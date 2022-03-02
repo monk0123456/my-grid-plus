@@ -1,0 +1,12 @@
+/**
+* 1、在缓存中，定义火车票的数据结构
+*/
+no_sql_create: {
+   name: my_train_ticket,
+   keyValue: {
+       /* key 表示：列车号，起点，终点 */
+       key: string
+       /* doc 为堆栈，里面保存了票的 token 和 票的价格 */
+       doc: [{token: string, price: int}]
+   }
+}

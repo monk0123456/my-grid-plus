@@ -1,0 +1,12 @@
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+
+; Statement 访问
+(.executeUpdate (.createStatement conn) "")
+
+; PreparedStatement 访问
+(def stmt (doto (.prepareStatement conn "")
+                 (.setObject 1 "")))
+
+(def rs (.executeQuery stmt))
+

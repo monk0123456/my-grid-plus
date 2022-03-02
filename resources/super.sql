@@ -423,6 +423,9 @@ CREATE TABLE IF NOT EXISTS my_group_view (
                   PRIMARY KEY (id, my_group_id)
                 ) WITH "template=MyMeta_template,affinityKey=my_group_id,cache_name=my_group_view,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
 
+/**
+记录 no sql
+*/
 DROP TABLE IF EXISTS my_cache;
 CREATE TABLE IF NOT EXISTS my_cache (
                 sql_line VARCHAR,

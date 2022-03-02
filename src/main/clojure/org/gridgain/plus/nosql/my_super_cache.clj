@@ -8,6 +8,7 @@
              (com.google.common.base Strings)
              (org.tools MyConvertUtil KvSql MyDbUtil)
              (cn.plus.model.nosql MyCacheGroup)
+             (org.log MyCljLogger)
              )
     (:gen-class
         ; 生成 class 的类名
@@ -335,7 +336,9 @@
 (defn my-no-lst [^Ignite ignite ^Long group_id lst no-sql-line]
     (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (lst-no-sql (rest (rest lst)))]
                                                                                          (if (and (some? name) (some? my-key))
-                                                                                             (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line)
+                                                                                             (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
+                                                                                                 (format "select show_msg('创建 no sql 表 %s 成功！')" name)
+                                                                                                 (format "select show_msg('创建 no sql 表 %s 失败！')" name))
                                                                                              ))
           (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (lst-no-sql (rest (rest lst)))]
                                                                                          (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
@@ -365,7 +368,12 @@
                                                                                             )
                                                                                         )
           (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (lst-no-sql (rest (rest lst)))]
-                                                                                       (MyNoSqlUtil/destroyCache ignite table_name group_id))
+                                                                                       (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
+                                                                                           (do
+                                                                                               (MyCljLogger/myWriter (format "%s %s" table_name group_id))
+                                                                                               (format "select show_msg('No sql 表 %s 删除成功！')" table_name))
+                                                                                           (format "select show_msg('No sql 表 %s 删除失败！')" table_name)
+                                                                                           ))
           (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (json_to_str lst)]
                                                                                                    (if (= (count my-lst) 6)
                                                                                                        (my-cache-push ignite group_id (nth my-lst 2) (nth my-lst 4))

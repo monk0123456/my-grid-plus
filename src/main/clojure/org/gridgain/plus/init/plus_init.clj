@@ -38,14 +38,14 @@
             (recur rs cache)
             )))
 
-; 添加自定义 template
-(defn add_template [^Ignite ignite]
-    (doto ignite
-        (.addCacheConfiguration (doto (CacheConfiguration. "MyMeta_template*")
-                                    (.setCacheMode (CacheMode/REPLICATED))
-                                    (.setReadFromBackup true)
-                                    (.setSqlSchema "MY_META")))
-        ))
+;; 添加自定义 template
+;(defn add_template [^Ignite ignite]
+;    (doto ignite
+;        (.addCacheConfiguration (doto (CacheConfiguration. "MyMeta_template*")
+;                                    (.setCacheMode (CacheMode/REPLICATED))
+;                                    (.setReadFromBackup true)
+;                                    (.setSqlSchema "MY_META")))
+;        ))
 
 ; 添加自定义  template
 (defn add_template [^Ignite ignite]
@@ -89,6 +89,7 @@
 (defn my-initialization
     [^Ignite ignite]
     (let [cache (get_meta_cache ignite) lst (get-code-lst plus-init/my-grid-tables)]
+        (get_public_cache ignite)
         (run-sql lst cache)))
 
 (defn -initialization

@@ -355,6 +355,19 @@
                     PRIMARY KEY (method_name, ps_index)
                     ) WITH \"template=MyMeta_template,affinityKey=method_name,VALUE_TYPE=cn.plus.model.ddl.MyFuncPs,cache_name=my_func_ps,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
 
+
+    /**
+    25、No sql 的定义
+    */
+    CREATE TABLE IF NOT EXISTS my_cache (
+                    sql_line VARCHAR,
+                    data_regin VARCHAR,
+                    cache_name VARCHAR(20),
+                    group_id BIGINT,
+                    PRIMARY KEY (cache_name, group_id)
+                    ) WITH \"template=MyMeta_template,KEY_TYPE=cn.plus.model.nosql.MyCacheGroup,VALUE_TYPE=cn.plus.model.nosql.MyCacheValue,cache_name=my_cache,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+
+
 ")
 
 (def my-un-grid-tables
@@ -392,6 +405,7 @@
      "DROP INDEX IF EXISTS ddl_log_group_id_idx"
      "DROP TABLE IF EXISTS dataset_ddl_log"
      "DROP INDEX IF EXISTS ds_ddl_log_idx"
+     "DROP TABLE IF EXISTS my_cache;"
      ])
 
 (def my-grid-tables-set #{"my_users_group"
@@ -414,4 +428,5 @@
                           "my_group_view"
                           "my_log"
                           "ddl_log"
-                          "dataset_ddl_log"})
+                          "dataset_ddl_log"
+                          "my_cache"})

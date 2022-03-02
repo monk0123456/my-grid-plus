@@ -22,7 +22,7 @@
     (:import (org.apache.ignite Ignite IgniteCache)
              (org.apache.ignite.internal IgnitionEx)
              (com.google.common.base Strings)
-             (org.tools MyConvertUtil KvSql MyDbUtil)
+             (org.tools MyConvertUtil KvSql MyDbUtil MyLineToBinary)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk)
@@ -33,6 +33,7 @@
              (java.util ArrayList List Date Iterator)
              (java.sql Timestamp)
              (java.math BigDecimal)
+             (cn.log MyLogger)
              )
     (:gen-class
         ; 生成 class 的类名
@@ -50,7 +51,7 @@
     ;(if (= userToken ))
     (if (my-lexical/is-eq? userToken (.getRoot_token (.configuration ignite)))
         0
-        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select g.id from my_users_group as g where g.userToken = ?") (to-array [userToken])))))]
+        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select g.id from my_users_group as g where g.user_token = ?") (to-array [userToken])))))]
             (first m)))
     )
 
@@ -76,9 +77,10 @@
             (my-lexical/get_str_value (str/join " " rs)))))
 
 ; 输入 group_id, sql 转换为，可执行的 sql
-(defn super-sql [^Ignite ignite ^Long group_id ^String sql]
+(defn super-sql [^Ignite ignite ^String userToken ^String sql]
     (if-not (Strings/isNullOrEmpty sql)
-        (let [lst (my-lexical/to-back sql)]
+        (let [lst (my-lexical/to-back sql) group_id (my_group_id ignite userToken)]
+            (.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
             (cond (my-lexical/is-eq? (first lst) "insert") (let [rs (my-insert/insert_run ignite group_id sql)]
                                                                    (if (nil? rs)
                                                                        (format "select show_msg('插入语句执行成功！')")))
@@ -140,10 +142,15 @@
                   (throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                   ))))
 
-(defn -superSql [^Ignite ignite ^String group_id ^Object sql]
-    (if-not (Strings/isNullOrEmpty group_id)
-        (super-sql ignite (Long/parseLong group_id) (MyCacheExUtil/restoreToLine sql))
-        (MyCacheExUtil/restoreToLine sql)))
+(defn -superSql [^Ignite ignite ^String userToken ^Object sql]
+    (if-not (Strings/isNullOrEmpty userToken)
+        (super-sql ignite userToken (MyCacheExUtil/restoreToLine sql))
+        (throw (Exception. "没有权限不能访问数据库！"))))
+
+;(defn -superSql [^Ignite ignite ^Long group_id ^Object sql]
+;    (if-not (> group_id -1)
+;        (super-sql ignite group_id (MyCacheExUtil/restoreToLine sql))
+;        (MyCacheExUtil/restoreToLine sql)))
 
 (defn -getGroupId [^Ignite ignite ^String userToken]
     (if-let [group_id (my_group_id ignite userToken)]

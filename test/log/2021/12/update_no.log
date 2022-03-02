@@ -21,6 +21,7 @@
     '[org.gridgain.plus.context.my-context :as my-context]
     '[org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
     '[org.gridgain.plus.init.plus-init :as plus-init]
+    '[org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
     '[org.gridgain.plus.tools.my-util :as my-util]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
@@ -39,7 +40,7 @@
         (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
         (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
         (java.util List ArrayList Date Iterator)
-        (java.sql Timestamp)
+        (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
         (java.math BigDecimal)
         (org.tools MyTools)
         (org.gridgain MyParamsUtil)

@@ -36,7 +36,7 @@
 
         <property name="clientMode" value="true"/>
 
-        <property name="igniteInstanceName" value="服务网格专用部署"></property>
+<!--        <property name="igniteInstanceName" value="服务网格专用部署"></property>-->
 
         <!-- 全局唯一标识符，在节点重启后仍然存在。主要是应对一个台机器，开启多个节点的持久化。
              并且希望节点在重启后依然有专用目录和数据分区
@@ -51,7 +51,7 @@
         <property name="super_password" value="my_root"/>
 
         <!-- 超级管理员的 root token -->
-        <property name="root_token" value="wudafushisuaige"/>
+        <property name="root_token" value="wudafu"/>
 
         <!-- 是否启用 Data Set -->
         <property name="dataSetEnabled" value="true"/>
