@@ -1,0 +1,926 @@
+Starting nREPL server...
+/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 -classpath "/Users/chenfei/Library/Application Support/IdeaIC2019.3/clojure-plugin/lib/nrepl-0.7.0.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/ant-javafx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/javafx-mx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/packager.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/tools.jar:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/target/classes:/Users/chenfei/.m2/repository/clojure-complete/clojure-complete/0.2.5/clojure-complete-0.2.5.jar:/Users/chenfei/.m2/repository/cn/mysuper/my-super-service/1.0-SNAPSHOT/my-super-service-1.0-SNAPSHOT.jar:/Users/chenfei/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/Users/chenfei/.m2/repository/com/google/code/gson/gson/2.8.2/gson-2.8.2.jar:/Users/chenfei/.m2/repository/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar:/Users/chenfei/.m2/repository/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar:/Users/chenfei/.m2/repository/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar:/Users/chenfei/.m2/repository/com/mchange/c3p0/0.9.5.4/c3p0-0.9.5.4.jar:/Users/chenfei/.m2/repository/com/mchange/mchange-commons-java/0.2.15/mchange-commons-java-0.2.15.jar:/Users/chenfei/.m2/repository/com/zaxxer/HikariCP-java7/2.4.13/HikariCP-java7-2.4.13.jar:/Users/chenfei/.m2/repository/commons-codec/commons-codec/1.12/commons-codec-1.12.jar:/Users/chenfei/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/Users/chenfei/.m2/repository/it/sauronsoftware/cron4j/cron4j/2.2.5/cron4j-2.2.5.jar:/Users/chenfei/.m2/repository/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar:/Users/chenfei/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar:/Users/chenfei/.m2/repository/junit/junit/4.11/junit-4.11.jar:/Users/chenfei/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar:/Users/chenfei/.m2/repository/nrepl/nrepl/0.6.0/nrepl-0.6.0.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpclient/4.5.6/httpclient-4.5.6.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-analyzers-common/7.4.0/lucene-analyzers-common-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-core/7.4.0/lucene-core-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queries/7.4.0/lucene-queries-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queryparser/7.4.0/lucene-queryparser-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-sandbox/7.4.0/lucene-sandbox-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/thrift/libthrift/0.12.0/libthrift-0.12.0.jar:/Users/chenfei/.m2/repository/org/checkerframework/checker-qual/2.0.0/checker-qual-2.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar:/Users/chenfei/.m2/repository/org/clojure/core.async/1.1.587/core.async-1.1.587.jar:/Users/chenfei/.m2/repository/org/clojure/core.cache/0.8.2/core.cache-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.memoize/0.8.2/core.memoize-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.specs.alpha/0.2.44/core.specs.alpha-0.2.44.jar:/Users/chenfei/.m2/repository/org/clojure/data.priority-map/0.0.7/data.priority-map-0.0.7.jar:/Users/chenfei/.m2/repository/org/clojure/spec.alpha/0.2.176/spec.alpha-0.2.176.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer.jvm/1.0.0/tools.analyzer.jvm-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer/1.0.0/tools.analyzer-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.reader/1.3.2/tools.reader-1.3.2.jar:/Users/chenfei/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.14/animal-sniffer-annotations-1.14.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-core/8.7.24/ignite-core-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-h2/8.7.24/ignite-h2-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-indexing/8.7.24/ignite-indexing-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-schedule/8.7.24/ignite-schedule-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-shmem/8.7.3/ignite-shmem-8.7.3.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-spring/8.7.24/ignite-spring-8.7.24.jar:/Users/chenfei/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:/Users/chenfei/.m2/repository/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar:/Users/chenfei/.m2/repository/org/locationtech/jts/jts-core/1.15.0/jts-core-1.15.0.jar:/Users/chenfei/.m2/repository/org/ow2/asm/asm/5.2/asm-5.2.jar:/Users/chenfei/.m2/repository/org/quartz-scheduler/quartz/2.3.2/quartz-2.3.2.jar:/Users/chenfei/.m2/repository/org/slf4j/slf4j-api/1.6.4/slf4j-api-1.6.4.jar:/Users/chenfei/.m2/repository/org/springframework/spring-aop/4.3.25.RELEASE/spring-aop-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-beans/4.3.25.RELEASE/spring-beans-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-context/4.3.25.RELEASE/spring-context-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-core/4.3.25.RELEASE/spring-core-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-expression/4.3.25.RELEASE/spring-expression-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-jdbc/4.3.25.RELEASE/spring-jdbc-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-tx/4.3.25.RELEASE/spring-tx-4.3.25.RELEASE.jar" clojure.main -i /private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init6235389833982471404.clj
+Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+Connecting to local nREPL server...
+nREPL server started on port 51233 on host localhost - nrepl://localhost:51233
+Clojure 1.10.1
+(require
+    '[org.gridgain.plus.ddl.my-create-table :as my-create-table]
+    '[org.gridgain.plus.ddl.my-alter-table :as my-alter-table]
+    '[org.gridgain.plus.ddl.my-create-index :as my-create-index]
+    '[org.gridgain.plus.ddl.my-drop-index :as my-drop-index]
+    '[org.gridgain.plus.ddl.my-drop-table :as my-drop-table]
+    '[org.gridgain.plus.ddl.my-create-dataset :as my-create-dataset]
+    '[org.gridgain.plus.ddl.my-alter-dataset :as my-alter-dataset]
+    '[org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
+    '[org.gridgain.plus.dml.my-select :as my-select]
+    '[org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+    '[org.gridgain.plus.dml.my-insert :as my-insert]
+    '[org.gridgain.plus.dml.my-update :as my-update]
+    '[org.gridgain.plus.dml.my-delete :as my-delete]
+    '[org.gridgain.plus.dml.my-trans :as my-trans]
+    '[org.gridgain.plus.dml.my-scenes :as my-scenes]
+    '[org.gridgain.plus.dml.my-scenes-util :as my-scenes-util]
+    '[org.gridgain.plus.dml.select-lexical :as my-lexical]
+    '[org.gridgain.plus.dml.my-expression :as my-expression]
+    '[org.gridgain.plus.sql.my-super-sql :as my-super-sql]
+    '[org.gridgain.plus.context.my-context :as my-context]
+    '[org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
+    '[org.gridgain.plus.init.plus-init :as plus-init]
+    '[org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
+    '[org.gridgain.plus.tools.my-util :as my-util]
+    '[clojure.core.reducers :as r]
+    '[clojure.string :as str]
+    '[clojure.walk :as w])
+(import (org.apache.ignite Ignite IgniteCache)
+        (org.apache.ignite.internal IgnitionEx)
+        (com.google.common.base Strings)
+        (org.tools MyConvertUtil KvSql)
+        (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType DdlLog DataSetDdlLog)
+        (cn.plus.model.ddl MyDataSet MyDatasetTable MyDatasetRealTable MyDatasetTablePK MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyTableObj MyUpdateViews MyViewObj ViewOperateType ViewType)
+        (org.gridgain.dml.util MyCacheExUtil)
+        (cn.plus.model.db MyScenesCache)
+        (org.apache.ignite.configuration CacheConfiguration)
+        (org.apache.ignite.cache CacheMode CacheAtomicityMode)
+        (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
+        (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
+        (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
+        (java.util List ArrayList Date Iterator)
+        (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+        (java.math BigDecimal)
+        (org.tools MyTools)
+        (org.gridgain MyParamsUtil)
+        )
+=> nil
+=> org.gridgain.MyParamsUtil
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+(def line_create "no_sql_create: {\n   name: my_train_ticket,\n   keyValue: {\n       /* key 表示：列车号，起点，终点 */\n       key: string\n       /* doc 为堆栈，里面保存了票的 token 和 票的价格 */\n       doc: [{token: string, price: int}]\n   }\n}")
+(.executeUpdate (.createStatement conn) line_create)
+*******************************
+jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu
+=> org.apache.ignite.IgniteJdbcDriver
+*******************************
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+*******************************
+*******************************
+=> #'user/conn
+=> #'user/line_create
+wudafu
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+=> 0
+(def line_insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
+=> #'user/line_insert
+(def ignite (IgnitionEx/start "/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources/default-config.xml"))
+(my-super-cache/my-no-sql ignite 0 line_insert)
+三月 02, 2022 11:14:00 上午 java.util.logging.LogManager$RootLogger log
+警告: Failed to resolve default logging config file: config/java.util.logging.properties
+[11:14:00]    __________  ________________
+[11:14:00]   /  _/ ___/ |/ /  _/_  __/ __/
+[11:14:00]  _/ // (7 7    // /  / / / _/
+[11:14:00] /___/\___/_/|_/___/ /_/ /___/
+[11:14:00]
+[11:14:00] ver. 8.7.24#20220302-sha1:DEV
+[11:14:00] 2022 Copyright(C) GridGain Systems, Inc. and Contributors
+[11:14:00]
+[11:14:00] Ignite documentation: http://gridgain.com
+[11:14:00]
+[11:14:00] Quiet mode.
+[11:14:00]   ^-- Logging by 'JavaLogger [quiet=true, config=null]'
+[11:14:00]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[11:14:00]
+[11:14:00] OS: Mac OS X 10.12.1 x86_64
+[11:14:01] VM information: Java(TM) SE Runtime Environment 1.8.0_111-b14 Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 25.111-b14
+[11:14:01] Please set system property '-Djava.net.preferIPv4Stack=true' to avoid possible problems in mixed environments.
+[11:14:01] Initial heap size is 128MB (should be no less than 512MB, use -Xms512m -Xmx512m).
+[11:14:01] Configured plugins:
+[11:14:01]   ^-- None
+[11:14:01]
+[11:14:01] Configured failure handler: [hnd=StopNodeOrHaltFailureHandler [tryStop=false, timeout=0, super=AbstractFailureHandler [ignoredFailureTypes=UnmodifiableSet [SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT]]]]
+[11:14:01] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[11:14:01] Security status [authentication=off, tls/ssl=off]
+*******************************
+jdbc:h2:mem:63f001e1-cbac-4c95-8c3f-6951505b04d8;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+*******************************
+jdbc:h2:mem:63f001e1-cbac-4c95-8c3f-6951505b04d8;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+>>>
+定时任务启动！
+>>>
+[11:14:02] REST protocols do not start on client node. To start the protocols on client node set '-DIGNITE_REST_START_ON_CLIENT=true' system property.
+[11:14:04] Data Regions Started: 6
+[11:14:04]     ^--   sysMemPlc region [type=internal, persistence=false, lazyAlloc=false,
+[11:14:04]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[11:14:04]     ^--   TxLog region [type=internal, persistence=false, lazyAlloc=false,
+[11:14:04]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[11:14:04]     ^--   40MB_Region_Eviction region [type=user, persistence=false, lazyAlloc=true,
+[11:14:04]       ...  initCfg=15MB, maxCfg=40MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[11:14:04]     ^--   volatileDsMemPlc region [type=internal, persistence=false, lazyAlloc=true,
+[11:14:04]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[11:14:04]     ^--   Default_Region region [type=default, persistence=false, lazyAlloc=true,
+[11:14:04]       ...  initCfg=10MB, maxCfg=50MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[11:14:04]     ^--   Meta_Region_Eviction region [type=user, persistence=false, lazyAlloc=true,
+[11:14:04]       ...  initCfg=20MB, maxCfg=40MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+*******************************
+jdbc:h2:mem:63f001e1-cbac-4c95-8c3f-6951505b04d8;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+*******************************
+jdbc:h2:mem:63f001e1-cbac-4c95-8c3f-6951505b04d8;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+[11:14:05] Performance suggestions for grid  (fix if possible)
+[11:14:05] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[11:14:05]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[11:14:05]   ^-- Specify JVM heap max size (add '-Xmx<size>[g|G|m|M|k|K]' to JVM options)
+[11:14:05]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[11:14:05]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[11:14:05] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[11:14:05]
+[11:14:05] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[11:14:05]
+[11:14:05] Ignite node started OK (id=63f001e1)
+[11:14:05] Topology snapshot [ver=2, locNode=63f001e1, servers=1, clients=1, state=ACTIVE, CPUs=4, offheap=0.24GB, heap=3.6GB]
+[11:14:05]   ^-- Baseline [id=0, size=1, online=1, offline=0]
+=> #'user/ignite
+=> nil
+[11:14:14] New version is available at gridgain.com: 8.8.16
+(try
+    (+ 1 2)
+    (* 3 5)
+    (catch Exception e
+        ))
+=> 15
+(try
+    (do
+        (+ 1 2)
+        (* 3 5))
+    (catch Exception e
+        ))
+=> 15
+(try
+    (do
+        (println (+ 1 2))
+        (* 3 5))
+    (catch Exception e
+        ))
+3
+=> 15
+(try
+    (println (+ 1 2))
+    (* 3 5)
+    (catch Exception e
+        ))
+3
+=> 15
+三月 02, 2022 1:56:10 下午 org.apache.ignite.logger.java.JavaLogger error
+严重: Blocked system-critical thread has been detected. This can lead to cluster-wide undefined behaviour [workerName=grid-nio-worker-tcp-comm-0, threadName=grid-nio-worker-tcp-comm-0-#23%TcpCommunicationSpi%, blockedFor=3596s]
+[13:56:10] Possible failure suppressed accordingly to a configured handler [hnd=StopNodeOrHaltFailureHandler [tryStop=false, timeout=0, super=AbstractFailureHandler [ignoredFailureTypes=UnmodifiableSet [SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT]]], failureCtx=FailureContext [type=SYSTEM_WORKER_BLOCKED, err=class o.a.i.IgniteException: GridWorker [name=grid-nio-worker-tcp-comm-0, igniteInstanceName=TcpCommunicationSpi, finished=false, heartbeatTs=1646196973198]]]
+(import (com.google.gson Gson GsonBuilder))
+=> com.google.gson.GsonBuilder
+(defn gson []
+    (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss")))
+=> #'user/gson
+(def my-gson (gson))
+=> #'user/my-gson
+(.toJson my-gson {"name" "吴大富" "age" 100})
+=> "{\"name\":\"吴大富\",\"age\":100}"
+(.toJson my-gson {"name" "吴大富" "age" 100 "food" [{"breakfast" ["面包" "苹果"]} {"breakfast" ["面谈" "香蕉"]}]})
+=> "{\"name\":\"吴大富\",\"age\":100,\"food\":[{\"breakfast\":[\"面包\",\"苹果\"]},{\"breakfast\":[\"面谈\",\"香蕉\"]}]}"
+
+Process finished with exit code 137 (interrupted by signal 9: SIGKILL)
+
+
+Starting nREPL server...
+/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 -classpath "/Users/chenfei/Library/Application Support/IdeaIC2019.3/clojure-plugin/lib/nrepl-0.7.0.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/ant-javafx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/javafx-mx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/packager.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/tools.jar:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/target/classes:/Users/chenfei/.m2/repository/clojure-complete/clojure-complete/0.2.5/clojure-complete-0.2.5.jar:/Users/chenfei/.m2/repository/cn/mysuper/my-super-service/1.0-SNAPSHOT/my-super-service-1.0-SNAPSHOT.jar:/Users/chenfei/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/Users/chenfei/.m2/repository/com/google/code/gson/gson/2.8.2/gson-2.8.2.jar:/Users/chenfei/.m2/repository/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar:/Users/chenfei/.m2/repository/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar:/Users/chenfei/.m2/repository/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar:/Users/chenfei/.m2/repository/com/mchange/c3p0/0.9.5.4/c3p0-0.9.5.4.jar:/Users/chenfei/.m2/repository/com/mchange/mchange-commons-java/0.2.15/mchange-commons-java-0.2.15.jar:/Users/chenfei/.m2/repository/com/zaxxer/HikariCP-java7/2.4.13/HikariCP-java7-2.4.13.jar:/Users/chenfei/.m2/repository/commons-codec/commons-codec/1.12/commons-codec-1.12.jar:/Users/chenfei/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/Users/chenfei/.m2/repository/it/sauronsoftware/cron4j/cron4j/2.2.5/cron4j-2.2.5.jar:/Users/chenfei/.m2/repository/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar:/Users/chenfei/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar:/Users/chenfei/.m2/repository/junit/junit/4.11/junit-4.11.jar:/Users/chenfei/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar:/Users/chenfei/.m2/repository/nrepl/nrepl/0.6.0/nrepl-0.6.0.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpclient/4.5.6/httpclient-4.5.6.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-analyzers-common/7.4.0/lucene-analyzers-common-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-core/7.4.0/lucene-core-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queries/7.4.0/lucene-queries-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queryparser/7.4.0/lucene-queryparser-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-sandbox/7.4.0/lucene-sandbox-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/thrift/libthrift/0.12.0/libthrift-0.12.0.jar:/Users/chenfei/.m2/repository/org/checkerframework/checker-qual/2.0.0/checker-qual-2.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar:/Users/chenfei/.m2/repository/org/clojure/core.async/1.1.587/core.async-1.1.587.jar:/Users/chenfei/.m2/repository/org/clojure/core.cache/0.8.2/core.cache-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.memoize/0.8.2/core.memoize-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.specs.alpha/0.2.44/core.specs.alpha-0.2.44.jar:/Users/chenfei/.m2/repository/org/clojure/data.priority-map/0.0.7/data.priority-map-0.0.7.jar:/Users/chenfei/.m2/repository/org/clojure/spec.alpha/0.2.176/spec.alpha-0.2.176.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer.jvm/1.0.0/tools.analyzer.jvm-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer/1.0.0/tools.analyzer-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.reader/1.3.2/tools.reader-1.3.2.jar:/Users/chenfei/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.14/animal-sniffer-annotations-1.14.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-core/8.7.24/ignite-core-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-h2/8.7.24/ignite-h2-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-indexing/8.7.24/ignite-indexing-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-schedule/8.7.24/ignite-schedule-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-shmem/8.7.3/ignite-shmem-8.7.3.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-spring/8.7.24/ignite-spring-8.7.24.jar:/Users/chenfei/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:/Users/chenfei/.m2/repository/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar:/Users/chenfei/.m2/repository/org/locationtech/jts/jts-core/1.15.0/jts-core-1.15.0.jar:/Users/chenfei/.m2/repository/org/ow2/asm/asm/5.2/asm-5.2.jar:/Users/chenfei/.m2/repository/org/quartz-scheduler/quartz/2.3.2/quartz-2.3.2.jar:/Users/chenfei/.m2/repository/org/slf4j/slf4j-api/1.6.4/slf4j-api-1.6.4.jar:/Users/chenfei/.m2/repository/org/springframework/spring-aop/4.3.25.RELEASE/spring-aop-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-beans/4.3.25.RELEASE/spring-beans-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-context/4.3.25.RELEASE/spring-context-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-core/4.3.25.RELEASE/spring-core-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-expression/4.3.25.RELEASE/spring-expression-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-jdbc/4.3.25.RELEASE/spring-jdbc-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-tx/4.3.25.RELEASE/spring-tx-4.3.25.RELEASE.jar" clojure.main -i /private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init4554110541540868167.clj
+Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+Connecting to local nREPL server...
+nREPL server started on port 60138 on host localhost - nrepl://localhost:60138
+Clojure 1.10.1
+(import
+    (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+    )
+=> java.sql.PreparedStatement
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+
+=> org.apache.ignite.IgniteJdbcDriver
+*******************************
+jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu
+*******************************
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+*******************************
+*******************************
+=> #'user/conn
+(def line-insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
+(def stmt (.prepareStatement conn line-insert))
+(def rs (.executeQuery stmt))
+=> #'user/line-insert
+wudafu
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+Execution error (SQLException) at org.apache.ignite.internal.jdbc.thin.JdbcThinConnection/sendRequest (JdbcThinConnection.java:1054).
+Exception calling user-defined function: "superSql(0, [B@4ad728fe): org/gridgain/plus/nosql/my_super_cache$get_doc_with_type_lst$equal_lst__4821" [90105-199]
+Execution error (IllegalArgumentException) at nrepl.middleware.interruptible-eval/evaluate$fn (interruptible_eval.clj:91).
+No matching field found: executeQuery for class clojure.lang.Var$Unbound
+
+Process finished with exit code 137 (interrupted by signal 9: SIGKILL)
+
+
+Starting nREPL server...
+/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 -classpath "/Users/chenfei/Library/Application Support/IdeaIC2019.3/clojure-plugin/lib/nrepl-0.7.0.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/ant-javafx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/javafx-mx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/packager.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/tools.jar:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/target/classes:/Users/chenfei/.m2/repository/clojure-complete/clojure-complete/0.2.5/clojure-complete-0.2.5.jar:/Users/chenfei/.m2/repository/cn/mysuper/my-super-service/1.0-SNAPSHOT/my-super-service-1.0-SNAPSHOT.jar:/Users/chenfei/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/Users/chenfei/.m2/repository/com/google/code/gson/gson/2.8.2/gson-2.8.2.jar:/Users/chenfei/.m2/repository/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar:/Users/chenfei/.m2/repository/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar:/Users/chenfei/.m2/repository/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar:/Users/chenfei/.m2/repository/com/mchange/c3p0/0.9.5.4/c3p0-0.9.5.4.jar:/Users/chenfei/.m2/repository/com/mchange/mchange-commons-java/0.2.15/mchange-commons-java-0.2.15.jar:/Users/chenfei/.m2/repository/com/zaxxer/HikariCP-java7/2.4.13/HikariCP-java7-2.4.13.jar:/Users/chenfei/.m2/repository/commons-codec/commons-codec/1.12/commons-codec-1.12.jar:/Users/chenfei/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/Users/chenfei/.m2/repository/it/sauronsoftware/cron4j/cron4j/2.2.5/cron4j-2.2.5.jar:/Users/chenfei/.m2/repository/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar:/Users/chenfei/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar:/Users/chenfei/.m2/repository/junit/junit/4.11/junit-4.11.jar:/Users/chenfei/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar:/Users/chenfei/.m2/repository/nrepl/nrepl/0.6.0/nrepl-0.6.0.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpclient/4.5.6/httpclient-4.5.6.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-analyzers-common/7.4.0/lucene-analyzers-common-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-core/7.4.0/lucene-core-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queries/7.4.0/lucene-queries-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queryparser/7.4.0/lucene-queryparser-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-sandbox/7.4.0/lucene-sandbox-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/thrift/libthrift/0.12.0/libthrift-0.12.0.jar:/Users/chenfei/.m2/repository/org/checkerframework/checker-qual/2.0.0/checker-qual-2.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar:/Users/chenfei/.m2/repository/org/clojure/core.async/1.1.587/core.async-1.1.587.jar:/Users/chenfei/.m2/repository/org/clojure/core.cache/0.8.2/core.cache-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.memoize/0.8.2/core.memoize-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.specs.alpha/0.2.44/core.specs.alpha-0.2.44.jar:/Users/chenfei/.m2/repository/org/clojure/data.priority-map/0.0.7/data.priority-map-0.0.7.jar:/Users/chenfei/.m2/repository/org/clojure/spec.alpha/0.2.176/spec.alpha-0.2.176.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer.jvm/1.0.0/tools.analyzer.jvm-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer/1.0.0/tools.analyzer-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.reader/1.3.2/tools.reader-1.3.2.jar:/Users/chenfei/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.14/animal-sniffer-annotations-1.14.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-core/8.7.24/ignite-core-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-h2/8.7.24/ignite-h2-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-indexing/8.7.24/ignite-indexing-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-schedule/8.7.24/ignite-schedule-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-shmem/8.7.3/ignite-shmem-8.7.3.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-spring/8.7.24/ignite-spring-8.7.24.jar:/Users/chenfei/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:/Users/chenfei/.m2/repository/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar:/Users/chenfei/.m2/repository/org/locationtech/jts/jts-core/1.15.0/jts-core-1.15.0.jar:/Users/chenfei/.m2/repository/org/ow2/asm/asm/5.2/asm-5.2.jar:/Users/chenfei/.m2/repository/org/quartz-scheduler/quartz/2.3.2/quartz-2.3.2.jar:/Users/chenfei/.m2/repository/org/slf4j/slf4j-api/1.6.4/slf4j-api-1.6.4.jar:/Users/chenfei/.m2/repository/org/springframework/spring-aop/4.3.25.RELEASE/spring-aop-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-beans/4.3.25.RELEASE/spring-beans-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-context/4.3.25.RELEASE/spring-context-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-core/4.3.25.RELEASE/spring-core-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-expression/4.3.25.RELEASE/spring-expression-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-jdbc/4.3.25.RELEASE/spring-jdbc-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-tx/4.3.25.RELEASE/spring-tx-4.3.25.RELEASE.jar" clojure.main -i /private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init10521987428243816966.clj
+Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+Connecting to local nREPL server...
+nREPL server started on port 61830 on host localhost - nrepl://localhost:61830
+Clojure 1.10.1
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+(def line-insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
+(def stmt (.prepareStatement conn line-insert))
+(def rs (.executeQuery stmt))
+=> org.apache.ignite.IgniteJdbcDriver
+Syntax error compiling at (/private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init10521987428243816966.clj:2:11).
+No such namespace: DriverManager
+=> #'user/line-insert
+Execution error (IllegalArgumentException) at nrepl.middleware.interruptible-eval/evaluate$fn (interruptible_eval.clj:91).
+No matching method prepareStatement found taking 1 args for class clojure.lang.Var$Unbound
+Execution error (IllegalArgumentException) at nrepl.middleware.interruptible-eval/evaluate$fn (interruptible_eval.clj:91).
+No matching field found: executeQuery for class clojure.lang.Var$Unbound
+(import
+    (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+    )
+
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+(def line-insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
+(def stmt (.prepareStatement conn line-insert))
+(def rs (.executeQuery stmt))
+=> java.sql.PreparedStatement
+=> org.apache.ignite.IgniteJdbcDriver
+*******************************
+jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu
+*******************************
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+*******************************
+*******************************
+=> #'user/conn
+=> #'user/line-insert
+wudafu
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+=> #'user/stmt
+*******************************
+*******************************
+=> #'user/rs
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (println (.getString rs 1))
+        ))
+=> #'user/show-rs
+(show-rs rs)
+true
+=> nil
+(def line-query "no_sql_query: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\"\n}")
+(def stmt (.prepareStatement conn line-query))
+(def rs (.executeQuery stmt))
+wudafu
+=>*******************************
+ #'user/line-query
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+Execution error (SQLException) at org.apache.ignite.internal.jdbc.thin.JdbcThinConnection/sendRequest (JdbcThinConnection.java:1054).
+Exception calling user-defined function: "superSql(0, [B@768b8486): clojure.lang.PersistentVector cannot be cast to java.lang.String" [90105-199]
+*******************************
+*******************************
+*******************************
+*******************************
+=> #'user/rs
+(show-rs rs)
+true
+=> nil
+
+Process finished with exit code 137 (interrupted by signal 9: SIGKILL)
+
+
+Starting nREPL server...
+/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 -classpath "/Users/chenfei/Library/Application Support/IdeaIC2019.3/clojure-plugin/lib/nrepl-0.7.0.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/ant-javafx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/javafx-mx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/packager.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/tools.jar:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/target/classes:/Users/chenfei/.m2/repository/clojure-complete/clojure-complete/0.2.5/clojure-complete-0.2.5.jar:/Users/chenfei/.m2/repository/cn/mysuper/my-super-service/1.0-SNAPSHOT/my-super-service-1.0-SNAPSHOT.jar:/Users/chenfei/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/Users/chenfei/.m2/repository/com/google/code/gson/gson/2.8.2/gson-2.8.2.jar:/Users/chenfei/.m2/repository/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar:/Users/chenfei/.m2/repository/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar:/Users/chenfei/.m2/repository/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar:/Users/chenfei/.m2/repository/com/mchange/c3p0/0.9.5.4/c3p0-0.9.5.4.jar:/Users/chenfei/.m2/repository/com/mchange/mchange-commons-java/0.2.15/mchange-commons-java-0.2.15.jar:/Users/chenfei/.m2/repository/com/zaxxer/HikariCP-java7/2.4.13/HikariCP-java7-2.4.13.jar:/Users/chenfei/.m2/repository/commons-codec/commons-codec/1.12/commons-codec-1.12.jar:/Users/chenfei/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/Users/chenfei/.m2/repository/it/sauronsoftware/cron4j/cron4j/2.2.5/cron4j-2.2.5.jar:/Users/chenfei/.m2/repository/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar:/Users/chenfei/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar:/Users/chenfei/.m2/repository/junit/junit/4.11/junit-4.11.jar:/Users/chenfei/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar:/Users/chenfei/.m2/repository/nrepl/nrepl/0.6.0/nrepl-0.6.0.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpclient/4.5.6/httpclient-4.5.6.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-analyzers-common/7.4.0/lucene-analyzers-common-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-core/7.4.0/lucene-core-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queries/7.4.0/lucene-queries-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queryparser/7.4.0/lucene-queryparser-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-sandbox/7.4.0/lucene-sandbox-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/thrift/libthrift/0.12.0/libthrift-0.12.0.jar:/Users/chenfei/.m2/repository/org/checkerframework/checker-qual/2.0.0/checker-qual-2.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar:/Users/chenfei/.m2/repository/org/clojure/core.async/1.1.587/core.async-1.1.587.jar:/Users/chenfei/.m2/repository/org/clojure/core.cache/0.8.2/core.cache-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.memoize/0.8.2/core.memoize-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.specs.alpha/0.2.44/core.specs.alpha-0.2.44.jar:/Users/chenfei/.m2/repository/org/clojure/data.priority-map/0.0.7/data.priority-map-0.0.7.jar:/Users/chenfei/.m2/repository/org/clojure/spec.alpha/0.2.176/spec.alpha-0.2.176.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer.jvm/1.0.0/tools.analyzer.jvm-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer/1.0.0/tools.analyzer-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.reader/1.3.2/tools.reader-1.3.2.jar:/Users/chenfei/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.14/animal-sniffer-annotations-1.14.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-core/8.7.24/ignite-core-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-h2/8.7.24/ignite-h2-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-indexing/8.7.24/ignite-indexing-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-schedule/8.7.24/ignite-schedule-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-shmem/8.7.3/ignite-shmem-8.7.3.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-spring/8.7.24/ignite-spring-8.7.24.jar:/Users/chenfei/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:/Users/chenfei/.m2/repository/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar:/Users/chenfei/.m2/repository/org/locationtech/jts/jts-core/1.15.0/jts-core-1.15.0.jar:/Users/chenfei/.m2/repository/org/ow2/asm/asm/5.2/asm-5.2.jar:/Users/chenfei/.m2/repository/org/quartz-scheduler/quartz/2.3.2/quartz-2.3.2.jar:/Users/chenfei/.m2/repository/org/slf4j/slf4j-api/1.6.4/slf4j-api-1.6.4.jar:/Users/chenfei/.m2/repository/org/springframework/spring-aop/4.3.25.RELEASE/spring-aop-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-beans/4.3.25.RELEASE/spring-beans-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-context/4.3.25.RELEASE/spring-context-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-core/4.3.25.RELEASE/spring-core-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-expression/4.3.25.RELEASE/spring-expression-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-jdbc/4.3.25.RELEASE/spring-jdbc-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-tx/4.3.25.RELEASE/spring-tx-4.3.25.RELEASE.jar" clojure.main -i /private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init16219826682781173419.clj
+Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+Connecting to local nREPL server...
+nREPL server started on port 63411 on host localhost - nrepl://localhost:63411
+Clojure 1.10.1
+(import
+    (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+    )
+
+=> java.sql.PreparedStatement
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+
+*******************************
+jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu
+=> org.apache.ignite.IgniteJdbcDriver
+*******************************
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+*******************************
+*******************************
+=> #'user/conn
+(def line-query "no_sql_query: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\"\n}")
+(def stmt (.prepareStatement conn line-query))
+(def rs (.executeQuery stmt))
+=> #'user/line-query
+wudafu
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+Execution error (SQLException) at org.apache.ignite.internal.jdbc.thin.JdbcThinConnection/sendRequest (JdbcThinConnection.java:1054).
+Exception calling user-defined function: "superSql(0, [B@3f701259): clojure.lang.PersistentVector cannot be cast to java.lang.String" [90105-199]
+Execution error (IllegalArgumentException) at nrepl.middleware.interruptible-eval/evaluate$fn (interruptible_eval.clj:91).
+No matching field found: executeQuery for class clojure.lang.Var$Unbound
+(require
+    '[org.gridgain.plus.ddl.my-create-table :as my-create-table]
+    '[org.gridgain.plus.ddl.my-alter-table :as my-alter-table]
+    '[org.gridgain.plus.ddl.my-create-index :as my-create-index]
+    '[org.gridgain.plus.ddl.my-drop-index :as my-drop-index]
+    '[org.gridgain.plus.ddl.my-drop-table :as my-drop-table]
+    '[org.gridgain.plus.ddl.my-create-dataset :as my-create-dataset]
+    '[org.gridgain.plus.ddl.my-alter-dataset :as my-alter-dataset]
+    '[org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
+    '[org.gridgain.plus.dml.my-select :as my-select]
+    '[org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+    '[org.gridgain.plus.dml.my-insert :as my-insert]
+    '[org.gridgain.plus.dml.my-update :as my-update]
+    '[org.gridgain.plus.dml.my-delete :as my-delete]
+    '[org.gridgain.plus.dml.my-trans :as my-trans]
+    '[org.gridgain.plus.dml.my-scenes :as my-scenes]
+    '[org.gridgain.plus.dml.my-scenes-util :as my-scenes-util]
+    '[org.gridgain.plus.dml.select-lexical :as my-lexical]
+    '[org.gridgain.plus.dml.my-expression :as my-expression]
+    '[org.gridgain.plus.sql.my-super-sql :as my-super-sql]
+    '[org.gridgain.plus.context.my-context :as my-context]
+    '[org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
+    '[org.gridgain.plus.init.plus-init :as plus-init]
+    '[org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
+    '[org.gridgain.plus.tools.my-util :as my-util]
+    '[clojure.core.reducers :as r]
+    '[clojure.string :as str]
+    '[clojure.walk :as w])
+(import (org.apache.ignite Ignite IgniteCache)
+        (org.apache.ignite.internal IgnitionEx)
+        (com.google.common.base Strings)
+        (org.tools MyConvertUtil KvSql)
+        (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType DdlLog DataSetDdlLog)
+        (cn.plus.model.ddl MyDataSet MyDatasetTable MyDatasetRealTable MyDatasetTablePK MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyTableObj MyUpdateViews MyViewObj ViewOperateType ViewType)
+        (org.gridgain.dml.util MyCacheExUtil)
+        (cn.plus.model.db MyScenesCache)
+        (org.apache.ignite.configuration CacheConfiguration)
+        (org.apache.ignite.cache CacheMode CacheAtomicityMode)
+        (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
+        (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
+        (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
+        (java.util List ArrayList Date Iterator)
+        (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+        (java.math BigDecimal)
+        (org.tools MyTools)
+        (org.gridgain MyParamsUtil)
+        )
+
+(def ignite (IgnitionEx/start "/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources/default-config.xml"))
+
+=> nil
+=> org.gridgain.MyParamsUtil
+三月 02, 2022 8:39:23 下午 java.util.logging.LogManager$RootLogger log
+警告: Failed to resolve default logging config file: config/java.util.logging.properties
+[20:39:23]    __________  ________________
+[20:39:23]   /  _/ ___/ |/ /  _/_  __/ __/
+[20:39:23]  _/ // (7 7    // /  / / / _/
+[20:39:23] /___/\___/_/|_/___/ /_/ /___/
+[20:39:23]
+[20:39:23] ver. 8.7.24#20220302-sha1:DEV
+[20:39:23] 2022 Copyright(C) GridGain Systems, Inc. and Contributors
+[20:39:23]
+[20:39:23] Ignite documentation: http://gridgain.com
+[20:39:23]
+[20:39:23] Quiet mode.
+[20:39:23]   ^-- Logging by 'JavaLogger [quiet=true, config=null]'
+[20:39:23]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[20:39:23]
+[20:39:23] OS: Mac OS X 10.12.1 x86_64
+[20:39:23] VM information: Java(TM) SE Runtime Environment 1.8.0_111-b14 Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 25.111-b14
+[20:39:23] Please set system property '-Djava.net.preferIPv4Stack=true' to avoid possible problems in mixed environments.
+[20:39:23] Initial heap size is 128MB (should be no less than 512MB, use -Xms512m -Xmx512m).
+[20:39:24] Configured plugins:
+[20:39:24]   ^-- None
+[20:39:24]
+[20:39:24] Configured failure handler: [hnd=StopNodeOrHaltFailureHandler [tryStop=false, timeout=0, super=AbstractFailureHandler [ignoredFailureTypes=UnmodifiableSet [SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT]]]]
+[20:39:24] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[20:39:25] Security status [authentication=off, tls/ssl=off]
+*******************************
+jdbc:h2:mem:4a5cb43e-51b8-4c0b-9fef-d8c2232f05e3;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+*******************************
+jdbc:h2:mem:4a5cb43e-51b8-4c0b-9fef-d8c2232f05e3;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+>>>
+定时任务启动！
+>>>
+[20:39:27] REST protocols do not start on client node. To start the protocols on client node set '-DIGNITE_REST_START_ON_CLIENT=true' system property.
+[20:39:29] Data Regions Started: 6
+[20:39:29]     ^--   sysMemPlc region [type=internal, persistence=false, lazyAlloc=false,
+[20:39:29]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[20:39:29]     ^--   TxLog region [type=internal, persistence=false, lazyAlloc=false,
+[20:39:29]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[20:39:29]     ^--   40MB_Region_Eviction region [type=user, persistence=false, lazyAlloc=true,
+[20:39:29]       ...  initCfg=15MB, maxCfg=40MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[20:39:29]     ^--   volatileDsMemPlc region [type=internal, persistence=false, lazyAlloc=true,
+[20:39:29]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[20:39:29]     ^--   Default_Region region [type=default, persistence=false, lazyAlloc=true,
+[20:39:29]       ...  initCfg=10MB, maxCfg=50MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[20:39:29]     ^--   Meta_Region_Eviction region [type=user, persistence=false, lazyAlloc=true,
+[20:39:29]       ...  initCfg=20MB, maxCfg=40MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+*******************************
+jdbc:h2:mem:4a5cb43e-51b8-4c0b-9fef-d8c2232f05e3;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+*******************************
+jdbc:h2:mem:4a5cb43e-51b8-4c0b-9fef-d8c2232f05e3;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+[20:39:31] Performance suggestions for grid  (fix if possible)
+[20:39:31] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[20:39:31]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[20:39:31]   ^-- Specify JVM heap max size (add '-Xmx<size>[g|G|m|M|k|K]' to JVM options)
+[20:39:31]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[20:39:31]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[20:39:31] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[20:39:31]
+[20:39:31] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[20:39:31]
+[20:39:31] Ignite node started OK (id=4a5cb43e)
+[20:39:31] Topology snapshot [ver=2, locNode=4a5cb43e, servers=1, clients=1, state=ACTIVE, CPUs=4, offheap=0.24GB, heap=3.6GB]
+[20:39:31]   ^-- Baseline [id=0, size=1, online=1, offline=0]
+=> #'user/ignite
+[20:39:39] New version is available at gridgain.com: 8.8.16
+(def line-query "no_sql_query: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\"\n}")
+=> #'user/line-query
+(def lst-query (my-lexical/to-back line-query))
+(my-super-cache/my-no-lst ignite 0 lst-query line-query)
+=> #'user/lst-query
+=> nil
+(import (org.apache.ignite Ignite IgniteCache)
+    (org.gridgain.nosql MyNoSqlUtil)
+    (com.google.common.base Strings)
+    (org.tools MyConvertUtil KvSql MyDbUtil)
+    (cn.plus.model.nosql MyCacheGroup)
+    (com.google.gson Gson GsonBuilder)
+    (org.log MyCljLogger)
+    )
+
+(defn my-no-lst [^Ignite ignite ^Long group_id lst no-sql-line]
+    (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (and (some? name) (some? my-key))
+                                                                                             (try
+                                                                                                 (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
+                                                                                                     "select show_msg('true')"
+                                                                                                     "select show_msg('false')")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (let [{{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                 (try
+                                                                                                     (if (nil? (.put (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                         "select show_msg('true')"
+                                                                                                         "select show_msg('false')")
+                                                                                                     (catch Exception e
+                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                 )))
+          (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (my-super-cache/lst-no-sql-query (rest (rest lst)))]
+                                                                                         (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
+                                                                                             (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                 (if (or (nil? f) (empty? f))
+                                                                                                     (let [{{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                         (try
+                                                                                                             (if (nil? (.replace (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                                 "select show_msg('true')"
+                                                                                                                 "select show_msg('false')")
+                                                                                                             (catch Exception e
+                                                                                                                 (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                         )
+                                                                                                     (let [vs-obj (.get (.cache ignite table_name) my-key) query-vs (my-super-cache/lst-no-sql (my-lexical/to-back no-sql))]
+                                                                                                         (let [no-sql (my-super-cache/set-cache-vs-lst (filter #(not (= % ".")) (my-super-cache/get-dic-lst-items (str/join (rest f)))) vs-obj query-vs) {{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                             (try
+                                                                                                                 (if (nil? (.replace (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                                     "select show_msg('true')"
+                                                                                                                     "select show_msg('false')")
+                                                                                                                 (catch Exception e
+                                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                             ))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_delete") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (try
+                                                                                                 (if (nil? (.remove (.cache ignite table_name) my-key))
+                                                                                                     "select show_msg('true')"
+                                                                                                     "select show_msg('false')")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                             )
+                                                                                         )
+          (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (my-super-cache/lst-no-sql-query (rest (rest lst)))]
+                                                                                        (if-let [{table_name "table_name" my-key "key"} r]
+                                                                                            (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                (if (or (nil? f) (empty? f))
+                                                                                                    (.get (.cache ignite table_name) my-key)
+                                                                                                    (let [vs-obj (.get (.cache ignite table_name) my-key) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                                                                                                        (try
+                                                                                                            (if-let [get-rs (my-super-cache/get-vs-dic vs-obj (str/join (rest f)))]
+                                                                                                                (do
+                                                                                                                    (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                    (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                "select show_msg('')")
+                                                                                                            (catch Exception e
+                                                                                                                (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                        )))
+                                                                                            )
+                                                                                        )
+          (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                       (try
+                                                                                           (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
+                                                                                               "select show_msg('true')"
+                                                                                               "select show_msg('false')")
+                                                                                           (catch Exception e
+                                                                                               (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                       )
+          (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (my-super-cache/json_to_str lst)]
+                                                                                                   (if (= (count my-lst) 6)
+                                                                                                       (my-super-cache/my-cache-push ignite group_id (nth my-lst 2) (nth my-lst 4))
+                                                                                                       (throw (Exception. "push 定义错误！"))))
+          (and (my-lexical/is-eq? (first lst) "pop") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (my-super-cache/json_to_str lst)]
+                                                                                                  (if (= (count my-lst) 4)
+                                                                                                      (my-cache-pop ignite group_id (nth my-lst 2))
+                                                                                                      (throw (Exception. "pop 定义错误！"))))
+          :else
+          (throw (Exception. "输入字符串错误！"))
+          ))
+(my-no-lst ignite 0 lst-query line-query)
+=> org.log.MyCljLogger
+Syntax error compiling at (/private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init16219826682781173419.clj:93:103).
+Unable to resolve symbol: my-cache-pop in this context
+Execution error (IllegalStateException) at user/eval1645 (form-init16219826682781173419.clj:98).
+Attempting to call unbound fn: #'user/my-no-lst
+(import (org.apache.ignite Ignite IgniteCache)
+    (org.gridgain.nosql MyNoSqlUtil)
+    (com.google.common.base Strings)
+    (org.tools MyConvertUtil KvSql MyDbUtil)
+    (cn.plus.model.nosql MyCacheGroup)
+    (com.google.gson Gson GsonBuilder)
+    (org.log MyCljLogger)
+    )
+
+(defn my-no-lst [^Ignite ignite ^Long group_id lst no-sql-line]
+    (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (and (some? name) (some? my-key))
+                                                                                             (try
+                                                                                                 (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
+                                                                                                     "select show_msg('true')"
+                                                                                                     "select show_msg('false')")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (let [{{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                 (try
+                                                                                                     (if (nil? (.put (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                         "select show_msg('true')"
+                                                                                                         "select show_msg('false')")
+                                                                                                     (catch Exception e
+                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                 )))
+          (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (my-super-cache/lst-no-sql-query (rest (rest lst)))]
+                                                                                         (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
+                                                                                             (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                 (if (or (nil? f) (empty? f))
+                                                                                                     (let [{{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                         (try
+                                                                                                             (if (nil? (.replace (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                                 "select show_msg('true')"
+                                                                                                                 "select show_msg('false')")
+                                                                                                             (catch Exception e
+                                                                                                                 (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                         )
+                                                                                                     (let [vs-obj (.get (.cache ignite table_name) my-key) query-vs (my-super-cache/lst-no-sql (my-lexical/to-back no-sql))]
+                                                                                                         (let [no-sql (my-super-cache/set-cache-vs-lst (filter #(not (= % ".")) (my-super-cache/get-dic-lst-items (str/join (rest f)))) vs-obj query-vs) {{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                             (try
+                                                                                                                 (if (nil? (.replace (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                                     "select show_msg('true')"
+                                                                                                                     "select show_msg('false')")
+                                                                                                                 (catch Exception e
+                                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                             ))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_delete") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (try
+                                                                                                 (if (nil? (.remove (.cache ignite table_name) my-key))
+                                                                                                     "select show_msg('true')"
+                                                                                                     "select show_msg('false')")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                             )
+                                                                                         )
+          (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (my-super-cache/lst-no-sql-query (rest (rest lst)))]
+                                                                                        (if-let [{table_name "table_name" my-key "key"} r]
+                                                                                            (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                (if (or (nil? f) (empty? f))
+                                                                                                    (.get (.cache ignite table_name) my-key)
+                                                                                                    (let [vs-obj (.get (.cache ignite table_name) my-key) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                                                                                                        (try
+                                                                                                            (if-let [get-rs (my-super-cache/get-vs-dic vs-obj (str/join (rest f)))]
+                                                                                                                (do
+                                                                                                                    (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                    (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                "select show_msg('')")
+                                                                                                            (catch Exception e
+                                                                                                                (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                        )))
+                                                                                            )
+                                                                                        )
+          (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                       (try
+                                                                                           (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
+                                                                                               "select show_msg('true')"
+                                                                                               "select show_msg('false')")
+                                                                                           (catch Exception e
+                                                                                               (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                       )
+          (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (my-super-cache/json_to_str lst)]
+                                                                                                   (if (= (count my-lst) 6)
+                                                                                                       (my-super-cache/my-cache-push ignite group_id (nth my-lst 2) (nth my-lst 4))
+                                                                                                       (throw (Exception. "push 定义错误！"))))
+          (and (my-lexical/is-eq? (first lst) "pop") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (my-super-cache/json_to_str lst)]
+                                                                                                  (if (= (count my-lst) 4)
+                                                                                                      (my-super-cache/my-cache-pop ignite group_id (nth my-lst 2))
+                                                                                                      (throw (Exception. "pop 定义错误！"))))
+          :else
+          (throw (Exception. "输入字符串错误！"))
+          ))
+(my-no-lst ignite 0 lst-query line-query)
+=> org.log.MyCljLogger
+=> #'user/my-no-lst
+=> nil
+(my-lexical/to-back line-query)
+=> ("no_sql_query" ":" "{" "table_name" ":" "my_train_ticket" "," "key" ":" "\"G350_成都东_北京西\"" "}")
+(import (org.apache.ignite Ignite IgniteCache)
+    (org.gridgain.nosql MyNoSqlUtil)
+    (com.google.common.base Strings)
+    (org.tools MyConvertUtil KvSql MyDbUtil)
+    (cn.plus.model.nosql MyCacheGroup)
+    (com.google.gson Gson GsonBuilder)
+    (org.log MyCljLogger)
+    )
+
+(defn my-no-lst [^Ignite ignite ^Long group_id lst no-sql-line]
+    (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (and (some? name) (some? my-key))
+                                                                                             (try
+                                                                                                 (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
+                                                                                                     "select show_msg('true')"
+                                                                                                     "select show_msg('false')")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (let [{{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                 (try
+                                                                                                     (if (nil? (.put (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                         "select show_msg('true')"
+                                                                                                         "select show_msg('false')")
+                                                                                                     (catch Exception e
+                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                 )))
+          (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (my-super-cache/lst-no-sql-query (rest (rest lst)))]
+                                                                                         (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
+                                                                                             (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                 (if (or (nil? f) (empty? f))
+                                                                                                     (let [{{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                         (try
+                                                                                                             (if (nil? (.replace (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                                 "select show_msg('true')"
+                                                                                                                 "select show_msg('false')")
+                                                                                                             (catch Exception e
+                                                                                                                 (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                         )
+                                                                                                     (let [vs-obj (.get (.cache ignite table_name) my-key) query-vs (my-super-cache/lst-no-sql (my-lexical/to-back no-sql))]
+                                                                                                         (let [no-sql (my-super-cache/set-cache-vs-lst (filter #(not (= % ".")) (my-super-cache/get-dic-lst-items (str/join (rest f)))) vs-obj query-vs) {{no-sql-type "doc"} "keyValue"} (my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                             (try
+                                                                                                                 (if (nil? (.replace (.cache ignite table_name) my-key (my-super-cache/get-doc-with-type no-sql-type no-sql)))
+                                                                                                                     "select show_msg('true')"
+                                                                                                                     "select show_msg('false')")
+                                                                                                                 (catch Exception e
+                                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                             ))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_delete") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (try
+                                                                                                 (if (nil? (.remove (.cache ignite table_name) my-key))
+                                                                                                     "select show_msg('true')"
+                                                                                                     "select show_msg('false')")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                             )
+                                                                                         )
+          (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (my-super-cache/lst-no-sql-query (rest (rest lst)))]
+                                                                                        (do
+                                                                                            (println f)
+                                                                                            (println r))
+                                                                                        )
+          (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (my-super-cache/lst-no-sql (rest (rest lst)))]
+                                                                                       (try
+                                                                                           (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
+                                                                                               "select show_msg('true')"
+                                                                                               "select show_msg('false')")
+                                                                                           (catch Exception e
+                                                                                               (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                       )
+          (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (my-super-cache/json_to_str lst)]
+                                                                                                   (if (= (count my-lst) 6)
+                                                                                                       (my-super-cache/my-cache-push ignite group_id (nth my-lst 2) (nth my-lst 4))
+                                                                                                       (throw (Exception. "push 定义错误！"))))
+          (and (my-lexical/is-eq? (first lst) "pop") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (my-super-cache/json_to_str lst)]
+                                                                                                  (if (= (count my-lst) 4)
+                                                                                                      (my-super-cache/my-cache-pop ignite group_id (nth my-lst 2))
+                                                                                                      (throw (Exception. "pop 定义错误！"))))
+          :else
+          (throw (Exception. "输入字符串错误！"))
+          ))
+(my-no-lst ignite 0 lst-query line-query)
+=> org.log.MyCljLogger
+=> #'user/my-no-lst
+nil
+{table_name my_train_ticket, key G350_成都东_北京西}
+=> nil
+(my-super-cache/lst-no-sql-query (rest (rest lst-query)))
+=> [nil {"table_name" "my_train_ticket", "key" "G350_成都东_北京西"}]
+(def params (my-super-cache/lst-no-sql-query (rest (rest lst-query))))
+(def f (nth params 0))
+(def r (nth params 1))
+(def group_id 0)
+
+(if-let [{table_name "table_name" my-key "key"} r]
+    (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+        (if (or (nil? f) (empty? f))
+            (.get (.cache ignite table_name) my-key)
+            (let [vs-obj (.get (.cache ignite table_name) my-key) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                (try
+                    (if-let [get-rs (my-super-cache/get-vs-dic vs-obj (str/join (rest f)))]
+                        (do
+                            (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                            (format "select show_msg('%s')" (.toJson gson get-rs)))
+                        "select show_msg('')")
+                    (catch Exception e
+                        (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                )))
+    )
+=> #'user/params
+=> #'user/f
+=> #'user/group_id
+=> #'user/r
+=> nil
+(def params (my-super-cache/lst-no-sql-query (rest (rest lst-query))))
+(def f (nth params 0))
+(def r (nth params 1))
+(def group_id 0)
+
+(if-let [{table_name "table_name" my-key "key"} r]
+    (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+        (if (or (nil? f) (empty? f))
+            (do
+                (println table_name)
+                (.get (.cache ignite table_name) my-key))
+            (let [vs-obj (.get (.cache ignite table_name) my-key) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                (try
+                    (if-let [get-rs (my-super-cache/get-vs-dic vs-obj (str/join (rest f)))]
+                        (do
+                            (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                            (format "select show_msg('%s')" (.toJson gson get-rs)))
+                        "select show_msg('')")
+                    (catch Exception e
+                        (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                )))
+    )
+=> #'user/params
+=> #'user/f
+=> #'user/r
+=> #'user/group_id
+=> nil
+(MyNoSqlUtil/hasCache ignite table_name group_id)
+Syntax error compiling at (/private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init16219826682781173419.clj:1:1).
+Unable to resolve symbol: table_name in this context
+(MyNoSqlUtil/hasCache ignite "my_train_ticket" group_id)
+=> false
+(import
+    (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+    )
+
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+(def line-insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
+(def stmt (.prepareStatement conn line-insert))
+(def rs (.executeQuery stmt))
+
+(MyNoSqlUtil/hasCache ignite "my_train_ticket" group_id)
+=> java.sql.PreparedStatement
+*******************************
+jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu
+*******************************
+=> org.apache.ignite.IgniteJdbcDriver
+*******************************
+*******************************
+=> #'user/conn
+=> #'user/line-insert
+wudafu
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+*******************************
+=> #'user/stmt
+*******************************
+*******************************
+=> #'user/rs
+=> false
+(MyNoSqlUtil/hasCache ignite "my_train_ticket" group_id)
+=> false
+(my-super-cache/my-no-lst ignite group_id (my-lexical/to-back line-insert) line-insert)
+(MyNoSqlUtil/hasCache ignite "my_train_ticket" group_id)
+=> nil
+=> false
+(my-super-cache/my-no-sql ignite group_id line-insert)
+(MyNoSqlUtil/hasCache ignite "my_train_ticket" group_id)
+=> nil
+=> false
+(my-super-cache/lst-no-sql (rest (rest (my-lexical/to-back line-insert))))
+(MyNoSqlUtil/hasCache ignite "my_train_ticket" group_id)
+=>
+{"table_name" "my_train_ticket",
+ "key" "G350_成都东_北京西",
+ "doc" [{"token" "B001", "price" "778"}
+        {"token" "B002", "price" "778"}
+        {"token" "B003", "price" "778"}
+        {"token" "B004", "price" "1246"}
+        {"token" "B005", "price" "1246"}]}
+=> false
+(.cache ignite "my_cache")
+=>
+#object[org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy
+        0x2b9e71bb
+        "org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy@2cb57e0e"]
+(.containsKey (.cache ignite "my_cache") (MyCacheGroup. "my_train_ticket" 0))
+=> false

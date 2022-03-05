@@ -1,0 +1,234 @@
+Starting nREPL server...
+/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/bin/java -Dfile.encoding=UTF-8 -classpath "/Users/chenfei/Library/Application Support/IdeaIC2019.3/clojure-plugin/lib/nrepl-0.7.0.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/ant-javafx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/javafx-mx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/packager.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_111.jdk/Contents/Home/lib/tools.jar:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/src/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/clojure:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/test/main/java:/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/target/classes:/Users/chenfei/.m2/repository/clojure-complete/clojure-complete/0.2.5/clojure-complete-0.2.5.jar:/Users/chenfei/.m2/repository/cn/mysuper/my-super-service/1.0-SNAPSHOT/my-super-service-1.0-SNAPSHOT.jar:/Users/chenfei/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar:/Users/chenfei/.m2/repository/com/google/code/gson/gson/2.8.2/gson-2.8.2.jar:/Users/chenfei/.m2/repository/com/google/errorprone/error_prone_annotations/2.1.3/error_prone_annotations-2.1.3.jar:/Users/chenfei/.m2/repository/com/google/guava/guava/25.1-jre/guava-25.1-jre.jar:/Users/chenfei/.m2/repository/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar:/Users/chenfei/.m2/repository/com/mchange/c3p0/0.9.5.4/c3p0-0.9.5.4.jar:/Users/chenfei/.m2/repository/com/mchange/mchange-commons-java/0.2.15/mchange-commons-java-0.2.15.jar:/Users/chenfei/.m2/repository/com/zaxxer/HikariCP-java7/2.4.13/HikariCP-java7-2.4.13.jar:/Users/chenfei/.m2/repository/commons-codec/commons-codec/1.12/commons-codec-1.12.jar:/Users/chenfei/.m2/repository/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar:/Users/chenfei/.m2/repository/it/sauronsoftware/cron4j/cron4j/2.2.5/cron4j-2.2.5.jar:/Users/chenfei/.m2/repository/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar:/Users/chenfei/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar:/Users/chenfei/.m2/repository/junit/junit/4.11/junit-4.11.jar:/Users/chenfei/.m2/repository/log4j/log4j/1.2.17/log4j-1.2.17.jar:/Users/chenfei/.m2/repository/nrepl/nrepl/0.6.0/nrepl-0.6.0.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpclient/4.5.6/httpclient-4.5.6.jar:/Users/chenfei/.m2/repository/org/apache/httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-analyzers-common/7.4.0/lucene-analyzers-common-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-core/7.4.0/lucene-core-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queries/7.4.0/lucene-queries-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-queryparser/7.4.0/lucene-queryparser-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/lucene/lucene-sandbox/7.4.0/lucene-sandbox-7.4.0.jar:/Users/chenfei/.m2/repository/org/apache/thrift/libthrift/0.12.0/libthrift-0.12.0.jar:/Users/chenfei/.m2/repository/org/checkerframework/checker-qual/2.0.0/checker-qual-2.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/clojure/1.10.1/clojure-1.10.1.jar:/Users/chenfei/.m2/repository/org/clojure/core.async/1.1.587/core.async-1.1.587.jar:/Users/chenfei/.m2/repository/org/clojure/core.cache/0.8.2/core.cache-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.memoize/0.8.2/core.memoize-0.8.2.jar:/Users/chenfei/.m2/repository/org/clojure/core.specs.alpha/0.2.44/core.specs.alpha-0.2.44.jar:/Users/chenfei/.m2/repository/org/clojure/data.priority-map/0.0.7/data.priority-map-0.0.7.jar:/Users/chenfei/.m2/repository/org/clojure/spec.alpha/0.2.176/spec.alpha-0.2.176.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer.jvm/1.0.0/tools.analyzer.jvm-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.analyzer/1.0.0/tools.analyzer-1.0.0.jar:/Users/chenfei/.m2/repository/org/clojure/tools.reader/1.3.2/tools.reader-1.3.2.jar:/Users/chenfei/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.14/animal-sniffer-annotations-1.14.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-core/8.7.24/ignite-core-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-h2/8.7.24/ignite-h2-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-indexing/8.7.24/ignite-indexing-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-schedule/8.7.24/ignite-schedule-8.7.24.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-shmem/8.7.3/ignite-shmem-8.7.3.jar:/Users/chenfei/.m2/repository/org/gridgain/ignite-spring/8.7.24/ignite-spring-8.7.24.jar:/Users/chenfei/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar:/Users/chenfei/.m2/repository/org/jetbrains/annotations/16.0.3/annotations-16.0.3.jar:/Users/chenfei/.m2/repository/org/locationtech/jts/jts-core/1.15.0/jts-core-1.15.0.jar:/Users/chenfei/.m2/repository/org/ow2/asm/asm/5.2/asm-5.2.jar:/Users/chenfei/.m2/repository/org/quartz-scheduler/quartz/2.3.2/quartz-2.3.2.jar:/Users/chenfei/.m2/repository/org/slf4j/slf4j-api/1.6.4/slf4j-api-1.6.4.jar:/Users/chenfei/.m2/repository/org/springframework/spring-aop/4.3.25.RELEASE/spring-aop-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-beans/4.3.25.RELEASE/spring-beans-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-context/4.3.25.RELEASE/spring-context-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-core/4.3.25.RELEASE/spring-core-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-expression/4.3.25.RELEASE/spring-expression-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-jdbc/4.3.25.RELEASE/spring-jdbc-4.3.25.RELEASE.jar:/Users/chenfei/.m2/repository/org/springframework/spring-tx/4.3.25.RELEASE/spring-tx-4.3.25.RELEASE.jar" clojure.main -i /private/var/folders/lx/ff4rbzj10fb35yvljzngf4g80000gn/T/form-init10869675363918345138.clj
+Picked up JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
+Connecting to local nREPL server...
+nREPL server started on port 49281 on host localhost - nrepl://localhost:49281
+Clojure 1.10.1
+(require
+    '[org.gridgain.plus.ddl.my-create-table :as my-create-table]
+    '[org.gridgain.plus.ddl.my-alter-table :as my-alter-table]
+    '[org.gridgain.plus.ddl.my-create-index :as my-create-index]
+    '[org.gridgain.plus.ddl.my-drop-index :as my-drop-index]
+    '[org.gridgain.plus.ddl.my-drop-table :as my-drop-table]
+    '[org.gridgain.plus.ddl.my-create-dataset :as my-create-dataset]
+    '[org.gridgain.plus.ddl.my-alter-dataset :as my-alter-dataset]
+    '[org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
+    '[org.gridgain.plus.dml.my-select :as my-select]
+    '[org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+    '[org.gridgain.plus.dml.my-insert :as my-insert]
+    '[org.gridgain.plus.dml.my-update :as my-update]
+    '[org.gridgain.plus.dml.my-delete :as my-delete]
+    '[org.gridgain.plus.dml.my-trans :as my-trans]
+    '[org.gridgain.plus.dml.my-scenes :as my-scenes]
+    '[org.gridgain.plus.dml.my-scenes-util :as my-scenes-util]
+    '[org.gridgain.plus.dml.select-lexical :as my-lexical]
+    '[org.gridgain.plus.dml.my-expression :as my-expression]
+    '[org.gridgain.plus.sql.my-super-sql :as my-super-sql]
+    '[org.gridgain.plus.context.my-context :as my-context]
+    '[org.gridgain.plus.init.plus-init-sql :as plus-init-sql]
+    '[org.gridgain.plus.init.plus-init :as plus-init]
+    '[org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
+    '[org.gridgain.plus.tools.my-util :as my-util]
+    '[clojure.core.reducers :as r]
+    '[clojure.string :as str]
+    '[clojure.walk :as w])
+(import (org.apache.ignite Ignite IgniteCache)
+        (org.apache.ignite.internal IgnitionEx)
+        (com.google.common.base Strings)
+        (org.tools MyConvertUtil KvSql)
+        (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType DdlLog DataSetDdlLog)
+        (cn.plus.model.ddl MyDataSet MyDatasetTable MyDatasetRealTable MyDatasetTablePK MyDeleteViews MyInsertViews MySelectViews MyTable MyTableIndex MyTableIndexItem MyTableItem MyTableItemPK MyTableObj MyUpdateViews MyViewObj ViewOperateType ViewType)
+        (org.gridgain.dml.util MyCacheExUtil)
+        (cn.plus.model.db MyScenesCache)
+        (org.apache.ignite.configuration CacheConfiguration)
+        (org.apache.ignite.cache CacheMode CacheAtomicityMode)
+        (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
+        (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
+        (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
+        (java.util List ArrayList Date Iterator)
+        (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+        (java.math BigDecimal)
+        (org.tools MyTools)
+        (org.gridgain MyParamsUtil)
+        )
+
+(def ignite (IgnitionEx/start "/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources/default-config.xml"))
+
+=> nil
+=> org.gridgain.MyParamsUtil
+三月 04, 2022 3:44:13 下午 java.util.logging.LogManager$RootLogger log
+警告: Failed to resolve default logging config file: config/java.util.logging.properties
+[15:44:13]    __________  ________________
+[15:44:13]   /  _/ ___/ |/ /  _/_  __/ __/
+[15:44:13]  _/ // (7 7    // /  / / / _/
+[15:44:13] /___/\___/_/|_/___/ /_/ /___/
+[15:44:13]
+[15:44:13] ver. 8.7.24#20220304-sha1:DEV
+[15:44:13] 2022 Copyright(C) GridGain Systems, Inc. and Contributors
+[15:44:13]
+[15:44:13] Ignite documentation: http://gridgain.com
+[15:44:13]
+[15:44:13] Quiet mode.
+[15:44:13]   ^-- Logging by 'JavaLogger [quiet=true, config=null]'
+[15:44:13]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[15:44:13]
+[15:44:14] OS: Mac OS X 10.12.1 x86_64
+[15:44:14] VM information: Java(TM) SE Runtime Environment 1.8.0_111-b14 Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 25.111-b14
+[15:44:14] Please set system property '-Djava.net.preferIPv4Stack=true' to avoid possible problems in mixed environments.
+[15:44:14] Initial heap size is 128MB (should be no less than 512MB, use -Xms512m -Xmx512m).
+[15:44:14] Configured plugins:
+[15:44:14]   ^-- None
+[15:44:14]
+[15:44:14] Configured failure handler: [hnd=StopNodeOrHaltFailureHandler [tryStop=false, timeout=0, super=AbstractFailureHandler [ignoredFailureTypes=UnmodifiableSet [SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT]]]]
+[15:44:14] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[15:44:14] Security status [authentication=off, tls/ssl=off]
+*******************************
+jdbc:h2:mem:93cf5e95-d009-4cc5-bd3d-dfc5a2b81b29;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+*******************************
+jdbc:h2:mem:93cf5e95-d009-4cc5-bd3d-dfc5a2b81b29;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+>>>
+定时任务启动！
+>>>
+[15:44:15] REST protocols do not start on client node. To start the protocols on client node set '-DIGNITE_REST_START_ON_CLIENT=true' system property.
+[15:44:17] Data Regions Started: 6
+[15:44:17]     ^--   sysMemPlc region [type=internal, persistence=false, lazyAlloc=false,
+[15:44:17]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[15:44:17]     ^--   TxLog region [type=internal, persistence=false, lazyAlloc=false,
+[15:44:17]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[15:44:17]     ^--   40MB_Region_Eviction region [type=user, persistence=false, lazyAlloc=true,
+[15:44:17]       ...  initCfg=15MB, maxCfg=40MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[15:44:17]     ^--   volatileDsMemPlc region [type=internal, persistence=false, lazyAlloc=true,
+[15:44:17]       ...  initCfg=40MB, maxCfg=100MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[15:44:17]     ^--   Default_Region region [type=default, persistence=false, lazyAlloc=true,
+[15:44:17]       ...  initCfg=10MB, maxCfg=50MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+[15:44:17]     ^--   Meta_Region_Eviction region [type=user, persistence=false, lazyAlloc=true,
+[15:44:17]       ...  initCfg=20MB, maxCfg=40MB, usedRam=0MB, freeRam=100%, allocRam=0MB]
+*******************************
+jdbc:h2:mem:93cf5e95-d009-4cc5-bd3d-dfc5a2b81b29;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+*******************************
+jdbc:h2:mem:93cf5e95-d009-4cc5-bd3d-dfc5a2b81b29;LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE;DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;MV_STORE=false;MAX_OPERATION_MEMORY=0;BATCH_JOINS=1;ROW_FACTORY="org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory";DEFAULT_TABLE_ENGINE=org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;LOCAL_RESULT_FACTORY="org.apache.ignite.internal.processors.query.h2.H2LocalResultFactory"
+*******************************
+[15:44:18] Performance suggestions for grid  (fix if possible)
+[15:44:18] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[15:44:18]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[15:44:18]   ^-- Specify JVM heap max size (add '-Xmx<size>[g|G|m|M|k|K]' to JVM options)
+[15:44:18]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[15:44:18]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[15:44:18] Refer to this page for more performance suggestions: https://apacheignite.readme.io/docs/jvm-and-system-tuning
+[15:44:18]
+[15:44:18] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[15:44:18]
+[15:44:18] Ignite node started OK (id=93cf5e95)
+[15:44:18] Topology snapshot [ver=2, locNode=93cf5e95, servers=1, clients=1, state=ACTIVE, CPUs=4, offheap=0.24GB, heap=3.6GB]
+[15:44:18]   ^-- Baseline [id=0, size=1, online=1, offline=0]
+=> #'user/ignite
+(def lst-pop '("pop" "(" "no_sql_query" ":" "{" "table_name" ":" "my_train_ticket" "," "key" ":" "\"G350_成都东_北京西\"" "}" ")"))
+=> #'user/lst-pop
+(my-super-cache/get-pop-query lst-pop)
+=> ["no_sql_query" ":" "{" "table_name" ":" "my_train_ticket" "," "key" ":" "\"G350_成都东_北京西\"" "}"]
+(defn get-push-query [[f & r]]
+    (if (and (my-lexical/is-eq? f "push") (= (first r) "(") (= (last r) ")"))
+        (loop [index 1 lst []]
+            (if (< (+ index 1) (count r))
+                (recur (+ index 1) (conj lst (nth r index)))
+                lst))))
+=> #'user/get-push-query
+(def lst-push "push(\n    no_sql_query: {\n       table_name: my_train_ticket,\n       key: \"G350_成都东_北京西\"\n    }\n    {token: B001, price: 778}\n)")
+=> #'user/lst-push
+(get-push-query lst-push)
+Execution error (ClassCastException) at org.gridgain.plus.dml.select-lexical/is-eq? (select_lexical.clj:81).
+java.lang.Character cannot be cast to java.lang.CharSequence
+(get-push-query (my-lexical/to-back lst-push))
+=>
+["no_sql_query"
+ ":"
+ "{"
+ "table_name"
+ ":"
+ "my_train_ticket"
+ ","
+ "key"
+ ":"
+ "\"G350_成都东_北京西\""
+ "}"
+ "{"
+ "token"
+ ":"
+ "B001"
+ ","
+ "price"
+ ":"
+ "778"
+ "}"]
+(def params-push (get-push-query (my-lexical/to-back lst-push)))
+=> #'user/params-push
+(defn get-push-params [[f & r] stack stack-lst lst-ps]
+    (if (some? f)
+        (cond (and (= f "{") (empty? stack)) (recur r (conj stack f) (conj stack-lst f) lst-ps)
+              (and (= f "{") (not (empty? stack))) (recur r stack (conj stack-lst f) lst-ps)
+              (and (= f "}") (empty? stack)) (recur r stack (conj stack-lst f) lst-ps)
+              (and (= f "}") (not (empty? stack))) (if (= (count stack) 1)
+                                                       (recur r [] [] (conj lst-ps stack-lst))
+                                                       (recur r stack (conj stack-lst f) lst-ps))
+
+              )))
+=> #'user/get-push-params
+
+
+
+(def lst-push "push(\n    no_sql_query: {\n       table_name: my_train_ticket,\n       key: \"G350_成都东_北京西\"\n    },\n    {token: B001, price: 778}\n)")
+(defn get-push-query [[f & r]]
+    (if (and (my-lexical/is-eq? f "push") (= (first r) "(") (= (last r) ")"))
+        (loop [index 1 lst []]
+            (if (< (+ index 1) (count r))
+                (recur (+ index 1) (conj lst (nth r index)))
+                lst))))
+(get-push-query (my-lexical/to-back lst-push))
+
+(def params-push (get-push-query (my-lexical/to-back lst-push)))
+
+(defn get-push-params
+    ([lst] (get-push-params lst [] [] []))
+    ([[f & r] stack stack-lst lst-ps]
+     (if (some? f)
+         (cond (= f "{") (cond (empty? stack) (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                               (not (empty? stack)) (let [top-item (peek stack)]
+                                                        (if (= top-item "{")
+                                                            (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                                                            (recur r stack (conj stack-lst f) lst-ps)
+                                                            ))
+                               )
+               (= f "(") (cond (empty? stack) (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                               (not (empty? stack)) (let [top-item (peek stack)]
+                                                        (if (= top-item "(")
+                                                            (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                                                            (recur r stack (conj stack-lst f) lst-ps)
+                                                            ))
+                               )
+               (= f "}") (if (not (empty? stack))
+                             (let [top-item (peek stack)]
+                                 (if (= top-item "{")
+                                     (recur r (pop stack) (conj stack-lst f) lst-ps)
+                                     (recur r stack (conj stack-lst f) lst-ps)))
+                             (recur r stack (conj stack-lst f) lst-ps))
+               (= f ")") (if (not (empty? stack))
+                             (let [top-item (peek stack)]
+                                 (if (= top-item "(")
+                                     (recur r (pop stack) (conj stack-lst f) lst-ps)
+                                     (recur r stack (conj stack-lst f) lst-ps)))
+                             (recur r stack (conj stack-lst f) lst-ps))
+               (= f ",") (if-not (empty? stack)
+                             (recur r stack (conj stack-lst f) lst-ps)
+                             (recur r [] [] (conj lst-ps stack-lst)))
+               :else
+               (recur r stack (conj stack-lst f) lst-ps)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst-ps stack-lst)
+             lst-ps)
+         )))
+
+(get-push-params params-push)

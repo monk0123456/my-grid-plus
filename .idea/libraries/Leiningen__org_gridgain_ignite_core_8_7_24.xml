@@ -4,6 +4,8 @@
       <root url="jar://$MAVEN_REPOSITORY$/org/gridgain/ignite-core/8.7.24/ignite-core-8.7.24.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/gridgain/ignite-core/8.7.24/ignite-core-8.7.24-sources.jar!/" />
+    </SOURCES>
   </library>
 </component>

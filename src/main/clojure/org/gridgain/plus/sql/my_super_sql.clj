@@ -41,7 +41,7 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [superSql [org.apache.ignite.Ignite String Object] String]
+        :methods [^:static [superSql [org.apache.ignite.Ignite Object Object] String]
                   ^:static [getGroupId [org.apache.ignite.Ignite String] Boolean]]
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
@@ -142,9 +142,9 @@
                   (throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                   ))))
 
-(defn -superSql [^Ignite ignite ^String userToken ^Object sql]
-    (if-not (Strings/isNullOrEmpty userToken)
-        (super-sql ignite userToken (MyCacheExUtil/restoreToLine sql))
+(defn -superSql [^Ignite ignite ^Object userToken ^Object sql]
+    (if (some? userToken)
+        (super-sql ignite (MyCacheExUtil/restoreToLine userToken) (MyCacheExUtil/restoreToLine sql))
         (throw (Exception. "没有权限不能访问数据库！"))))
 
 ;(defn -superSql [^Ignite ignite ^Long group_id ^Object sql]

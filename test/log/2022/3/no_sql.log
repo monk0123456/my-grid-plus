@@ -1,3 +1,21 @@
+(import
+        (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+        )
+
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+
+(def line-insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
+(def stmt (.prepareStatement conn line-insert))
+(def rs (.executeQuery stmt))
+
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (println (.getString rs 1))
+        ))
+
+(show-rs rs)
+
 /**
 * 1、在缓存中，定义火车票的数据结构
 */
@@ -10,3 +28,193 @@ no_sql_create: {
        doc: [{token: string, price: int}]
    }
 }
+
+(def line-create "no_sql_create: {\n   name: my_train_ticket,\n   keyValue: {\n       /* key 表示：列车号，起点，终点 */\n       key: string\n       /* doc 为堆栈，里面保存了票的 token 和 票的价格 */\n       doc: [{token: string, price: int}]\n   }\n}")
+(.executeUpdate (.createStatement conn) line-create)
+
+/**
+* 2、插入 成都-北京
+*/
+no_sql_insert: {
+   table_name: my_train_ticket,
+   key: "G350_成都东_北京西",
+   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]
+}
+
+(def line-insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
+(.executeUpdate (.createStatement conn) line-insert)
+
+/**
+* 3、查询 成都-北京
+*/
+no_sql_query: {
+   table_name: my_train_ticket,
+   key: "G350_成都东_北京西"
+}
+
+(def line-query "no_sql_query: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\"\n}")
+(def stmt (.prepareStatement conn line-query))
+(def rs (.executeQuery stmt))
+
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (println (.getString rs 1))
+        ))
+
+(show-rs rs)
+
+/**
+* 4、查询 成都-北京
+* 第二张票的价格
+* 这里需要注意的是：我们的计数是从 0 开始的，所以 0 是第一张票，依次类推
+*/
+no_sql_query: {
+   table_name: my_train_ticket,
+   key: "G350_成都东_北京西",
+   query: [1].price
+}
+
+(def line-query "no_sql_query: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   query: [1].price\n}")
+(def stmt (.prepareStatement conn line-query))
+(def rs (.executeQuery stmt))
+
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (println (.getString rs 1))
+        ))
+
+(show-rs rs)
+
+/**
+* 5、修改 成都-北京
+* 第二张票的价格为 2000
+* 这里需要注意的是：我们的计数是从 0 开始的，所以 0 是第一张票，依次类推
+*/
+no_sql_update: {
+   table_name: my_train_ticket,
+   key: G350_成都东_北京西,
+   doc: 2000,
+   query: [1].price
+}
+
+(def line-update "no_sql_update: {\n   table_name: my_train_ticket,\n   key: G350_成都东_北京西,\n   doc: 2000,\n   query: [1].price\n}")
+(def stmt (.prepareStatement conn line-update))
+(def rs (.executeQuery stmt))
+
+(show-rs rs)
+
+/**
+* 6、删除 成都-北京
+* 这个列车的所有票
+*/
+no_sql_delete: {
+   table_name: my_train_ticket,
+   key: G350_成都东_北京西
+}
+
+(def line-delete "no_sql_delete: {\n   table_name: my_train_ticket,\n   key: G350_成都东_北京西\n}")
+(def stmt (.prepareStatement conn line-update))
+(def rs (.executeQuery stmt))
+
+(show-rs rs)
+
+/**
+* 7、抢票 成都-北京
+*/
+pop(
+    no_sql_query: {
+       table_name: my_train_ticket,
+       key: "G350_成都东_北京西"
+    }
+)
+
+(def line-pop "pop(\n    no_sql_query: {\n       table_name: my_train_ticket,\n       key: \"G350_成都东_北京西\"\n    }\n)")
+
+(def stmt (.prepareStatement conn line-pop))
+(def rs (.executeQuery stmt))
+
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (println (.getString rs 1))
+        ))
+
+(show-rs rs)
+
+/**
+* 8、更新余票 成都-北京
+*/
+push(
+    no_sql_query: {
+       table_name: my_train_ticket,
+       key: "G350_成都东_北京西"
+    }
+    ,
+    {token: C001, price: 778}
+)
+
+(def line-push "push(\n    no_sql_query: {\n       table_name: my_train_ticket,\n       key: \"G350_成都东_北京西\"\n    },\n    {token: C001, price: 778}\n)")
+
+(def stmt (.prepareStatement conn line-push))
+(def rs (.executeQuery stmt))
+
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (println (.getString rs 1))
+        ))
+
+(show-rs rs)
+
+/**
+* 9、删除这个表
+*/
+no_sql_drop: {
+   name: my_train_ticket
+}
+
+(def line-drop "no_sql_drop: {\n   name: my_train_ticket\n}")
+(.executeUpdate (.createStatement conn) line-drop)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

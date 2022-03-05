@@ -7,8 +7,7 @@
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache CacheMode)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
-             com.google.gson.GsonBuilder
-             org.tools.MyDbUtil)
+             com.google.gson.GsonBuilder)
     (:gen-class
         ; 生成 class 的类名
         :name org.gridgain.plus.tools.MyUtil

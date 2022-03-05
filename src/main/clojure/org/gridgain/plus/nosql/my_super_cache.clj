@@ -8,6 +8,7 @@
              (com.google.common.base Strings)
              (org.tools MyConvertUtil KvSql MyDbUtil)
              (cn.plus.model.nosql MyCacheGroup)
+             (com.google.gson Gson GsonBuilder)
              (org.log MyCljLogger)
              )
     (:gen-class
@@ -32,7 +33,7 @@
 ; {name: 热销产品, attr: List}
 
 (declare lst-dic seq-dic lst-no-sql get-lst-big get-doc-with-type-lst get-doc-with-type-dic get-doc-with-type
-         get-dic-lst-items get-vs-dic set-cache-vs-lst set-cache-vs get-cache-vs my-cache-push my-cache-pop)
+         get-dic-lst-items get-vs-dic set-cache-vs-lst set-cache-vs get-cache-vs my-cache-push my-cache-pop my-cache-push-lst my-cache-pop-lst)
 
 (defn json_to_str
     ([lst] (json_to_str lst [] [] []))
@@ -45,6 +46,82 @@
                (recur r stack stack-lst (conj lst f))
                )
          lst)))
+
+; 判断是否是成对出现的
+(defn is-pair?
+    ([lst lst-ps] (if (= (count lst-ps) 2)
+                      (is-pair? lst (first lst-ps) (last lst-ps) [])
+                      (throw (Exception. "输入参数必须成对出现！"))))
+    ([[f & r] ps_1 ps_2 stack]
+     (if (some? f)
+         (cond (= f ps_1) (recur r ps_1 ps_2 (conj stack ps_1))
+               (= f ps_2) (if (and (nil? r) (= (count stack) 1))
+                              true
+                              (recur r ps_1 ps_2 (pop stack)))
+               :else
+               (recur r ps_1 ps_2 stack)
+               )
+         false)))
+
+; ("pop" "(" "no_sql_query" ":" "{" "table_name" ":" "my_train_ticket" "," "key" ":" "\"G350_成都东_北京西\"" "}" ")")
+(defn get-pop-query [[f & r]]
+    (if (and (my-lexical/is-eq? f "pop") (= (first r) "(") (= (last r) ")"))
+        (loop [index 1 lst []]
+            (if (< (+ index 1) (count r))
+                (recur (+ index 1) (conj lst (nth r index)))
+                (if (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":") (is-pair? (rest (rest lst)) ["{" "}"]))
+                    lst)))))
+
+; lst: ["no_sql_query" ":" "{" "table_name" ":" "my_train_ticket" "," "key" ":" "\"G350_成都东_北京西\"" "}" "," "{" "token" ":" "B001" "," "price" ":" "778" "}"]
+(defn get-push-params
+    ([lst] (get-push-params lst [] [] []))
+    ([[f & r] stack stack-lst lst-ps]
+     (if (some? f)
+         (cond (= f "{") (cond (empty? stack) (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                               (not (empty? stack)) (let [top-item (peek stack)]
+                                                        (if (= top-item "{")
+                                                            (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                                                            (recur r stack (conj stack-lst f) lst-ps)
+                                                            ))
+                               )
+               (= f "(") (cond (empty? stack) (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                               (not (empty? stack)) (let [top-item (peek stack)]
+                                                        (if (= top-item "(")
+                                                            (recur r (conj stack f) (conj stack-lst f) lst-ps)
+                                                            (recur r stack (conj stack-lst f) lst-ps)
+                                                            ))
+                               )
+               (= f "}") (if (not (empty? stack))
+                             (let [top-item (peek stack)]
+                                 (if (= top-item "{")
+                                     (recur r (pop stack) (conj stack-lst f) lst-ps)
+                                     (recur r stack (conj stack-lst f) lst-ps)))
+                             (recur r stack (conj stack-lst f) lst-ps))
+               (= f ")") (if (not (empty? stack))
+                             (let [top-item (peek stack)]
+                                 (if (= top-item "(")
+                                     (recur r (pop stack) (conj stack-lst f) lst-ps)
+                                     (recur r stack (conj stack-lst f) lst-ps)))
+                             (recur r stack (conj stack-lst f) lst-ps))
+               (= f ",") (if-not (empty? stack)
+                             (recur r stack (conj stack-lst f) lst-ps)
+                             (recur r [] [] (conj lst-ps stack-lst)))
+               :else
+               (recur r stack (conj stack-lst f) lst-ps)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst-ps stack-lst)
+             lst-ps)
+         )))
+
+; lst-push "push(\n    no_sql_query: {\n       table_name: my_train_ticket,\n       key: \"G350_成都东_北京西\"\n    },\n    {token: B001, price: 778}\n)"
+; 输入参数：(my-lexical/to-back lst-push)
+(defn get-push-query [[f & r]]
+    (if (and (my-lexical/is-eq? f "push") (= (first r) "(") (= (last r) ")"))
+        (loop [index 1 lst []]
+            (if (< (+ index 1) (count r))
+                (recur (+ index 1) (conj lst (nth r index)))
+                (get-push-params lst)))))
 
 ;(defn get-query-lst
 ;    ([lst] (get-query-lst lst [] [] [] ["{"]))
@@ -295,7 +372,8 @@
                   (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (lst-no-sql (rest (rest lst)))]
                                                                                                  (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
                                                                                                      (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
-                                                                                                         (.put (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))))
+                                                                                                         (.put (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))
+                                                                                                         )))
                   (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
                                                                                                  (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
                                                                                                      (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
@@ -334,57 +412,109 @@
                   ))))
 
 (defn my-no-lst [^Ignite ignite ^Long group_id lst no-sql-line]
-    (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (lst-no-sql (rest (rest lst)))]
-                                                                                         (if (and (some? name) (some? my-key))
-                                                                                             (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
-                                                                                                 (format "select show_msg('创建 no sql 表 %s 成功！')" name)
-                                                                                                 (format "select show_msg('创建 no sql 表 %s 失败！')" name))
-                                                                                             ))
-          (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (lst-no-sql (rest (rest lst)))]
-                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                             (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
-                                                                                                 (.put (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))))
-          (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
-                                                                                         (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
+    (do
+        (MyCljLogger/myWriter (format "%s  %s" group_id no-sql-line))
+        (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (lst-no-sql (rest (rest lst)))]
+                                                                                             (if (and (some? name) (some? my-key))
+                                                                                                 (try
+                                                                                                     (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
+                                                                                                         "select show_msg('true')"
+                                                                                                         "select show_msg('false')")
+                                                                                                     (catch Exception e
+                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                 ))
+              (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (lst-no-sql (rest (rest lst)))]
                                                                                              (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                                 (if (or (nil? f) (empty? f))
-                                                                                                     (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
-                                                                                                         (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
-                                                                                                     (let [vs-obj (.get (.cache ignite table_name) my-key) query-vs (lst-no-sql (my-lexical/to-back no-sql))]
-                                                                                                         (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items (str/join (rest f)))) vs-obj query-vs) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
-                                                                                                             (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))))))
-                                                                                             ))
-          (and (my-lexical/is-eq? (first lst) "no_sql_delete") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key"} (lst-no-sql (rest (rest lst)))]
-                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                             (.remove (.cache ignite table_name) my-key))
-                                                                                         )
-          (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
-                                                                                        (if-let [{table_name "table_name" my-key "key"} r]
-                                                                                            (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                                (if (or (nil? f) (empty? f))
-                                                                                                    (.get (.cache ignite table_name) my-key)
-                                                                                                    (let [vs-obj (.get (.cache ignite table_name) my-key)]
-                                                                                                        (get-vs-dic vs-obj (str/join (rest f))))))
+                                                                                                 (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                     (try
+                                                                                                         (if (nil? (.put (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
+                                                                                                             "select show_msg('true')"
+                                                                                                             "select show_msg('false')")
+                                                                                                         (catch Exception e
+                                                                                                             (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                     )))
+              (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
+                                                                                             (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
+                                                                                                 (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                     (if (or (nil? f) (empty? f))
+                                                                                                         (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                             (try
+                                                                                                                 (if (true? (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
+                                                                                                                     "select show_msg('true')"
+                                                                                                                     "select show_msg('false')")
+                                                                                                                 (catch Exception e
+                                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                             )
+                                                                                                         (let [vs-obj (.get (.cache ignite table_name) my-key) query-vs (lst-no-sql (my-lexical/to-back no-sql))]
+                                                                                                             (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items (str/join (rest f)))) vs-obj query-vs) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                                 (try
+                                                                                                                     (if (true? (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
+                                                                                                                         "select show_msg('true')"
+                                                                                                                         "select show_msg('false')")
+                                                                                                                     (catch Exception e
+                                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                                 ))))
+                                                                                                 ))
+              (and (my-lexical/is-eq? (first lst) "no_sql_delete") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key"} (lst-no-sql (rest (rest lst)))]
+                                                                                             (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                 (try
+                                                                                                     (if (true? (.remove (.cache ignite table_name) my-key))
+                                                                                                         "select show_msg('true')"
+                                                                                                         "select show_msg('false')")
+                                                                                                     (catch Exception e
+                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                 )
+                                                                                             )
+              (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst))) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                                                                                            (if-let [{table_name "table_name" my-key "key"} r]
+                                                                                                (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                    (if (or (nil? f) (empty? f))
+                                                                                                        (try
+                                                                                                            (if-let [get-rs (.get (.cache ignite table_name) my-key)]
+                                                                                                                (do
+                                                                                                                    (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                    (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                "select show_msg('')")
+                                                                                                            (catch Exception e
+                                                                                                                (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                        (let [vs-obj (.get (.cache ignite table_name) my-key)]
+                                                                                                            (try
+                                                                                                                (if-let [get-rs (get-vs-dic vs-obj (str/join (rest f)))]
+                                                                                                                    (do
+                                                                                                                        (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                        (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                    "select show_msg('')")
+                                                                                                                (catch Exception e
+                                                                                                                    (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                            )))
+                                                                                                )
                                                                                             )
-                                                                                        )
-          (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (lst-no-sql (rest (rest lst)))]
-                                                                                       (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
-                                                                                           (do
-                                                                                               (MyCljLogger/myWriter (format "%s %s" table_name group_id))
-                                                                                               (format "select show_msg('No sql 表 %s 删除成功！')" table_name))
-                                                                                           (format "select show_msg('No sql 表 %s 删除失败！')" table_name)
-                                                                                           ))
-          (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (json_to_str lst)]
-                                                                                                   (if (= (count my-lst) 6)
-                                                                                                       (my-cache-push ignite group_id (nth my-lst 2) (nth my-lst 4))
-                                                                                                       (throw (Exception. "push 定义错误！"))))
-          (and (my-lexical/is-eq? (first lst) "pop") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (json_to_str lst)]
-                                                                                                  (if (= (count my-lst) 4)
-                                                                                                      (my-cache-pop ignite group_id (nth my-lst 2))
-                                                                                                      (throw (Exception. "pop 定义错误！"))))
-          :else
-          (throw (Exception. "输入字符串错误！"))
-          ))
+              (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (lst-no-sql (rest (rest lst)))]
+                                                                                           (try
+                                                                                               (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
+                                                                                                   "select show_msg('true')"
+                                                                                                   "select show_msg('false')")
+                                                                                               (catch Exception e
+                                                                                                   (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                           )
+              (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (get-push-query lst)]
+                                                                                                       (try
+                                                                                                           (if (true? (my-cache-push-lst ignite group_id my-lst))
+                                                                                                               "select show_msg('true')"
+                                                                                                               "select show_msg('false')")
+                                                                                                           (catch Exception e
+                                                                                                               (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
+                                                                                                       )
+              (and (my-lexical/is-eq? (first lst) "pop") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (get-pop-query lst) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                                                                                                      (try
+                                                                                                          (if-let [get-rs (my-cache-pop-lst ignite group_id my-lst)]
+                                                                                                              (format "select show_msg('%s')" (.toJson gson get-rs))
+                                                                                                              "select show_msg('')")
+                                                                                                          (catch Exception e
+                                                                                                              (format "select show_msg('执行失败！原因：%s')" (.getMessage e)))))
+              :else
+              (throw (Exception. "输入字符串错误！"))
+              )))
 
 (defn -myNoSql [^Ignite ignite ^Long group_id ^String no-sql-line]
     (my-no-sql ignite group_id no-sql-line))
@@ -588,7 +718,7 @@
                 (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
                                                                                               (if-let [{table_name "table_name" my-key "key"} r]
                                                                                                   (let [vs-obj (.get (.cache ignite table_name) my-key) items-line (str/join (rest f))]
-                                                                                                      (if (or (nil? f) (empty? f))
+                                                                                                      (if-not (and (nil? f) (empty? f))
                                                                                                           (let [my-stack (get-vs-dic vs-obj items-line)]
                                                                                                               (if (vector? my-stack)
                                                                                                                   (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items items-line)) my-stack (conj my-stack (lst-no-sql (my-lexical/to-back vs)))) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
@@ -600,6 +730,26 @@
                 :else
                 (throw (Exception. "输入字符串错误！"))
                 )))
+    )
+
+(defn my-cache-push-lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector no-sql-lst]
+    (let [lst (nth no-sql-lst 0) vs-lst (nth no-sql-lst 1)]
+        (cond
+            (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
+                                                                                          (if-let [{table_name "table_name" my-key "key"} r]
+                                                                                              (let [vs-obj (.get (.cache ignite table_name) my-key) items-line (str/join (rest f))]
+                                                                                                  (if-not (and (nil? f) (empty? f))
+                                                                                                      (let [my-stack (get-vs-dic vs-obj items-line)]
+                                                                                                          (if (vector? my-stack)
+                                                                                                              (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items items-line)) my-stack (conj my-stack (lst-no-sql vs-lst))) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                                  (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))))
+                                                                                                      (if (vector? vs-obj)
+                                                                                                          (let [no-sql (conj vs-obj (lst-no-sql vs-lst)) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                              (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))))
+                                                                                                      ))))
+            :else
+            (throw (Exception. "输入字符串错误！"))
+            ))
     )
 
 (defn -myCachePush [^Ignite ignite ^Long group_id ^String no-sql-line ^String vs]
@@ -627,6 +777,28 @@
                 :else
                 (throw (Exception. "输入字符串错误！"))
                 )))
+    )
+
+(defn my-cache-pop-lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector lst]
+    (cond
+        (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
+                                                                                      (if-let [{table_name "table_name" my-key "key"} r]
+                                                                                          (let [vs-obj (.get (.cache ignite table_name) my-key) items-line (str/join (rest f))]
+                                                                                              (if-not (Strings/isNullOrEmpty items-line)
+                                                                                                  (let [my-stack (get-vs-dic vs-obj items-line)]
+                                                                                                      (if (vector? my-stack)
+                                                                                                          (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items items-line)) my-stack (pop my-stack)) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                              (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))
+                                                                                                              (peek my-stack)
+                                                                                                              )))
+                                                                                                  (if (vector? vs-obj)
+                                                                                                      (let [no-sql (pop vs-obj) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                          (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))
+                                                                                                          (peek vs-obj)))
+                                                                                                  ))))
+        :else
+        (throw (Exception. "输入字符串错误！"))
+        )
     )
 
 (defn -myCachePop [^Ignite ignite ^Long group_id ^String no-sql-line]
