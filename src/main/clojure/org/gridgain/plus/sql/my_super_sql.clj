@@ -83,13 +83,16 @@
             (.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
             (cond (my-lexical/is-eq? (first lst) "insert") (let [rs (my-insert/insert_run ignite group_id sql)]
                                                                    (if (nil? rs)
-                                                                       (format "select show_msg('插入语句执行成功！')")))
+                                                                       "select show_msg('true') as tip"
+                                                                       "select show_msg('false') as tip"))
                   (my-lexical/is-eq? (first lst) "update") (let [rs (my-update/update_run ignite group_id sql)]
                                                                    (if (nil? rs)
-                                                                       (format "select show_msg('更新语句执行成功！')")))
+                                                                       "select show_msg('true') as tip"
+                                                                       "select show_msg('false') as tip"))
                   (my-lexical/is-eq? (first lst) "delete") (let [rs (my-delete/delete_run ignite group_id sql)]
                                                                    (if (nil? rs)
-                                                                       (format "select show_msg('删除语句执行成功！')")))
+                                                                       "select show_msg('true') as tip"
+                                                                       "select show_msg('false') as tip"))
                   (my-lexical/is-eq? (first lst) "select") (if (has-from? (rest lst))
                                                                    (my-select/my_plus_sql ignite group_id sql)
                                                                    sql)
@@ -103,39 +106,48 @@
                   ; create dataset
                   (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-create-dataset/create_data_set ignite group_id sql)]
                                                                                                                 (if (nil? rs)
-                                                                                                                    (format "select show_msg('创建数据集语句执行成功！')")))
+                                                                                                                    "select show_msg('true') as tip"
+                                                                                                                    "select show_msg('false') as tip"))
                   ; alert dataset
                   (and (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-alter-dataset/alter_data_set ignite group_id sql)]
                                                                                                                (if (nil? rs)
-                                                                                                                   (format "select show_msg('修改数据集语句执行成功！')")))
+                                                                                                                   "select show_msg('true') as tip"
+                                                                                                                   "select show_msg('false') as tip"))
                   ; drop dataset
                   (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop_data_set ignite group_id sql)]
                                                                                                               (if (nil? rs)
-                                                                                                                  (format "select show_msg('删除数据集语句执行成功！')")))
+                                                                                                                  "select show_msg('true') as tip"
+                                                                                                                  "select show_msg('false') as tip"))
                   ; create table
                   (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/create-table ignite group_id sql)]
                                                                                                               (if (nil? rs)
-                                                                                                                  (format "select show_msg('创建表语句执行成功！')")))
+                                                                                                                  "select show_msg('true') as tip"
+                                                                                                                  "select show_msg('false') as tip"))
                   ; alter table
                   (and (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-alter-table/my_alter_table ignite group_id sql)]
                                                                                                              (if (nil? rs)
-                                                                                                                 (format "select show_msg('修改表语句执行成功！')")))
+                                                                                                                 "select show_msg('true') as tip"
+                                                                                                                 "select show_msg('false') as tip"))
                   ; drop table
                   (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-drop-table/drop_table ignite group_id sql)]
                                                                                                             (if (nil? rs)
-                                                                                                                (format "select show_msg('删除表语句执行成功！')")))
+                                                                                                                "select show_msg('true') as tip"
+                                                                                                                "select show_msg('false') as tip"))
                   ; create index
                   (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-create-index/create_index ignite group_id sql)]
                                                                                                               (if (nil? rs)
-                                                                                                                  (format "select show_msg('创建表索引语句执行成功！')")))
+                                                                                                                  "select show_msg('true') as tip"
+                                                                                                                  "select show_msg('false') as tip"))
                   ; drop index
                   (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id sql)]
                                                                                                             (if (nil? rs)
-                                                                                                                (format "select show_msg('删除表索引语句执行成功！')")))
+                                                                                                                "select show_msg('true') as tip"
+                                                                                                                "select show_msg('false') as tip"))
                   ; create table
                   (and (my-lexical/is-eq? (first lst) "update") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-update-dataset/update_dataset ignite group_id sql)]
                                                                                                                 (if (nil? rs)
-                                                                                                                    (format "select show_msg('更新数据集语句执行成功！')")))
+                                                                                                                    "select show_msg('true') as tip"
+                                                                                                                    "select show_msg('false') as tip"))
                   ; no sql
                   (and (contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst)))) (my-super-cache/my-no-lst ignite group_id lst sql)
                   :else

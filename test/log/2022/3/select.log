@@ -1,0 +1,4 @@
+1、为其它用户组定权限
+
+添加 用户组 美羊羊
+insert into my_users_group (id, group_name, user_token, group_type) values (1, 'myy', 'myy', 'all')

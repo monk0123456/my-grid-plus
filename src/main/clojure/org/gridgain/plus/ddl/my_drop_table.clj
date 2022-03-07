@@ -107,11 +107,13 @@
                         (if (true? (.getIs_real dataset))
                             (run_ddl_real_time ignite sql_code (.getId dataset))
                             (if-let [m (get_drop_table_obj sql_code)]
-                                (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
-                                    (if (> (first tables) 0)
-                                        (throw (Exception. (format "该用户组不能删除实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
-                                        (run_ddl ignite sql_code (.getId dataset) group_id)
-                                        ))
+                                (if-not (my-lexical/is-eq? (-> (my-lexical/get-schema (-> m :table_name)) :schema_name) "my_meta")
+                                    (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
+                                        (if (> (first tables) 0)
+                                            (throw (Exception. (format "该用户组不能删除实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
+                                            (run_ddl ignite sql_code (.getId dataset) group_id)
+                                            ))
+                                    (throw (Exception. "没有执行语句的权限！")))
                                 (throw (Exception. "删除表语句错误！请仔细检查并参考文档"))))
                         (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))
                 (throw (Exception. "不存在该用户组！"))

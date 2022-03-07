@@ -103,7 +103,8 @@
         (letfn [(insert_obj [[f & r]]
                     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
                         (if-let [items (get-insert-items (rest (rest r)))]
-                            {:table_name (str/lower-case (second r)) :values items}
+                            (assoc (my-lexical/get-schema (str/lower-case (second r))) :values items)
+                            ;{:table_name (str/lower-case (second r)) :values items}
                             (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))
                             )
                         ))]
@@ -452,25 +453,33 @@
 
 ; 执行需要保持 log 的 insert 语句
 (defn insert_run_log [^Ignite ignite ^Long group_id ^String sql]
-    (let [insert_obj (get_insert_obj sql) view_obj (get_view_obj ignite group_id sql)]
-        (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-            (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
-                (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                    (insert_obj_to_db ignite group_id (-> insert_obj :table_name) pk_with_data)
-                    )
-                )
-            )))
+    (let [insert_obj (get_insert_obj sql)]
+        (if-not (my-lexical/is-eq? (-> insert_obj :schema_name) "my_meta")
+            (let [view_obj (get_view_obj ignite group_id sql)]
+                (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
+                    (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                        (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
+                            (insert_obj_to_db ignite group_id (-> insert_obj :table_name) pk_with_data)
+                            )
+                        )
+                    ))
+            (throw (Exception. "没有执行 insert 语句的权限！")))
+        ))
 
 ; 执行需要保持 log 的 insert 语句
 (defn insert_run_log_fun [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
-    (let [insert_obj (get_insert_obj_fun sql dic_paras) view_obj (get_view_obj ignite group_id sql)]
-        (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-            (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
-                (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                    (insert_obj_to_db_fun ignite group_id (-> insert_obj :table_name) pk_with_data dic_paras)
-                    )
-                )
-            )))
+    (let [insert_obj (get_insert_obj_fun sql dic_paras)]
+        (if-not (my-lexical/is-eq? (-> insert_obj :schema_name) "my_meta")
+            (let [view_obj (get_view_obj ignite group_id sql)]
+                (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
+                    (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                        (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
+                            (insert_obj_to_db_fun ignite group_id (-> insert_obj :table_name) pk_with_data dic_paras)
+                            )
+                        )
+                    ))
+            (throw (Exception. "没有执行 insert 语句的权限！")))
+        ))
 
 ; 执行不需要保持 log 的 insert 语句
 (defn insert_run_no_log [^Ignite ignite ^Long group_id ^String sql]

@@ -412,109 +412,109 @@
                   ))))
 
 (defn my-no-lst [^Ignite ignite ^Long group_id lst no-sql-line]
-    (do
-        (MyCljLogger/myWriter (format "%s  %s" group_id no-sql-line))
-        (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (lst-no-sql (rest (rest lst)))]
-                                                                                             (if (and (some? name) (some? my-key))
+    (cond (and (my-lexical/is-eq? (first lst) "no_sql_create") (= (second lst) ":")) (if-let [{name "name" {my-key "key" no-sql "doc"} "keyValue" data-regin "dataRegin"} (lst-no-sql (rest (rest lst)))]
+                                                                                         (if (and (some? name) (some? my-key))
+                                                                                             (try
+                                                                                                 (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
+                                                                                                     "select show_msg('true') as tip"
+                                                                                                     "select show_msg('false') as tip")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                  (try
-                                                                                                     (if (nil? (MyNoSqlUtil/defineCache ignite group_id name data-regin no-sql-line))
-                                                                                                         "select show_msg('true')"
-                                                                                                         "select show_msg('false')")
+                                                                                                     (if (nil? (.put (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
+                                                                                                         "select show_msg('true') as tip"
+                                                                                                         "select show_msg('false') as tip")
                                                                                                      (catch Exception e
-                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                 ))
-              (and (my-lexical/is-eq? (first lst) "no_sql_insert") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key" no-sql "doc"} (lst-no-sql (rest (rest lst)))]
+                                                                                                         (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                                 )))
+          (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
+                                                                                         (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
                                                                                              (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                                 (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
-                                                                                                     (try
-                                                                                                         (if (nil? (.put (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
-                                                                                                             "select show_msg('true')"
-                                                                                                             "select show_msg('false')")
-                                                                                                         (catch Exception e
-                                                                                                             (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                     )))
-              (and (my-lexical/is-eq? (first lst) "no_sql_update") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst)))]
-                                                                                             (let [{table_name "table_name" my-key "key" no-sql "doc"} r]
-                                                                                                 (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                                     (if (or (nil? f) (empty? f))
-                                                                                                         (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                 (if (or (nil? f) (empty? f))
+                                                                                                     (let [{{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
+                                                                                                         (try
+                                                                                                             (if (true? (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
+                                                                                                                 "select show_msg('true') as tip"
+                                                                                                                 "select show_msg('false') as tip")
+                                                                                                             (catch Exception e
+                                                                                                                 (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                                         )
+                                                                                                     (let [vs-obj (.get (.cache ignite table_name) my-key) query-vs (lst-no-sql (my-lexical/to-back no-sql))]
+                                                                                                         (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items (str/join (rest f)))) vs-obj query-vs) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                              (try
                                                                                                                  (if (true? (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
-                                                                                                                     "select show_msg('true')"
-                                                                                                                     "select show_msg('false')")
+                                                                                                                     "select show_msg('true') as tip"
+                                                                                                                     "select show_msg('false') as tip")
                                                                                                                  (catch Exception e
-                                                                                                                     (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                             )
-                                                                                                         (let [vs-obj (.get (.cache ignite table_name) my-key) query-vs (lst-no-sql (my-lexical/to-back no-sql))]
-                                                                                                             (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items (str/join (rest f)))) vs-obj query-vs) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
-                                                                                                                 (try
-                                                                                                                     (if (true? (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))
-                                                                                                                         "select show_msg('true')"
-                                                                                                                         "select show_msg('false')")
-                                                                                                                     (catch Exception e
-                                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                                 ))))
-                                                                                                 ))
-              (and (my-lexical/is-eq? (first lst) "no_sql_delete") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key"} (lst-no-sql (rest (rest lst)))]
-                                                                                             (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                                 (try
-                                                                                                     (if (true? (.remove (.cache ignite table_name) my-key))
-                                                                                                         "select show_msg('true')"
-                                                                                                         "select show_msg('false')")
-                                                                                                     (catch Exception e
-                                                                                                         (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                 )
+                                                                                                                     (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                                             ))))
+                                                                                             ))
+          (and (my-lexical/is-eq? (first lst) "no_sql_delete") (= (second lst) ":")) (if-let [{table_name "table_name" my-key "key"} (lst-no-sql (rest (rest lst)))]
+                                                                                         (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                             (try
+                                                                                                 (if (true? (.remove (.cache ignite table_name) my-key))
+                                                                                                     "select show_msg('true') as tip"
+                                                                                                     "select show_msg('false') as tip")
+                                                                                                 (catch Exception e
+                                                                                                     (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
                                                                                              )
-              (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst))) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
-                                                                                            (if-let [{table_name "table_name" my-key "key"} r]
-                                                                                                (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
-                                                                                                    (if (or (nil? f) (empty? f))
+                                                                                         )
+          (and (my-lexical/is-eq? (first lst) "no_sql_query") (= (second lst) ":")) (let [[f r] (lst-no-sql-query (rest (rest lst))) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                                                                                        (if-let [{table_name "table_name" my-key "key"} r]
+                                                                                            (if (true? (MyNoSqlUtil/hasCache ignite table_name group_id))
+                                                                                                (if (or (nil? f) (empty? f))
+                                                                                                    (try
+                                                                                                        (if-let [get-rs (.get (.cache ignite table_name) my-key)]
+                                                                                                            ;(do
+                                                                                                            ;    (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                            ;    (format "select show_msg('%s') as value" (.toJson gson get-rs)))
+                                                                                                            (format "select show_msg('%s') as value" (.toJson gson get-rs))
+                                                                                                            "select show_msg('') as value")
+                                                                                                        (catch Exception e
+                                                                                                            (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                                    (let [vs-obj (.get (.cache ignite table_name) my-key)]
                                                                                                         (try
-                                                                                                            (if-let [get-rs (.get (.cache ignite table_name) my-key)]
-                                                                                                                (do
-                                                                                                                    (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
-                                                                                                                    (format "select show_msg('%s')" (.toJson gson get-rs)))
-                                                                                                                "select show_msg('')")
+                                                                                                            (if-let [get-rs (get-vs-dic vs-obj (str/join (rest f)))]
+                                                                                                                ;(do
+                                                                                                                ;    (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
+                                                                                                                ;    (format "select show_msg('%s') as value" (.toJson gson get-rs)))
+                                                                                                                (format "select show_msg('%s') as value" (.toJson gson get-rs))
+                                                                                                                "select show_msg('') as value")
                                                                                                             (catch Exception e
-                                                                                                                (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                        (let [vs-obj (.get (.cache ignite table_name) my-key)]
-                                                                                                            (try
-                                                                                                                (if-let [get-rs (get-vs-dic vs-obj (str/join (rest f)))]
-                                                                                                                    (do
-                                                                                                                        (MyCljLogger/myWriter (format "select show_msg('%s')" (.toJson gson get-rs)))
-                                                                                                                        (format "select show_msg('%s')" (.toJson gson get-rs)))
-                                                                                                                    "select show_msg('')")
-                                                                                                                (catch Exception e
-                                                                                                                    (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                            )))
-                                                                                                )
+                                                                                                                (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                                        )))
                                                                                             )
-              (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (lst-no-sql (rest (rest lst)))]
-                                                                                           (try
-                                                                                               (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
-                                                                                                   "select show_msg('true')"
-                                                                                                   "select show_msg('false')")
-                                                                                               (catch Exception e
-                                                                                                   (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                           )
-              (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (get-push-query lst)]
-                                                                                                       (try
-                                                                                                           (if (true? (my-cache-push-lst ignite group_id my-lst))
-                                                                                                               "select show_msg('true')"
-                                                                                                               "select show_msg('false')")
-                                                                                                           (catch Exception e
-                                                                                                               (format "select show_msg('执行失败！原因：%s')" (.getMessage e))))
-                                                                                                       )
-              (and (my-lexical/is-eq? (first lst) "pop") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (get-pop-query lst) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
-                                                                                                      (try
-                                                                                                          (if-let [get-rs (my-cache-pop-lst ignite group_id my-lst)]
-                                                                                                              (format "select show_msg('%s')" (.toJson gson get-rs))
-                                                                                                              "select show_msg('')")
-                                                                                                          (catch Exception e
-                                                                                                              (format "select show_msg('执行失败！原因：%s')" (.getMessage e)))))
-              :else
-              (throw (Exception. "输入字符串错误！"))
-              )))
+                                                                                        )
+          (and (my-lexical/is-eq? (first lst) "no_sql_drop") (= (second lst) ":")) (if-let [{table_name "name"} (lst-no-sql (rest (rest lst)))]
+                                                                                       (try
+                                                                                           (if (nil? (MyNoSqlUtil/destroyCache ignite table_name group_id))
+                                                                                               "select show_msg('true') as tip"
+                                                                                               "select show_msg('false') as tip")
+                                                                                           (catch Exception e
+                                                                                               (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                       )
+          (and (my-lexical/is-eq? (first lst) "push") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (get-push-query lst)]
+                                                                                                   (try
+                                                                                                       (if (true? (my-cache-push-lst ignite group_id my-lst))
+                                                                                                           "select show_msg('true') as tip"
+                                                                                                           "select show_msg('false') as tip")
+                                                                                                       (catch Exception e
+                                                                                                           (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e))))
+                                                                                                   )
+          (and (my-lexical/is-eq? (first lst) "pop") (= (second lst) "(") (= (last lst) ")")) (let [my-lst (get-pop-query lst) gson (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+                                                                                                  (try
+                                                                                                      (if-let [get-rs (my-cache-pop-lst ignite group_id my-lst)]
+                                                                                                          (format "select show_msg('%s') as value" (.toJson gson get-rs))
+                                                                                                          "select show_msg('') as value")
+                                                                                                      (catch Exception e
+                                                                                                          (format "select show_msg('执行失败！原因：%s') as tip" (.getMessage e)))))
+          :else
+          (throw (Exception. "输入字符串错误！"))
+          ))
 
 (defn -myNoSql [^Ignite ignite ^Long group_id ^String no-sql-line]
     (my-no-sql ignite group_id no-sql-line))

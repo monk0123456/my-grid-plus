@@ -174,16 +174,18 @@
                         (if (true? (.getIs_real dataset))
                             (run_ddl_real_time ignite sql_code (.getId dataset) group_id)
                             (if-let [m (get_table_alter_obj sql_code)]
-                                (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
-                                    (if (> (first tables) 0)
-                                        (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
-                                        (let [ds_m (assoc m :table_name (format "%s_%s" (.getDataset_name dataset) (-> m :table_name)))]
-                                            (if (true? (.isDataSetEnabled (.configuration ignite)))
-                                                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                                                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (doto (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item))) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line (.getData_set_id my_group)) (SqlType/INSERT))))}))
-                                                (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item)))}))
-                                            )
-                                        ))
+                                (if-not (my-lexical/is-eq? (-> (my-lexical/get-schema (-> m :table_name)) :schema_name) "my_meta")
+                                    (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
+                                        (if (> (first tables) 0)
+                                            (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
+                                            (let [ds_m (assoc m :table_name (format "%s_%s" (.getDataset_name dataset) (-> m :table_name)))]
+                                                (if (true? (.isDataSetEnabled (.configuration ignite)))
+                                                    (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+                                                        (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (doto (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item))) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line (.getData_set_id my_group)) (SqlType/INSERT))))}))
+                                                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item)))}))
+                                                )
+                                            ))
+                                    (throw (Exception. "没有执行语句的权限！")))
                                 (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
                         (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))
                 (throw (Exception. "不存在该用户组！"))

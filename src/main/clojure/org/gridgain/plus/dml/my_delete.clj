@@ -40,20 +40,29 @@
 
 ; 判断权限
 (defn get-authority [^Ignite ignite ^Long group_id ^String sql]
-    (when-let [{table_name :table_name where_lst :where_lst} (get_table_name (my-lexical/to-back sql))]
-        (if-let [{v_table_name :table_name v_where_lst :where_lst} (get_view_db ignite group_id table_name)]
-            (if (my-lexical/is-eq? table_name v_table_name)
-                {:table_name table_name :where_lst (my-update/merge_where where_lst v_where_lst)})
-            {:table_name table_name :where_lst where_lst}
-            )))
+    (if-let [{my_table_name :table_name where_lst :where_lst} (get_table_name (my-lexical/to-back sql))]
+        (let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema my_table_name)]
+            (if (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0))
+                (throw (Exception. "用户不存在或者没有权限！"))
+                (if-let [{v_table_name :table_name v_where_lst :where_lst} (get_view_db ignite group_id table_name)]
+                    (if (my-lexical/is-eq? table_name v_table_name)
+                        {:schema_name schema_name :table_name table_name :where_lst (my-update/merge_where where_lst v_where_lst)})
+                    {:schema_name schema_name :table_name table_name :where_lst where_lst}
+                    ))
+            )
+        ))
 
 (defn get-authority-lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
-    (when-let [{table_name :table_name where_lst :where_lst} (get_table_name sql_lst)]
-        (if-let [{v_table_name :table_name v_where_lst :where_lst} (get_view_db ignite group_id table_name)]
-            (if (my-lexical/is-eq? table_name v_table_name)
-                {:table_name table_name :where_lst (my-update/merge_where where_lst v_where_lst)})
-            {:table_name table_name :where_lst where_lst}
-            )))
+    (if-let [{my_table_name :table_name where_lst :where_lst} (get_table_name sql_lst)]
+        (let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema my_table_name)]
+            (if (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0))
+                (throw (Exception. "用户不存在或者没有权限！"))
+                (if-let [{v_table_name :table_name v_where_lst :where_lst} (get_view_db ignite group_id table_name)]
+                    (if (my-lexical/is-eq? table_name v_table_name)
+                        {:schema_name schema_name :table_name table_name :where_lst (my-update/merge_where where_lst v_where_lst)})
+                    {:schema_name schema_name :table_name table_name :where_lst where_lst}
+                    )))
+        ))
 
 (defn get_delete_query_sql [^Ignite ignite obj]
     (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (-> obj :table_name))]

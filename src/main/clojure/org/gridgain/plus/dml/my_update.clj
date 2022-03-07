@@ -485,22 +485,26 @@
         (if (= group_id 0)
             ; 超级用户
             (update_run_super_admin ignite sql)
-            (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-                (if-not (empty? ds_obj)
-                    ; 如果是实时数据集
-                    (if (true? (nth (first ds_obj) 1))
-                        ; 在实时数据集
-                        (if (true? (.isDataSetEnabled (.configuration ignite)))
-                            (my-lexical/trans ignite (update_run_log ignite group_id sql))
-                            (my-lexical/trans ignite (update_run_no_log ignite group_id sql)))
-                        ; 在非实时树集
-                        (let [{table_name :table_name} (get_table_name (my-lexical/to-back sql))]
-                            (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                                (throw (Exception. "表来至实时数据集不能在该表上执行更新操作！"))
-                                (my-lexical/trans ignite (update_run_no_log ignite group_id sql))))
-                        )
-                    (throw (Exception. "用户不存在或者没有权限！")))
-                )))
+            (let [{my_table_name :table_name} (get_table_name (my-lexical/to-back sql))]
+                (let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema my_table_name)]
+                    (if-not (= schema_name "my_meta")
+                        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
+                            (if-not (empty? ds_obj)
+                                ; 如果是实时数据集
+                                (if (true? (nth (first ds_obj) 1))
+                                    ; 在实时数据集
+                                    (if (true? (.isDataSetEnabled (.configuration ignite)))
+                                        (my-lexical/trans ignite (update_run_log ignite group_id sql))
+                                        (my-lexical/trans ignite (update_run_no_log ignite group_id sql)))
+                                    ; 在非实时树集
+                                    (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
+                                        (throw (Exception. "表来至实时数据集不能在该表上执行更新操作！"))
+                                        (my-lexical/trans ignite (update_run_no_log ignite group_id sql)))
+                                    )
+                                (throw (Exception. "用户不存在或者没有权限！")))
+                            )
+                        (throw (Exception. "用户不存在或者没有权限！")))))
+            ))
     )
 
 ; 以下是保存到 cache 中的 scenes_name, ast, 参数列表

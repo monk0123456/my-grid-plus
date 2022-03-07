@@ -148,6 +148,26 @@
          (recur r (doto lst (.add f)))
          lst)))
 
+(defn get-schema
+    ([lst] (if-let [m (get-schema lst [] [])]
+               (cond (= (count m) 1) {:schema_name "" :table_name (first m)}
+                     (= (count m) 2) {:schema_name (first m) :table_name (second m)}
+                     :else
+                     (throw (Exception. "语句错误，表名不符合要求！"))
+                     )
+               (throw (Exception. "语句错误，表名不符合要求！"))))
+    ([[f & r] stack lst]
+     (if (some? f)
+         (cond (= f \.) (if-not (empty? stack)
+                            (recur r [] (conj lst (str/join stack)))
+                            (throw (Exception. "语句错误，表名开始不能有 '.' 符号！")))
+               :else
+               (recur r (conj stack f) lst)
+               )
+         (if (empty? stack)
+             lst
+             (conj lst (str/join stack))))))
+
 ; 生成 MyLogCache
 (defn get_mylogcache [^Ignite ignite ^String table_name ^MyLogCache myLogCache]
     (.build (doto (.builder (.binary ignite) "cn.plus.model.MyLog")
