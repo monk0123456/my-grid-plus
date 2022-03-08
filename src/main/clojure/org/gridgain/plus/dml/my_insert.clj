@@ -544,7 +544,7 @@
                         ;(insert_run_log_fun ignite group_id sql dic_paras)
                         ;(insert_run_no_log_fun ignite group_id sql dic_paras)
                         )
-                    ; 在非实时树集
+                    ; 在非实时数据集
                     (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) (-> ast :table_name)))
                         (throw (Exception. "表来至实时数据集不能在该表上执行插入操作！"))
                         (insert_obj_to_db_no_log_fun ignite group_id (-> ast :table_name) ast dic_paras)

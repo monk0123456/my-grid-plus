@@ -40,7 +40,7 @@
     (when-let [sql (my-create-table/get_sql sql_line)]
         (let [drop_index (re-find #"^(?i)DROP\sTable\sIF\sEXISTS\s|^(?i)DROP\sTable\s" sql) table_name (str/replace sql #"^(?i)DROP\sTable\sIF\sEXISTS\s|^(?i)DROP\sTable\s" "")]
             (if (some? drop_index)
-                {:drop_line (str/trim drop_index) :is_exists (table_exists (str/trim drop_index)) :table_name (str/trim table_name)}
+                (assoc (my-lexical/get-schema (str/trim table_name)) :drop_line (str/trim drop_index) :is_exists (table_exists (str/trim drop_index)))
                 (throw (Exception. "删除表语句错误！"))))))
 
 (defn get_sql [drop_table_obj]
@@ -71,10 +71,12 @@
 ; 整个 ddl 的 obj
 (defn get_ddl_obj [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
     (if-let [m (get_drop_table_obj sql_line)]
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
-            (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                {:sql (my-lexical/to_arryList (get_sql m)) :lst_cachex (doto (my-lexical/to_arryList (getCacheex ignite (str/lower-case (-> m :table_name)) data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
-            {:sql (my-lexical/to_arryList (get_sql m)) :lst_cachex (my-lexical/to_arryList (getCacheex ignite (str/lower-case (-> m :table_name)) data_set_id))})
+        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
+            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+                    {:sql (my-lexical/to_arryList (get_sql m)) :lst_cachex (doto (my-lexical/to_arryList (getCacheex ignite (str/lower-case (-> m :table_name)) data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
+                {:sql (my-lexical/to_arryList (get_sql m)) :lst_cachex (my-lexical/to_arryList (getCacheex ignite (str/lower-case (-> m :table_name)) data_set_id))})
+            (throw (Exception. "没有执行语句的权限！")))
         (throw (Exception. "删除表语句错误！"))))
 
 ; run ddl obj
@@ -94,7 +96,10 @@
 ; 实时数据集
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id]
     (if-let [m (get_drop_table_obj sql_line)]
-        (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_all ignite m)) :lst_cachex (my-lexical/to_arryList (getCacheex ignite (str/lower-case (-> m :table_name)) data_set_id))})))
+        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
+            (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_all ignite m)) :lst_cachex (my-lexical/to_arryList (getCacheex ignite (str/lower-case (-> m :table_name)) data_set_id))})
+            (throw (Exception. "没有执行语句的权限！")))
+        ))
 
 ; 删除表
 (defn drop_table [^Ignite ignite ^Long group_id ^String sql_line]
@@ -107,12 +112,14 @@
                         (if (true? (.getIs_real dataset))
                             (run_ddl_real_time ignite sql_code (.getId dataset))
                             (if-let [m (get_drop_table_obj sql_code)]
-                                (if-not (my-lexical/is-eq? (-> (my-lexical/get-schema (-> m :table_name)) :schema_name) "my_meta")
-                                    (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
-                                        (if (> (first tables) 0)
-                                            (throw (Exception. (format "该用户组不能删除实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
-                                            (run_ddl ignite sql_code (.getId dataset) group_id)
-                                            ))
+                                (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
+                                    (if-not (my-lexical/is-eq? (-> (my-lexical/get-schema (-> m :table_name)) :schema_name) "my_meta")
+                                        (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
+                                            (if (> (first tables) 0)
+                                                (throw (Exception. (format "该用户组不能删除实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
+                                                (run_ddl ignite sql_code (.getId dataset) group_id)
+                                                ))
+                                        (throw (Exception. "没有执行语句的权限！")))
                                     (throw (Exception. "没有执行语句的权限！")))
                                 (throw (Exception. "删除表语句错误！请仔细检查并参考文档"))))
                         (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))

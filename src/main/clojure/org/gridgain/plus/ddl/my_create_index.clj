@@ -92,10 +92,12 @@
                     (if (some? index_name)
                         (let [table_name (re-find #"^(?i)\w+\s" last_line_1) last_line_2 (str/replace last_line_1 #"^(?i)\w+\s" "")]
                             (if (some? table_name)
-                                (let [index_items (re-find #"(?i)(?<=^\()[\s\S]*(?=\))" last_line_2) last_line_3 (str/replace last_line_2 #"(?i)(?<=^\()[\s\S]*(?=\))" "")]
+                                (let [index_items (re-find #"(?i)(?<=^\()[\s\S]*(?=\))" last_line_2) last_line_3 (str/replace last_line_2 #"(?i)(?<=^\()[\s\S]*(?=\))" "") {schema_name :schema_name table_name :table_name} (my-lexical/get-schema (str/trim (str/lower-case table_name)))]
                                     (if (some? index_name)
-                                        {:create_index (index_map (str/trim create_index_line)) :index_name (str/replace index_name #"(?i)\sON\s$" "")
-                                         :table_name (str/trim (str/lower-case table_name)) :index_items_obj (get_index_obj (str/trim index_items))
+                                        {:create_index (index_map (str/trim create_index_line))
+                                         :index_name (str schema_name "." (str/replace index_name #"(?i)\sON\s$" ""))
+                                         :schema_name schema_name
+                                         :table_name table_name :index_items_obj (get_index_obj (str/trim index_items))
                                          :inline_size (get_inline_size last_line_3)}
                                         ))
                                 (throw (Exception. "创建索引语句错误！"))
@@ -231,21 +233,25 @@
 ; 实时数据集
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
     (if-let [m (get_create_index_obj sql_line)]
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
-            (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
-                )
-            (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
+        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
+            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+                    (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
+                    )
+                (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
+            (throw (Exception. "没有执行语句的权限！")))
         (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
 ; 批处理数据集
 (defn run_ddl [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
     (if-let [m (get_create_index_obj sql_line)]
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
-            (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList [(get_sql_line m)]) :un_sql (my-lexical/to_arryList [(get_un_sql_line m)]) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
-                )
-            (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList [(get_sql_line m)]) :un_sql (my-lexical/to_arryList [(get_un_sql_line m)]) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
+        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
+            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+                    (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList [(get_sql_line m)]) :un_sql (my-lexical/to_arryList [(get_un_sql_line m)]) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
+                    )
+                (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList [(get_sql_line m)]) :un_sql (my-lexical/to_arryList [(get_un_sql_line m)]) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
+            (throw (Exception. "没有执行语句的权限！")))
         (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
 ; 新增 index
@@ -259,11 +265,13 @@
                         (if (true? (.getIs_real dataset))
                             (run_ddl_real_time ignite sql_code (.getId dataset) group_id)
                             (if-let [m (get_create_index_obj sql_code)]
-                                (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
-                                    (if (> (first tables) 0)
-                                        (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
-                                        (run_ddl ignite sql_code (.getId dataset) sql_line)
-                                        ))
+                                (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
+                                    (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
+                                        (if (> (first tables) 0)
+                                            (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
+                                            (run_ddl ignite sql_code (.getId dataset) sql_line)
+                                            ))
+                                    (throw (Exception. "没有执行语句的权限！")))
                                 (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
                         (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))
                 (throw (Exception. "不存在该用户组！"))

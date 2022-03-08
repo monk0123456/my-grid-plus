@@ -1,4 +1,41 @@
 1、为其它用户组定权限
 
-添加 用户组 美羊羊
-insert into my_users_group (id, group_name, user_token, group_type) values (1, 'myy', 'myy', 'all')
+添加 用户组 美羊羊(myy) 吴大富(wudafu) 吴大贵(wudagui)
+
+insert into my_users_group (id, group_name, user_token, group_type) values (1, 'myy', 'myy', 'all');
+insert into my_users_group (id, group_name, user_token, group_type) values (2, 'wudafu', 'wudafu', 'all');
+insert into my_users_group (id, group_name, user_token, group_type) values (3, 'wudagui', 'wudagui', 'all');
+
+public 公有：Customers:客户表
+            Categories:种类表
+            Products:产品表
+美羊羊(myy) 用户组管理：Shippers:运货商
+                      Suppliers：供应商表
+吴大富(wudafu) 用户组管理：
+                        Employees：员工表，
+                        EmployeeTerritories：员销售区域表
+                        Territories：销售小区域表
+吴大贵(wudagui) 用户组管理：
+                        OrderDetails：订单明细表
+                        Orders:订单表
+
+
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "select * from public.Categories")))
+
+(.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. "select * from public.Categories")))
+
+(.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. "select * from my_meta.MY_CACHE")))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
