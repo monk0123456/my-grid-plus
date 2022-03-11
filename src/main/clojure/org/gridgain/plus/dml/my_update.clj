@@ -65,13 +65,11 @@
          (recur r (conj lst (to_item_obj f)))
          lst)))
 
-(defn get_json [^String sql]
-    (if-let [lst (my-lexical/to-back sql)]
-        (if-let [{table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
-            (if-let [{items_line :items_line where_line :where_line} (get_items rs_lst)]
-                (if-let [items (get_item_lst items_line)]
-                    {:table_name table_name :items (item_jsons items) :where_line where_line})
-                (throw (Exception. "更新数据的语句错误！")))
+(defn get_json [lst]
+    (if-let [{table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
+        (if-let [{items_line :items_line where_line :where_line} (get_items rs_lst)]
+            (if-let [items (get_item_lst items_line)]
+                {:table_name table_name :items (item_jsons items) :where_line where_line})
             (throw (Exception. "更新数据的语句错误！")))
         (throw (Exception. "更新数据的语句错误！"))))
 
@@ -115,8 +113,8 @@
           ))
 
 ; 判断权限
-(defn get-authority [^Ignite ignite ^Long group_id ^String sql]
-    (when-let [{table_name :table_name items :items where_line :where_line} (get_json sql)]
+(defn get-authority [^Ignite ignite ^Long group_id lst-sql]
+    (when-let [{table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (if-let [{v_items :items v_where_line :where_line} (get_view_db ignite group_id table_name)]
             (if (nil? (has_authority_item items v_items))
                 {:table_name table_name :items items :where_line (merge_where where_line v_where_line)}
@@ -201,29 +199,29 @@
         ))
 
 ; update 转换为对象
-(defn get_update_obj [^Ignite ignite ^Long group_id ^String sql]
-    (if-let [m (get-authority ignite group_id sql)]
+(defn get_update_obj [^Ignite ignite ^Long group_id lst-sql]
+    (if-let [m (get-authority ignite group_id lst-sql)]
         (if-let [us (get_update_query_sql ignite m)]
             us
             (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))
 
-(defn get_update_obj_fun [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
-    (if-let [m (get-authority ignite group_id sql)]
+(defn get_update_obj_fun [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap dic_paras]
+    (if-let [m (get-authority ignite group_id lst-sql)]
         (if-let [us (get_update_query_sql_fun ignite group_id m dic_paras)]
             us
             (throw (Exception. "更新语句字符串错误！")))
         (throw (Exception. "更新语句字符串错误！"))))
 
-(defn update_run_super_admin [^Ignite ignite ^String sql]
-    (if-let [{table_name :table_name} (get_table_name (my-lexical/to-back sql))]
+(defn update_run_super_admin [^Ignite ignite lst-sql]
+    (if-let [{table_name :table_name} (get_table_name (my-lexical/to-back lst-sql))]
         (if (contains? plus-init-sql/my-grid-tables-set (str/lower-case table_name))
-            (.getAll (.query (.cache ignite (str/lower-case table_name)) (SqlFieldsQuery. sql)))
+            (.getAll (.query (.cache ignite (str/lower-case table_name)) (SqlFieldsQuery. (str/join " " lst-sql))))
             (throw (Exception. "超级管理员不能修改具体的业务数据！")))
         (throw (Exception. "更新语句字符串错误！"))))
 
-(defn update_run_log [^Ignite ignite ^Long group_id ^String sql]
-    (if-let [{table_name :table_name sql :sql items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id sql)]
+(defn update_run_log [^Ignite ignite ^Long group_id lst-sql]
+    (if-let [{table_name :table_name sql :sql items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id lst-sql)]
         (if-let [it (.iterator (.query (.cache ignite (format "f_%s" table_name)) (doto (SqlFieldsQuery. sql)
                                                                          (.setLazy true))))]
             (letfn [(item_value_tokens [^Ignite ignite lst_tokens ^BinaryObject binaryObject dic]
@@ -336,8 +334,8 @@
     (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} ast]
         (run_log_fun ignite group_id table_name sql args items pk_lst dic dic_paras)))
 
-(defn update_run_log_fun_tran [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
-    (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id sql)]
+(defn update_run_log_fun_tran [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap dic_paras]
+    (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id lst-sql)]
         (run_log_fun ignite group_id table_name sql args items pk_lst dic dic_paras)))
 ;
 ;(defn -my_update_run_log [^Ignite ignite ^Long group_id ^String sql]
@@ -433,78 +431,35 @@
     (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} my_ast]
         (run_no_log_fun ignite group_id table_name sql args items pk_lst dic dic_paras)))
 
-(defn update_run_no_log_fun_tran [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
-    (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id sql)]
+(defn update_run_no_log_fun_tran [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap dic_paras]
+    (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id lst-sql)]
         (run_no_log_fun ignite group_id table_name sql args items pk_lst dic dic_paras)))
 
-(defn get_update_cache_tran [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
+(defn get_update_cache_tran [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-            (if-not (empty? ds_obj)
-                ; 如果是实时数据集
-                (if (true? (nth (first ds_obj) 1))
-                    ; 在实时数据集
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
-                        (update_run_log_fun_tran ignite group_id sql dic_paras)
-                        (update_run_no_log_fun_tran ignite group_id sql dic_paras))
-                    ; 在非实时树集
-                    (let [{table_name :table_name} (get_table_name (my-lexical/to-back sql))]
-                        (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                            (throw (Exception. "表来至实时数据集不能在该表上执行更新操作！"))
-                            (update_run_no_log_fun_tran ignite group_id sql dic_paras)))
-                    )
-                (throw (Exception. "用户不存在或者没有权限！")))
-            )))
+        (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (update_run_log_fun_tran ignite group_id lst-sql dic_paras)
+            (update_run_no_log_fun_tran ignite group_id lst-sql dic_paras))))
 
 (defn get_update_cache [^Ignite ignite ^Long group_id ^clojure.lang.PersistentArrayMap ast ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-            (if-not (empty? ds_obj)
-                ; 如果是实时数据集
-                (if (true? (nth (first ds_obj) 1))
-                    ; 在实时数据集
-                    (if-let [my_ast (get_update_query_sql_fun ignite group_id ast dic_paras)]
-                        (if (true? (.isDataSetEnabled (.configuration ignite)))
-                            (update_run_log_fun ignite group_id my_ast dic_paras)
-                            (update_run_no_log_fun ignite group_id my_ast dic_paras)))
-                    ; 在非实时树集
-                    (if-let [my_ast (get_update_query_sql_fun ignite group_id ast dic_paras)]
-                        (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) (-> ast :table_name)))
-                            (throw (Exception. "表来至实时数据集不能在该表上执行更新操作！"))
-                            (update_run_no_log_fun ignite group_id my_ast dic_paras)))
-                    )
-                (throw (Exception. "用户不存在或者没有权限！")))
-            )))
+        (if-let [my_ast (get_update_query_sql_fun ignite group_id ast dic_paras)]
+            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (update_run_log_fun ignite group_id my_ast dic_paras)
+                (update_run_no_log_fun ignite group_id my_ast dic_paras)))))
 
 ; 1、判断用户组在实时数据集，还是非实时数据
 ; 如果是非实时数据集,
 ; 获取表名后，查一下，表名是否在 对应的 my_dataset_table 中，如果在就不能添加，否则直接执行 insert sql
 ; 2、如果是在实时数据集是否需要 log
-(defn update_run [^Ignite ignite ^Long group_id ^String sql]
-    (let [sql (str/lower-case sql)]
-        (if (= group_id 0)
-            ; 超级用户
-            (update_run_super_admin ignite sql)
-            (let [{my_table_name :table_name} (get_table_name (my-lexical/to-back sql))]
-                (let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema my_table_name)]
-                    (if-not (= schema_name "my_meta")
-                        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-                            (if-not (empty? ds_obj)
-                                ; 如果是实时数据集
-                                (if (true? (nth (first ds_obj) 1))
-                                    ; 在实时数据集
-                                    (if (true? (.isDataSetEnabled (.configuration ignite)))
-                                        (my-lexical/trans ignite (update_run_log ignite group_id sql))
-                                        (my-lexical/trans ignite (update_run_no_log ignite group_id sql)))
-                                    ; 在非实时树集
-                                    (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                                        (throw (Exception. "表来至实时数据集不能在该表上执行更新操作！"))
-                                        (my-lexical/trans ignite (update_run_no_log ignite group_id sql)))
-                                    )
-                                (throw (Exception. "用户不存在或者没有权限！")))
-                            )
-                        (throw (Exception. "用户不存在或者没有权限！")))))
-            ))
+(defn update_run [^Ignite ignite ^Long group_id lst-sql]
+    (if (= group_id 0)
+        ; 超级用户
+        (str/join " " lst-sql)
+        (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (my-lexical/trans ignite (update_run_log ignite group_id lst-sql))
+            (my-lexical/trans ignite (update_run_no_log ignite group_id lst-sql)))
+        )
     )
 
 ; 以下是保存到 cache 中的 scenes_name, ast, 参数列表

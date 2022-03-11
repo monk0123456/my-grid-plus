@@ -39,8 +39,8 @@
         (if (> (count lst_rs) 0) (get_table_name (my-lexical/to-back (nth lst_rs 0))))))
 
 ; 判断权限
-(defn get-authority [^Ignite ignite ^Long group_id ^String sql]
-    (if-let [{my_table_name :table_name where_lst :where_lst} (get_table_name (my-lexical/to-back sql))]
+(defn get-authority [^Ignite ignite ^Long group_id lst-sql]
+    (if-let [{my_table_name :table_name where_lst :where_lst} (get_table_name lst-sql)]
         (let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema my_table_name)]
             (if (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0))
                 (throw (Exception. "用户不存在或者没有权限！"))
@@ -89,8 +89,8 @@
         ))
 
 ; delete obj
-(defn get_delete_obj [^Ignite ignite ^Long group_id ^String sql]
-    (if-let [m (get-authority ignite group_id sql)]
+(defn get_delete_obj [^Ignite ignite ^Long group_id lst-sql]
+    (if-let [m (get-authority ignite group_id lst-sql)]
         (get_delete_query_sql ignite m)
         (throw (Exception. "删除语句字符串错误！"))))
 
@@ -259,70 +259,32 @@
 
 (defn get_delete_cache_tran [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-            (if-not (empty? ds_obj)
-                ; 如果是实时数据集
-                (if (true? (nth (first ds_obj) 1))
-                    (if-let [delete_obj (get_delete_obj_fun ignite group_id sql dic_paras)]
-                        ; 在实时数据集
-                        (if (true? (.isDataSetEnabled (.configuration ignite)))
-                            (delete_run_log_fun ignite delete_obj)
-                            (delete_run_no_log_fun ignite delete_obj)))
-                    ; 在非实时树集
-                    (let [{table_name :table_name} (get_table_name (my-lexical/to-back sql)) delete_obj (get_delete_obj_fun ignite group_id sql dic_paras)]
-                        (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                            (throw (Exception. "表来至实时数据集不能在该表上执行删除操作！"))
-                            (delete_run_no_log_fun ignite delete_obj )))
-                    )
-                (throw (Exception. "用户不存在或者没有权限！")))
-            )))
+        (if-let [delete_obj (get_delete_obj_fun ignite group_id sql dic_paras)]
+            ; 在实时数据集
+            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (delete_run_log_fun ignite delete_obj)
+                (delete_run_no_log_fun ignite delete_obj)))))
 
 (defn get_delete_cache [^Ignite ignite ^Long group_id ^clojure.lang.PersistentArrayMap ast ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-            (if-not (empty? ds_obj)
-                ; 如果是实时数据集
-                (if (true? (nth (first ds_obj) 1))
-                    (if-let [delete_obj (get_delete_query_sql_fun ignite group_id ast dic_paras)]
-                        ; 在实时数据集
-                        (if (true? (.isDataSetEnabled (.configuration ignite)))
-                            (delete_run_log_fun ignite delete_obj)
-                            (delete_run_no_log_fun ignite delete_obj)))
-                    ; 在非实时树集
-                    (if-let [delete_obj (get_delete_query_sql_fun ignite group_id ast dic_paras)]
-                        (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) (-> ast :table_name)))
-                            (throw (Exception. "表来至实时数据集不能在该表上执行删除操作！"))
-                            (delete_run_no_log_fun ignite delete_obj )))
-                    )
-                (throw (Exception. "用户不存在或者没有权限！")))
-            )))
+        (if-let [delete_obj (get_delete_query_sql_fun ignite group_id ast dic_paras)]
+            ; 在实时数据集
+            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (delete_run_log_fun ignite delete_obj)
+                (delete_run_no_log_fun ignite delete_obj)))))
 
 ; 1、判断用户组在实时数据集，还是非实时数据
 ; 如果是非实时数据集,
 ; 获取表名后，查一下，表名是否在 对应的 my_dataset_table 中，如果在就不能添加，否则直接执行 insert sql
 ; 2、如果是在实时数据集是否需要 log
-(defn delete_run [^Ignite ignite ^Long group_id ^String sql]
-    (let [sql (str/lower-case sql)]
-        (if (= group_id 0)
-            ; 超级用户
-            (delete_run_super_admin ignite sql)
-            (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-                (if-not (empty? ds_obj)
-                    ; 如果是实时数据集
-                    (if (true? (nth (first ds_obj) 1))
-                        ; 在实时数据集
-                        (if-let [delete_obj (get_delete_obj ignite group_id sql)]
-                            (if (true? (.isDataSetEnabled (.configuration ignite)))
-                                (my-lexical/trans ignite (delete_run_log ignite delete_obj))
-                                (my-lexical/trans ignite (delete_run_no_log ignite delete_obj))))
-                        ; 在非实时树集
-                        (let [{table_name :table_name} (get_table_name (my-lexical/to-back sql)) delete_obj (get_delete_obj ignite group_id sql)]
-                            (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                                (throw (Exception. "表来至实时数据集不能在该表上执行删除操作！"))
-                                (my-lexical/trans ignite (delete_run_no_log ignite delete_obj))))
-                        )
-                    (throw (Exception. "用户不存在或者没有权限！")))
-                )))
+(defn delete_run [^Ignite ignite ^Long group_id lst-sql]
+    (if (= group_id 0)
+        ; 超级用户
+        (str/join " " lst-sql)
+        (if-let [delete_obj (get_delete_obj ignite group_id lst-sql)]
+            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (my-lexical/trans ignite (delete_run_log ignite delete_obj))
+                (my-lexical/trans ignite (delete_run_no_log ignite delete_obj)))))
     )
 
 

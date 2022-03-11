@@ -1,0 +1,24 @@
+(def sql  "insert INTO MY_META.my_users_group (id, group_name, user_token, group_type) values (1, 'myy', 'myy', 'all')")
+=> #'user/sql
+(my-insert/insert_run_super_admin ignite sql)
+
+
+(my-insert/get_insert_obj sql)
+(defn user_group_sql [^clojure.lang.PersistentArrayMap insert_obj]
+    (if-let [{table_name :table_name values :values} insert_obj]
+        (loop [[f & r] values sb_item (StringBuilder.) sb_vs (StringBuilder.)]
+            (if (some? f)
+                (if (contains? #{"group_name" "user_token" "data_set_id" "group_type"} (str/lower-case (-> f :item_name)))
+                    (recur r (doto sb_item (.append (format "%s," (-> f :item_name)))) (doto sb_vs (.append (format "%s," (-> f :item_value)))))
+                    (if (false? (my-lexical/is-eq? (-> f :item_name) "id"))
+                        (throw (Exception. (format "插入数据的列 %s 在 my_users_group 表中不存在！" (-> f :item_name))))
+                        (recur r sb_item sb_vs)))
+                (do
+                    (println (.toString sb_item))
+                    (println (.toString sb_vs))
+                    (println (type sb_vs))
+                    (format "insert into %s (%s id) values (%s ?)" table_name (.toString sb_item) (.toString sb_vs)))
+                )
+            )))
+
+(user_group_sql (my-insert/get_insert_obj sql))

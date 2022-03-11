@@ -672,8 +672,8 @@
         ))
 
 ; 获取 tran obj
-(defn tran_obj [^String sql]
-    (let [{name :name params :params trans :trans descrip :descrip is_batch :is_batch} (tran_segment (my-lexical/to-back sql))]
+(defn tran_obj [lst-sql]
+    (let [{name :name params :params trans :trans descrip :descrip is_batch :is_batch} (tran_segment lst-sql)]
         (try
             {:name (my-lexical/get_str_value (first name)) :params (to_params (get_params (get_contain params))) :trans trans :descrip descrip :is_batch is_batch}
             (catch Exception ex
@@ -681,8 +681,8 @@
         ))
 
 ; 获取 scenes obj
-(defn scenes_obj [^String sql]
-    (let [{name :name params :params sql :sql descrip :descrip is_batch :is_batch} (scenes_segment (my-lexical/to-back sql))]
+(defn scenes_obj [lst-sql]
+    (let [{name :name params :params sql :sql descrip :descrip is_batch :is_batch} (scenes_segment lst-sql)]
         (try
             {:name (my-lexical/get_str_value (first name)) :params (to_params (get_params (get_contain params))) :sql sql :descrip descrip :is_batch is_batch}
             (catch Exception ex
@@ -690,8 +690,8 @@
         ))
 
 ; 获取 cron obj
-(defn cron_obj [^String sql]
-    (let [{name :name params :params batch :batch descrip :descrip cron :cron} (cron_segment (my-lexical/to-back sql))]
+(defn cron_obj [lst-sql]
+    (let [{name :name params :params batch :batch descrip :descrip cron :cron} (cron_segment lst-sql)]
         (try
             {:name (my-lexical/get_str_value (first name)) :params (to_params (get_params (get_contain params))) :batch batch :descrip descrip :cron cron}
             (catch Exception ex
@@ -699,25 +699,25 @@
         ))
 
 ; 获取场景对象
-(defn my_scenes_obj [^String sql]
-    (if-let [s_obj (scenes_obj sql)]
+(defn my_scenes_obj [lst-sql]
+    (if-let [s_obj (scenes_obj lst-sql)]
         (if-not (empty? (-> s_obj :sql))
             {:scenes_type "scenes" :obj s_obj}
-            (if-let [t_obj (tran_obj sql)]
+            (if-let [t_obj (tran_obj lst-sql)]
                 (if-not (empty? (-> t_obj :trans))
                     {:scenes_type "tran" :obj t_obj}
-                    (if-let [c_obj (cron_obj sql)]
+                    (if-let [c_obj (cron_obj lst-sql)]
                         {:scenes_type "cron" :obj c_obj})
                     )
-                (if-let [c_obj (cron_obj sql)]
+                (if-let [c_obj (cron_obj lst-sql)]
                     {:scenes_type "cron" :obj c_obj})))
-        (if-let [t_obj (tran_obj sql)]
+        (if-let [t_obj (tran_obj lst-sql)]
             (if-not (empty? (-> t_obj :trans))
                 {:scenes_type "tran" :obj t_obj}
-                (if-let [c_obj (cron_obj sql)]
+                (if-let [c_obj (cron_obj lst-sql)]
                     {:scenes_type "cron" :obj c_obj})
                 )
-            (if-let [c_obj (cron_obj sql)]
+            (if-let [c_obj (cron_obj lst-sql)]
                 {:scenes_type "cron" :obj c_obj}))
         ))
 

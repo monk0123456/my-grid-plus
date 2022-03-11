@@ -299,28 +299,28 @@ CREATE TABLE IF NOT EXISTS my_delete_views (
 DROP TABLE IF EXISTS my_dataset;
 CREATE TABLE IF NOT EXISTS my_dataset (
                   id BIGINT,
-                  is_real BOOLEAN DEFAULT true,
                   dataset_name VARCHAR,
                   PRIMARY KEY (id)
                 ) WITH "template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+CREATE INDEX IF NOT EXISTS my_dataset_idx ON my_dataset (dataset_name);
 
-DROP TABLE IF EXISTS my_dataset_table;
-CREATE TABLE IF NOT EXISTS my_dataset_table (
-                  id BIGINT,
-                  table_name VARCHAR,
-                  to_real BOOLEAN DEFAULT true,
-                  dataset_id BIGINT,
-                  PRIMARY KEY (id, dataset_id)
-                ) WITH "template=MyMeta_template,cache_name=my_dataset_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
-
-
-DROP TABLE IF EXISTS my_dataset_real_table;
-CREATE TABLE IF NOT EXISTS my_dataset_real_table (
-                  id BIGINT,
-                  table_name VARCHAR,
-                  dataset_id BIGINT,
-                  PRIMARY KEY (id, dataset_id)
-                ) WITH "template=MyMeta_template,cache_name=my_dataset_real_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetRealTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+--DROP TABLE IF EXISTS my_dataset_table;
+--CREATE TABLE IF NOT EXISTS my_dataset_table (
+--                  id BIGINT,
+--                  table_name VARCHAR,
+--                  to_real BOOLEAN DEFAULT true,
+--                  dataset_id BIGINT,
+--                  PRIMARY KEY (id, dataset_id)
+--                ) WITH "template=MyMeta_template,cache_name=my_dataset_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+--
+--
+--DROP TABLE IF EXISTS my_dataset_real_table;
+--CREATE TABLE IF NOT EXISTS my_dataset_real_table (
+--                  id BIGINT,
+--                  table_name VARCHAR,
+--                  dataset_id BIGINT,
+--                  PRIMARY KEY (id, dataset_id)
+--                ) WITH "template=MyMeta_template,cache_name=my_dataset_real_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetRealTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
 
 
 /**
@@ -362,18 +362,18 @@ CREATE INDEX IF NOT EXISTS ddl_log_gp_ds_id_idx ON ddl_log (group_id, data_set_i
   数据集的 ddl log 即 data set 的 ddl
   更新数据集时，先执行 更新数据集、在更新表、在更新表中的数据
 */
-DROP TABLE IF EXISTS dataset_ddl_log;
-CREATE TABLE IF NOT EXISTS dataset_ddl_log (
-                  id BIGINT,
-                  data_set_name VARCHAR,
-                  ds_ddl_type VARCHAR,
-                  sql_code VARCHAR,
-                  create_date TIMESTAMP,
-                  PRIMARY KEY (id)
-                ) WITH "template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.DataSetDdlLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=dataset_ddl_log,cache_group=my_data";
-
-DROP INDEX IF EXISTS ds_ddl_log_idx;
-CREATE INDEX IF NOT EXISTS ds_ddl_log_idx ON dataset_ddl_log (data_set_name, create_date);
+--DROP TABLE IF EXISTS dataset_ddl_log;
+--CREATE TABLE IF NOT EXISTS dataset_ddl_log (
+--                  id BIGINT,
+--                  data_set_name VARCHAR,
+--                  ds_ddl_type VARCHAR,
+--                  sql_code VARCHAR,
+--                  create_date TIMESTAMP,
+--                  PRIMARY KEY (id)
+--                ) WITH "template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.DataSetDdlLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=dataset_ddl_log,cache_group=my_data";
+--
+--DROP INDEX IF EXISTS ds_ddl_log_idx;
+--CREATE INDEX IF NOT EXISTS ds_ddl_log_idx ON dataset_ddl_log (data_set_name, create_date);
 
 /**
 用户表 my_user

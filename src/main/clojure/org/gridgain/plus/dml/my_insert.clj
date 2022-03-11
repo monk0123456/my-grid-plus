@@ -98,24 +98,23 @@
 ;  :values ({:item_name "description", :item_value "'meiyy'"}
 ;           {:item_name "categoryname", :item_value "'wudafu'"}
 ;           {:item_name "categoryid", :item_value "12"})}
-(defn get_insert_obj [^String line]
-    (if-let [lst (my-lexical/to-back line)]
-        (letfn [(insert_obj [[f & r]]
-                    (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
-                        (if-let [items (get-insert-items (rest (rest r)))]
-                            (assoc (my-lexical/get-schema (str/lower-case (second r))) :values items)
-                            ;{:table_name (str/lower-case (second r)) :values items}
-                            (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))
-                            )
-                        ))]
-            (insert_obj lst))))
+(defn get_insert_obj [lst]
+    (letfn [(insert_obj [[f & r]]
+                (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
+                    (if-let [items (get-insert-items (rest (rest r)))]
+                        (assoc (my-lexical/get-schema (str/lower-case (second r))) :values items)
+                        ;{:table_name (str/lower-case (second r)) :values items}
+                        (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))
+                        )
+                    ))]
+        (insert_obj lst)))
 
 (defn get_insert_obj_fun [^String line ^clojure.lang.PersistentArrayMap dic_paras]
     (if-let [lst (my-lexical/to-back line)]
         (letfn [(insert_obj [[f & r]]
                     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
                         (if-let [items (get-insert-items (rest (rest r)))]
-                            {:table_name (str/lower-case (second r)) :values items}
+                            (assoc (my-lexical/get-schema (str/lower-case (second r))) :values items)
                             )
                         ))]
             (insert_obj lst))))
@@ -432,8 +431,8 @@
             )))
 
 ; 对于超级管理员执行 insert 语句
-(defn insert_run_super_admin [^Ignite ignite ^String sql]
-    (if-let [insert_obj (get_insert_obj sql)]
+(defn insert_run_super_admin [^Ignite ignite lst-sql]
+    (if-let [insert_obj (get_insert_obj lst-sql)]
         (if (contains? plus-init-sql/my-grid-tables-set (str/lower-case (-> insert_obj :table_name)))
             (insert_meta_table ignite insert_obj))
         ))
@@ -452,10 +451,10 @@
                 (recur r view_items)))))
 
 ; 执行需要保持 log 的 insert 语句
-(defn insert_run_log [^Ignite ignite ^Long group_id ^String sql]
-    (let [insert_obj (get_insert_obj sql)]
+(defn insert_run_log [^Ignite ignite ^Long group_id lst-sql]
+    (let [insert_obj (get_insert_obj lst-sql)]
         (if-not (my-lexical/is-eq? (-> insert_obj :schema_name) "my_meta")
-            (let [view_obj (get_view_obj ignite group_id sql)]
+            (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
                 (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
                     (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
                         (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
@@ -470,7 +469,7 @@
 (defn insert_run_log_fun [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
     (let [insert_obj (get_insert_obj_fun sql dic_paras)]
         (if-not (my-lexical/is-eq? (-> insert_obj :schema_name) "my_meta")
-            (let [view_obj (get_view_obj ignite group_id sql)]
+            (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
                 (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
                     (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
                         (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
@@ -482,26 +481,30 @@
         ))
 
 ; 执行不需要保持 log 的 insert 语句
-(defn insert_run_no_log [^Ignite ignite ^Long group_id ^String sql]
-    (let [insert_obj (get_insert_obj sql) view_obj (get_view_obj ignite group_id sql)]
-        (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-            (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
-                (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                    (insert_obj_to_db_no_log ignite group_id (-> insert_obj :table_name) pk_with_data)
+(defn insert_run_no_log [^Ignite ignite ^Long group_id lst-sql]
+    (let [insert_obj (get_insert_obj lst-sql)]
+        (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
+            (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
+                (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                    (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
+                        (insert_obj_to_db_no_log ignite group_id (-> insert_obj :table_name) pk_with_data)
+                        )
                     )
-                )
-            )))
+                ))
+        ))
 
 ; 执行不需要保持 log 的 insert 语句
-(defn insert_run_no_log_fun [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
-    (let [insert_obj (get_insert_obj sql) view_obj (get_view_obj ignite group_id sql)]
-        (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-            (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
-                (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                    (insert_obj_to_db_no_log_fun ignite group_id (-> insert_obj :table_name) pk_with_data dic_paras)
+(defn insert_run_no_log_fun [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap dic_paras]
+    (let [insert_obj (get_insert_obj lst-sql)]
+        (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
+            (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
+                (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                    (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
+                        (insert_obj_to_db_no_log_fun ignite group_id (-> insert_obj :table_name) pk_with_data dic_paras)
+                        )
                     )
-                )
-            )))
+                ))
+        ))
 
 ; 1、保存参数列表 MyInputParamEx
 ; 2、在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是  my-lexical/get_scenes_dic
@@ -509,22 +512,9 @@
 ; key 表示参数的名字，value 表示值和数据类型
 (defn get_insert_cache_tran [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-            (if-not (empty? ds_obj)
-                ; 如果是实时数据集
-                (if (true? (nth (first ds_obj) 1))
-                    ; 在实时数据集
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
-                        (insert_run_log_fun ignite group_id sql dic_paras)
-                        (insert_run_no_log_fun ignite group_id sql dic_paras)
-                        )
-                    ; 在非实时树集
-                    (let [{table_name :table_name} (get_insert_obj sql)]
-                        (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                            (throw (Exception. "表来至实时数据集不能在该表上执行插入操作！"))
-                            (insert_run_no_log_fun ignite group_id sql dic_paras)))
-                    )
-                (throw (Exception. "用户不存在或者没有权限！")))
+        (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (insert_run_log_fun ignite group_id sql dic_paras)
+            (insert_run_no_log_fun ignite group_id sql dic_paras)
             )))
 
 ; 1、保存参数列表 MyInputParamEx
@@ -533,56 +523,24 @@
 ; key 表示参数的名字，value 表示值和数据类型
 (defn get_insert_cache [^Ignite ignite ^Long group_id ^clojure.lang.PersistentArrayMap ast ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-            (if-not (empty? ds_obj)
-                ; 如果是实时数据集
-                (if (true? (nth (first ds_obj) 1))
-                    ; 在实时数据集
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
-                        (insert_obj_to_db_fun ignite group_id (-> ast :table_name) ast dic_paras)
-                        (insert_obj_to_db_no_log_fun ignite group_id (-> ast :table_name) ast dic_paras)
-                        ;(insert_run_log_fun ignite group_id sql dic_paras)
-                        ;(insert_run_no_log_fun ignite group_id sql dic_paras)
-                        )
-                    ; 在非实时数据集
-                    (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) (-> ast :table_name)))
-                        (throw (Exception. "表来至实时数据集不能在该表上执行插入操作！"))
-                        (insert_obj_to_db_no_log_fun ignite group_id (-> ast :table_name) ast dic_paras)
-                        ;(insert_run_no_log_fun ignite group_id sql dic_paras)
-                        )
-                    ;(let [{table_name :table_name} (get_insert_obj sql)]
-                    ;    (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                    ;        (throw (Exception. "表来至实时数据集不能在该表上执行插入操作！"))
-                    ;        (insert_run_no_log_fun ignite group_id sql dic_paras)))
-                    )
-                (throw (Exception. "用户不存在或者没有权限！")))
+        (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (insert_obj_to_db_fun ignite group_id (-> ast :table_name) ast dic_paras)
+            (insert_obj_to_db_no_log_fun ignite group_id (-> ast :table_name) ast dic_paras)
             )))
 
 ; 1、判断用户组在实时数据集，还是非实时数据
 ; 如果是非实时数据集,
 ; 获取表名后，查一下，表名是否在 对应的 my_dataset_table 中，如果在就不能添加，否则直接执行 insert sql
 ; 2、如果是在实时数据集是否需要 log
-(defn insert_run [^Ignite ignite ^Long group_id ^String sql]
+(defn insert_run [^Ignite ignite ^Long group_id lst-sql]
     (if (= group_id 0)
         ; 超级用户
-        (insert_run_super_admin ignite sql)
+        ;(insert_run_super_admin ignite sql)
+        (str/join " " lst-sql)
         ; 不是超级用户就要先看看这个用户组在哪个数据集下
-        (if-let [ds_obj (my-util/get_ds_by_group_id ignite group_id)]
-            (if-not (empty? ds_obj)
-                ; 如果是实时数据集
-                (if (true? (nth (first ds_obj) 1))
-                    ; 在实时数据集
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
-                        (my-lexical/trans ignite (insert_run_log ignite group_id sql))
-                        (my-lexical/trans ignite (insert_run_no_log ignite group_id sql)))
-                    ; 在非实时树集
-                    (let [{table_name :table_name} (get_insert_obj sql)]
-                        (if (true? (my-util/is_in_ds ignite (nth ds_obj 0) table_name))
-                            (throw (Exception. "表来至实时数据集不能在该表上执行插入操作！"))
-                            (my-lexical/trans ignite (insert_run_no_log ignite group_id sql))))
-                    )
-                (throw (Exception. "用户不存在或者没有权限！")))
-            ))
+        (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (my-lexical/trans ignite (insert_run_log ignite group_id lst-sql))
+            (my-lexical/trans ignite (insert_run_no_log ignite group_id lst-sql))))
     )
 
 ; 以下是保存到 cache 中的 scenes_name, ast, 参数列表

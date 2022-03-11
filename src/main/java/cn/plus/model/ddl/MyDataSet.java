@@ -7,16 +7,14 @@ public class MyDataSet implements Serializable {
 
     private Long id;
     private String dataset_name;
-    private Boolean is_real;
 
     public MyDataSet()
     {}
 
-    public MyDataSet(final Long id, final String dataset_name, final Boolean is_real)
+    public MyDataSet(final Long id, final String dataset_name)
     {
         this.id = id;
         this.dataset_name = dataset_name;
-        this.is_real = is_real;
     }
 
     public Long getId() {
@@ -35,11 +33,4 @@ public class MyDataSet implements Serializable {
         this.dataset_name = dataset_name;
     }
 
-    public Boolean getIs_real() {
-        return is_real;
-    }
-
-    public void setIs_real(Boolean is_real) {
-        this.is_real = is_real;
-    }
 }

@@ -5,7 +5,7 @@
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.ddl.my-create-table :as my-create-table]
-        [org.gridgain.plus.ddl.my-create-dataset :as my-create-dataset]
+        [org.gridgain.plus.ddl.my-create-dataset-0 :as my-create-dataset]
         [org.gridgain.plus.dml.my-expression :as my-expression]
         [org.gridgain.plus.context.my-context :as my-context]
         [clojure.core.reducers :as r]

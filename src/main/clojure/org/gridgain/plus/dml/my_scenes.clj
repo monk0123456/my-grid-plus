@@ -33,20 +33,20 @@
         ))
 
 ; 以下是保存到 cache 中的 scenes_name, ast, 参数列表
-(defn save_scenes [^Ignite ignite ^Long group_id ^String scenes_code]
-    (let [{scenes_type :scenes_type scenes_obj :obj} (my-scenes-util/my_scenes_obj scenes_code)]
+(defn save_scenes [^Ignite ignite ^Long group_id lst_scenes_code]
+    (let [{scenes_type :scenes_type scenes_obj :obj} (my-scenes-util/my_scenes_obj lst_scenes_code)]
         (cond (= scenes_type "scenes") (let [{scenes_name :name params :params sql :sql descrip :descrip is_batch :is_batch} scenes_obj]
-                                           (cond (my-lexical/is-eq? (first sql) "select") (my-select/save_scenes ignite group_id scenes_name scenes_code sql descrip params is_batch)
-                                                 (my-lexical/is-eq? (first sql) "insert") (my-insert/save_scenes ignite group_id scenes_name scenes_code sql descrip params is_batch)
-                                                 (my-lexical/is-eq? (first sql) "update") (my-update/save_scenes ignite group_id scenes_name scenes_code sql descrip params is_batch)
-                                                 (my-lexical/is-eq? (first sql) "delete") (my-delete/save_scenes ignite group_id scenes_name scenes_code sql descrip params is_batch)
+                                           (cond (my-lexical/is-eq? (first sql) "select") (my-select/save_scenes ignite group_id scenes_name lst_scenes_code sql descrip params is_batch)
+                                                 (my-lexical/is-eq? (first sql) "insert") (my-insert/save_scenes ignite group_id scenes_name lst_scenes_code sql descrip params is_batch)
+                                                 (my-lexical/is-eq? (first sql) "update") (my-update/save_scenes ignite group_id scenes_name lst_scenes_code sql descrip params is_batch)
+                                                 (my-lexical/is-eq? (first sql) "delete") (my-delete/save_scenes ignite group_id scenes_name lst_scenes_code sql descrip params is_batch)
                                                  )
                                            )
               (= scenes_type "tran") (let [{scenes_name :name params :params trans :trans descrip :descrip is_batch :is_batch} scenes_obj]
-                                           (let [m (MyScenesCache. group_id scenes_name scenes_code descrip is_batch params (my-trans/get_trans_to_json_lst trans) (ScenesType/TRAN))]
+                                           (let [m (MyScenesCache. group_id scenes_name lst_scenes_code descrip is_batch params (my-trans/get_trans_to_json_lst trans) (ScenesType/TRAN))]
                                                (.put (.cache ignite "my_scenes") (str/lower-case scenes_name) m)))
               (= scenes_type "cron") (let [{scenes_name :name params :params descrip :descrip is_batch :is_batch} scenes_obj]
-                                           (let [m (MyScenesCache. group_id scenes_name scenes_code descrip is_batch params (.addJob (.getMyCron (MyCronService/getInstance)) ignite group_id scenes_obj) (ScenesType/CRON))]
+                                           (let [m (MyScenesCache. group_id scenes_name lst_scenes_code descrip is_batch params (.addJob (.getMyCron (MyCronService/getInstance)) ignite group_id scenes_obj) (ScenesType/CRON))]
                                                (.put (.cache ignite "my_scenes") (str/lower-case scenes_name) m)))
               )))
 

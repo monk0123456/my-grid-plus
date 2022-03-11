@@ -1,0 +1,8 @@
+1、以超级管理员的 token 登录进去
+jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu
+
+2、添加 用户组 美羊羊(myy) 吴大富(wudafu) 吴大贵(wudagui)
+
+  insert into my_users_group (id, group_name, user_token, group_type) values (1, 'myy', 'myy', 'all');
+  insert into my_users_group (id, group_name, user_token, group_type) values (2, 'wudafu', 'wudafu', 'all');
+  insert into my_users_group (id, group_name, user_token, group_type) values (3, 'wudagui', 'wudagui', 'all');

@@ -680,11 +680,10 @@
             {:sql (str/join " " lst) :args (to-array lst_ps)})))
 
 ; sql to myAst
-(defn get_my_ast [ignite group_id sql]
-    (if-not (Strings/isNullOrEmpty sql)
-        (when-let [ast (sql-to-ast (my-lexical/to-back sql))]
-            (when-let [func_ast (find-table-func ignite ast)]
-                (get_query_table ignite group_id func_ast)))))
+(defn get_my_ast [ignite group_id lst-sql]
+    (when-let [ast (sql-to-ast lst-sql)]
+        (when-let [func_ast (find-table-func ignite ast)]
+            (get_query_table ignite group_id func_ast))))
 
 (defn get_my_ast_lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
     (if-not (empty? sql_lst)
@@ -707,10 +706,10 @@
         (throw (Exception. (format "查询字符串 %s 错误！" sql)))))
 
 ; 输入 sql 获取处理后的 sql
-(defn my_plus_sql [^Ignite ignite ^Long group_id ^String sql]
-    (if-let [ast (get_my_ast ignite group_id sql)]
+(defn my_plus_sql [^Ignite ignite ^Long group_id lst-sql]
+    (if-let [ast (get_my_ast ignite group_id lst-sql)]
         (ast_to_sql ignite group_id ast)
-        (throw (Exception. (format "查询字符串 %s 错误！" sql)))))
+        (throw (Exception. (format "查询字符串 %s 错误！" (str/join " " lst-sql))))))
 
 (defn my_plus_sql_lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
     (if-let [ast (get_my_ast_lst ignite group_id sql_lst)]

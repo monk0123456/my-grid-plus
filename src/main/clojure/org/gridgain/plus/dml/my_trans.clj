@@ -83,8 +83,8 @@
          lst)))
 
 ; trans to json
-(defn get_trans_to_json [^String sql]
-    (if-let [{init :init body :body} (get_segment (my-lexical/to-back sql))]
+(defn get_trans_to_json [lst-sql]
+    (if-let [{init :init body :body} (get_segment lst-sql)]
         {:vars (get_vars (get_segment_lst init)) :body (get_segment_lst body)}
         (throw (Exception. "事务语言错误！"))))
 
@@ -94,8 +94,8 @@
         (throw (Exception. "事务语言错误！"))))
 
 ; 执行
-(defn tran_run [^Ignite ignite ^Long group_id ^String sql]
-    (let [{vars :vars body :body} (get_trans_to_json (str/lower-case sql))]
+(defn tran_run [^Ignite ignite ^Long group_id lst-sql]
+    (let [{vars :vars body :body} (get_trans_to_json lst-sql)]
         (letfn [(get-var
                     ([^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector vars] (get-var ignite group_id vars {}))
                     ([^Ignite ignite ^Long group_id [f & r] dic_paras]
@@ -119,8 +119,8 @@
                 (throw (Exception. "该事务没有改变任何值，请确认写法正确！"))))))
 
 ; 执行
-(defn tran_run_fun [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap input_dic_paras]
-    (let [{vars :vars body :body} (get_trans_to_json (str/lower-case sql))]
+(defn tran_run_fun [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap input_dic_paras]
+    (let [{vars :vars body :body} (get_trans_to_json lst-sql)]
         (letfn [(get-var
                     ([^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector vars input_dic_paras] (get-var ignite group_id vars {} input_dic_paras))
                     ([^Ignite ignite ^Long group_id [f & r] dic_paras input_dic_paras]

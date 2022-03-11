@@ -29,15 +29,16 @@
     */
     CREATE TABLE IF NOT EXISTS my_dataset (
                     id BIGINT,
-                    is_real BOOLEAN DEFAULT true,
                     dataset_name VARCHAR,
                     PRIMARY KEY (id)
                     ) WITH \"template=MyMeta_template,cache_name=my_dataset,VALUE_TYPE=cn.plus.model.ddl.MyDataSet,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    CREATE INDEX IF NOT EXISTS my_dataset_idx ON my_dataset (dataset_name);
 
     /**
     3、批处理数据集中的表：my_dataset_table
     DROP TABLE IF EXISTS my_dataset_table;
     */
+    /*
     CREATE TABLE IF NOT EXISTS my_dataset_table (
                     id BIGINT,
                     table_name VARCHAR,
@@ -45,17 +46,20 @@
                     dataset_id BIGINT,
                     PRIMARY KEY (id, dataset_id)
                     ) WITH \"template=MyMeta_template,cache_name=my_dataset_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    */
 
     /**
     4、批处理数据集中的表：my_dataset_table
     DROP TABLE IF EXISTS my_dataset_real_table;
     */
+    /*
     CREATE TABLE IF NOT EXISTS my_dataset_real_table (
                     id BIGINT,
                     table_name VARCHAR,
                     dataset_id BIGINT,
                     PRIMARY KEY (id, dataset_id)
                     ) WITH \"template=MyMeta_template,cache_name=my_dataset_real_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetRealTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
+    */
 
     /**
     5、存储元表： my_meta_tables
@@ -373,8 +377,6 @@
 (def my-un-grid-tables
     ["DROP TABLE IF EXISTS my_users_group"
      "DROP TABLE IF EXISTS my_dataset"
-     "DROP TABLE IF EXISTS my_dataset_table"
-     "DROP TABLE IF EXISTS my_dataset_real_table"
      "DROP TABLE IF EXISTS my_meta_tables"
      "DROP TABLE IF EXISTS table_item"
      "DROP TABLE IF EXISTS table_index"
@@ -410,8 +412,6 @@
 
 (def my-grid-tables-set #{"my_users_group"
                           "my_dataset"
-                          "my_dataset_table"
-                          "my_dataset_real_table"
                           "my_meta_tables"
                           "table_item"
                           "table_index"

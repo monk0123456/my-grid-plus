@@ -46,6 +46,38 @@
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
 
+(defn get-lst-sql
+    ([^String sql] (get-lst-sql sql [] [] []))
+    ([[f & r] stack stack-lst lst]
+     (if (some? f)
+         (cond (and (= f \-) (= (first r) \-) (empty? stack)) (recur (rest r) (conj stack "单注释") (concat stack-lst [\- \-]) lst)
+               (and (= f \newline) (not (empty? stack))) (let [m (peek stack)]
+                                                             (if (= m "单注释")
+                                                                 (recur r (pop stack) (concat stack-lst [f]) lst)
+                                                                 (recur r stack (concat stack-lst [f]) lst)))
+               (and (= f \/) (= (first r) \*) (empty? stack)) (recur (rest r) (conj stack "双注释") (concat stack-lst [\/ \*]) lst)
+               (and (= f \*) (= (first r) \\) (not (empty? stack))) (let [m (peek stack)]
+                                                                        (if (= m "双注释")
+                                                                            (recur (rest r) (pop stack) (concat stack-lst [f]) lst)
+                                                                            (recur (rest r) stack (concat stack-lst [f]) lst)))
+               (and (= f \") (empty? stack)) (recur r (conj stack "双字符") (concat stack-lst [f]) lst)
+               (and (= f \") (not (empty? stack))) (let [m (peek stack)]
+                                                       (if (= m "双字符")
+                                                           (recur r (pop stack) (concat stack-lst [f]) lst)
+                                                           (recur r stack (concat stack-lst [f]) lst)))
+               (and (= f \') (empty? stack)) (recur r (conj stack "单字符") (concat stack-lst [f]) lst)
+               (and (= f \') (not (empty? stack))) (let [m (peek stack)]
+                                                       (if (= m "单字符")
+                                                           (recur r (pop stack) (concat stack-lst [f]) lst)
+                                                           (recur r stack (concat stack-lst [f]) lst)))
+               (and (= f \;) (empty? stack) (not (empty? stack-lst))) (recur r [] [] (conj lst (str/join stack-lst)))
+               :else
+               (recur r stack (concat stack-lst [f]) lst)
+               )
+         (if (empty? stack-lst)
+             lst
+             (conj lst (str/join stack-lst))))))
+
 ; 通过 userToken 获取 group_id
 (defn get_group_id [^Ignite ignite ^String userToken]
     ;(if (= userToken ))
@@ -76,83 +108,90 @@
             (recur (+ index 1) my-count (conj rs (nth lst index)))
             (my-lexical/get_str_value (str/join " " rs)))))
 
-; 输入 group_id, sql 转换为，可执行的 sql
+(defn super-sql-lst [^Ignite ignite ^Long group_id [sql & r]]
+    (if (some? sql)
+        (do
+            (let [lst (my-lexical/to-back (str/lower-case sql))]
+                ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
+                (cond (my-lexical/is-eq? (first lst) "insert") (let [rs (my-insert/insert_run ignite group_id lst)]
+                                                                   (if (nil? rs)
+                                                                       "select show_msg('true') as tip"
+                                                                       "select show_msg('false') as tip"))
+                      (my-lexical/is-eq? (first lst) "update") (let [rs (my-update/update_run ignite group_id lst)]
+                                                                   (if (nil? rs)
+                                                                       "select show_msg('true') as tip"
+                                                                       "select show_msg('false') as tip"))
+                      (my-lexical/is-eq? (first lst) "delete") (let [rs (my-delete/delete_run ignite group_id lst)]
+                                                                   (if (nil? rs)
+                                                                       "select show_msg('true') as tip"
+                                                                       "select show_msg('false') as tip"))
+                      (my-lexical/is-eq? (first lst) "select") (if (has-from? (rest lst))
+                                                                   (my-select/my_plus_sql ignite group_id lst)
+                                                                   sql)
+                      ; 执行事务
+                      (and (= (first lst) "{") (= (last lst) "}")) (my-trans/tran_run ignite group_id lst)
+
+                      ; 保存 scenes
+                      (is-scenes? lst) (my-scenes/save_scenes ignite group_id (get-scenes lst))
+
+                      ; ddl
+                      ; create dataset
+                      (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-create-dataset/create_data_set ignite group_id sql)]
+                                                                                                                    (if (nil? rs)
+                                                                                                                        "select show_msg('true') as tip"
+                                                                                                                        "select show_msg('false') as tip"))
+                      ; alert dataset
+                      ;(and (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-alter-dataset/alter_data_set ignite group_id sql)]
+                      ;                                                                                             (if (nil? rs)
+                      ;                                                                                                 "select show_msg('true') as tip"
+                      ;                                                                                                 "select show_msg('false') as tip"))
+                      ; drop dataset
+                      ;(and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop_data_set ignite group_id sql)]
+                      ;                                                                                            (if (nil? rs)
+                      ;                                                                                                "select show_msg('true') as tip"
+                      ;                                                                                                "select show_msg('false') as tip"))
+                      ; create table
+                      (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/create-table ignite group_id sql)]
+                                                                                                                  (if (nil? rs)
+                                                                                                                      "select show_msg('true') as tip"
+                                                                                                                      "select show_msg('false') as tip"))
+                      ; alter table
+                      (and (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-alter-table/my_alter_table ignite group_id sql)]
+                                                                                                                 (if (nil? rs)
+                                                                                                                     "select show_msg('true') as tip"
+                                                                                                                     "select show_msg('false') as tip"))
+                      ; drop table
+                      (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-drop-table/drop_table ignite group_id sql)]
+                                                                                                                (if (nil? rs)
+                                                                                                                    "select show_msg('true') as tip"
+                                                                                                                    "select show_msg('false') as tip"))
+                      ; create index
+                      (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-create-index/create_index ignite group_id sql)]
+                                                                                                                  (if (nil? rs)
+                                                                                                                      "select show_msg('true') as tip"
+                                                                                                                      "select show_msg('false') as tip"))
+                      ; drop index
+                      (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id sql)]
+                                                                                                                (if (nil? rs)
+                                                                                                                    "select show_msg('true') as tip"
+                                                                                                                    "select show_msg('false') as tip"))
+                      ; update dataset
+                      ;(and (my-lexical/is-eq? (first lst) "update") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-update-dataset/update_dataset ignite group_id sql)]
+                      ;                                                                                              (if (nil? rs)
+                      ;                                                                                                  "select show_msg('true') as tip"
+                      ;                                                                                                  "select show_msg('false') as tip"))
+                      ; no sql
+                      (and (contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst)))) (my-super-cache/my-no-lst ignite group_id lst sql)
+                      :else
+                      (throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
+                      ))
+            (recur ignite group_id r))))
+
 (defn super-sql [^Ignite ignite ^String userToken ^String sql]
     (if-not (Strings/isNullOrEmpty sql)
-        (let [lst (my-lexical/to-back sql) group_id (my_group_id ignite userToken)]
-            (.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
-            (cond (my-lexical/is-eq? (first lst) "insert") (let [rs (my-insert/insert_run ignite group_id sql)]
-                                                                   (if (nil? rs)
-                                                                       "select show_msg('true') as tip"
-                                                                       "select show_msg('false') as tip"))
-                  (my-lexical/is-eq? (first lst) "update") (let [rs (my-update/update_run ignite group_id sql)]
-                                                                   (if (nil? rs)
-                                                                       "select show_msg('true') as tip"
-                                                                       "select show_msg('false') as tip"))
-                  (my-lexical/is-eq? (first lst) "delete") (let [rs (my-delete/delete_run ignite group_id sql)]
-                                                                   (if (nil? rs)
-                                                                       "select show_msg('true') as tip"
-                                                                       "select show_msg('false') as tip"))
-                  (my-lexical/is-eq? (first lst) "select") (if (has-from? (rest lst))
-                                                                   (my-select/my_plus_sql ignite group_id sql)
-                                                                   sql)
-                  ; 执行事务
-                  (and (= (first lst) "{") (= (last lst) "}")) (my-trans/tran_run ignite group_id sql)
-
-                  ; 保存 scenes
-                  (is-scenes? lst) (my-scenes/save_scenes ignite group_id (get-scenes lst))
-
-                  ; ddl
-                  ; create dataset
-                  (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-create-dataset/create_data_set ignite group_id sql)]
-                                                                                                                (if (nil? rs)
-                                                                                                                    "select show_msg('true') as tip"
-                                                                                                                    "select show_msg('false') as tip"))
-                  ; alert dataset
-                  (and (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-alter-dataset/alter_data_set ignite group_id sql)]
-                                                                                                               (if (nil? rs)
-                                                                                                                   "select show_msg('true') as tip"
-                                                                                                                   "select show_msg('false') as tip"))
-                  ; drop dataset
-                  (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-drop-dataset/drop_data_set ignite group_id sql)]
-                                                                                                              (if (nil? rs)
-                                                                                                                  "select show_msg('true') as tip"
-                                                                                                                  "select show_msg('false') as tip"))
-                  ; create table
-                  (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-create-table/create-table ignite group_id sql)]
-                                                                                                              (if (nil? rs)
-                                                                                                                  "select show_msg('true') as tip"
-                                                                                                                  "select show_msg('false') as tip"))
-                  ; alter table
-                  (and (my-lexical/is-eq? (first lst) "ALTER") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-alter-table/my_alter_table ignite group_id sql)]
-                                                                                                             (if (nil? rs)
-                                                                                                                 "select show_msg('true') as tip"
-                                                                                                                 "select show_msg('false') as tip"))
-                  ; drop table
-                  (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "table")) (let [rs (my-drop-table/drop_table ignite group_id sql)]
-                                                                                                            (if (nil? rs)
-                                                                                                                "select show_msg('true') as tip"
-                                                                                                                "select show_msg('false') as tip"))
-                  ; create index
-                  (and (my-lexical/is-eq? (first lst) "create") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-create-index/create_index ignite group_id sql)]
-                                                                                                              (if (nil? rs)
-                                                                                                                  "select show_msg('true') as tip"
-                                                                                                                  "select show_msg('false') as tip"))
-                  ; drop index
-                  (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id sql)]
-                                                                                                            (if (nil? rs)
-                                                                                                                "select show_msg('true') as tip"
-                                                                                                                "select show_msg('false') as tip"))
-                  ; create table
-                  (and (my-lexical/is-eq? (first lst) "update") (my-lexical/is-eq? (second lst) "dataset")) (let [rs (my-update-dataset/update_dataset ignite group_id sql)]
-                                                                                                                (if (nil? rs)
-                                                                                                                    "select show_msg('true') as tip"
-                                                                                                                    "select show_msg('false') as tip"))
-                  ; no sql
-                  (and (contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst)))) (my-super-cache/my-no-lst ignite group_id lst sql)
-                  :else
-                  (throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
-                  ))))
+        (let [lst (get-lst-sql sql) group_id (my_group_id ignite userToken)]
+            ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
+            (super-sql-lst ignite group_id lst))))
 
 (defn -superSql [^Ignite ignite ^Object userToken ^Object sql]
     (if (some? userToken)
