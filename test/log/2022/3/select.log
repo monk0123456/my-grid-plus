@@ -26,11 +26,24 @@ public 公有：Customers:客户表
 
 (.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. "select * from my_meta.MY_CACHE")))
 
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "select * from MY_META.my_users_group")))
 
 
 
+(def line "-- 添加美羊羊 ; 用户组\ninsert INTO MY_META.my_users_group (id, group_name, user_token, group_type) values (1, 'myy', 'myy', 'all');")
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. line)))
 
+(def line "-- 添加吴大富(wudafu) 用户组\ninsert into my_meta.my_users_group (id, group_name, user_token, group_type) values (2, 'wudafu', 'wudafu', 'all');")
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. line)))
 
+(def line "-- 添加吴大富(wudafu) 用户组\ninsert into my_meta.my_users_group (id, group_name, user_token, group_type) values (3, 'wudagui', 'wudagui', 'all');")
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. line)))
+
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "select * from MY_META.my_users_group")))
+(.toString (first (first (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "delete from MY_META.my_users_group where id > 0"))))))
+(.toString (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "delete from MY_META.my_users_group where id > 0"))))
+
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "update MY_META.my_users_group set group_name = 'wuxiaohua' where id =2")))
 
 
 

@@ -7,7 +7,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgnitionEx;
-import org.gridgain.plus.dml.MyUpdate;
 import org.junit.Test;
 import org.tools.KvSql;
 import org.tools.MyConvertUtil;

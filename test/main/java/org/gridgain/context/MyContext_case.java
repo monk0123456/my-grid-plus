@@ -4,7 +4,6 @@ import clojure.lang.PersistentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
-import org.gridgain.plus.init.PlusInit;
 import org.junit.Test;
 
 public class MyContext_case {

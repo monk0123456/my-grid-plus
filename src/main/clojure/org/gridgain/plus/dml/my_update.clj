@@ -452,10 +452,10 @@
 ; 如果是非实时数据集,
 ; 获取表名后，查一下，表名是否在 对应的 my_dataset_table 中，如果在就不能添加，否则直接执行 insert sql
 ; 2、如果是在实时数据集是否需要 log
-(defn update_run [^Ignite ignite ^Long group_id lst-sql]
+(defn update_run [^Ignite ignite ^Long group_id lst-sql sql]
     (if (= group_id 0)
         ; 超级用户
-        (str/join " " lst-sql)
+        (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))
         (if (true? (.isDataSetEnabled (.configuration ignite)))
             (my-lexical/trans ignite (update_run_log ignite group_id lst-sql))
             (my-lexical/trans ignite (update_run_no_log ignite group_id lst-sql)))

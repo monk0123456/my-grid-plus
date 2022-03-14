@@ -6,8 +6,6 @@ import clojure.lang.PersistentArrayMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
-import org.gridgain.plus.dml.MyInsert;
-//import org.gridgain.plus.dml.my_insert.insert_kv;
 import org.junit.Test;
 
 public class MyInsert_case {

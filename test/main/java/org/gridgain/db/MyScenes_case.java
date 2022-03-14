@@ -7,7 +7,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
-import org.gridgain.plus.init.PlusInit;
 import org.junit.Test;
 import org.tools.MyTools;
 
