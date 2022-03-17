@@ -32,4 +32,12 @@ public class MyDatasetTablePK implements Serializable {
     public void setDataset_id(Long dataset_id) {
         this.dataset_id = dataset_id;
     }
+
+    @Override
+    public String toString() {
+        return "MyDatasetTablePK{" +
+                "id=" + id +
+                ", dataset_id=" + dataset_id +
+                '}';
+    }
 }

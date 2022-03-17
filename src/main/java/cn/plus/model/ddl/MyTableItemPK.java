@@ -32,4 +32,12 @@ public class MyTableItemPK implements Serializable {
     public void setTable_id(Long table_id) {
         this.table_id = table_id;
     }
+
+    @Override
+    public String toString() {
+        return "MyTableItemPK{" +
+                "id=" + id +
+                ", table_id=" + table_id +
+                '}';
+    }
 }

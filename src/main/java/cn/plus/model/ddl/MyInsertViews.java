@@ -66,6 +66,17 @@ public class MyInsertViews implements Serializable {
     public void setCode(String code) {
         this.code = code;
     }
+
+    @Override
+    public String toString() {
+        return "MyInsertViews{" +
+                "id=" + id +
+                ", view_name='" + view_name + '\'' +
+                ", table_name='" + table_name + '\'' +
+                ", data_set_id=" + data_set_id +
+                ", code='" + code + '\'' +
+                '}';
+    }
 }
 
 

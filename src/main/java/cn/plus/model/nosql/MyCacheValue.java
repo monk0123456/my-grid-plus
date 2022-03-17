@@ -32,4 +32,12 @@ public class MyCacheValue implements Serializable {
     public void setData_regin(String data_regin) {
         this.data_regin = data_regin;
     }
+
+    @Override
+    public String toString() {
+        return "MyCacheValue{" +
+                "sql_line='" + sql_line + '\'' +
+                ", data_regin='" + data_regin + '\'' +
+                '}';
+    }
 }

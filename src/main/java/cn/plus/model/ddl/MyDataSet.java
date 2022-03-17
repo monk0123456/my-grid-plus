@@ -33,4 +33,11 @@ public class MyDataSet implements Serializable {
         this.dataset_name = dataset_name;
     }
 
+    @Override
+    public String toString() {
+        return "MyDataSet{" +
+                "id=" + id +
+                ", dataset_name='" + dataset_name + '\'' +
+                '}';
+    }
 }

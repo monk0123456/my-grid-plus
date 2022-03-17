@@ -90,12 +90,12 @@
             (if (some? create_index_line)
                 (let [index_name (re-find #"^(?i)\w+\sON\s" last_line) last_line_1 (str/replace last_line #"^(?i)\w+\sON\s" "")]
                     (if (some? index_name)
-                        (let [table_name (re-find #"^(?i)\w+\s" last_line_1) last_line_2 (str/replace last_line_1 #"^(?i)\w+\s" "")]
+                        (let [table_name (re-find #"^(?i)\w+\.\w+\s|^(?i)\w+\s" last_line_1) last_line_2 (str/replace last_line_1 #"^(?i)\w+\.\w+\s|^(?i)\w+\s" "")]
                             (if (some? table_name)
                                 (let [index_items (re-find #"(?i)(?<=^\()[\s\S]*(?=\))" last_line_2) last_line_3 (str/replace last_line_2 #"(?i)(?<=^\()[\s\S]*(?=\))" "") {schema_name :schema_name table_name :table_name} (my-lexical/get-schema (str/trim (str/lower-case table_name)))]
                                     (if (some? index_name)
                                         {:create_index (index_map (str/trim create_index_line))
-                                         :index_name (str schema_name "." (str/replace index_name #"(?i)\sON\s$" ""))
+                                         :index_name (str/replace index_name #"(?i)\sON\s$" "")
                                          :schema_name schema_name
                                          :table_name table_name :index_items_obj (get_index_obj (str/trim index_items))
                                          :inline_size (get_inline_size last_line_3)}
@@ -126,7 +126,7 @@
                         (doto sb_items (.append ",")))
                     (recur r))))
         (.toString (doto sb
-                       (.append (-> (-> index_obj :create_index) :create_index_line))
+                       (.append (-> index_obj :create_index :create_index_line))
                        (.append " ")
                        (.append (-> index_obj :index_name))
                        (.append " ON ")
@@ -154,7 +154,7 @@
                         (doto sb_items (.append ",")))
                     (recur r))))
         (.toString (doto sb
-                       (.append (-> (-> index_obj :create_index) :create_index_line))
+                       (.append (-> index_obj :create_index :create_index_line))
                        (.append " ")
                        (.append (format "%s_%s" data_set_name (-> index_obj :index_name)))
                        (.append " ON ")
@@ -190,7 +190,7 @@
 ; 获取 mycacheex
 (defn myIndexToMyCacheEx [^Ignite ignite index_obj ^Long data_set_id]
     (let [id (.incrementAndGet (.atomicSequence ignite "table_index" 0 true)) {table_name :table_name index_name :index_name index_items_obj :index_items_obj} index_obj]
-        (if-let [table_ids (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = ? and m.table_name = ?") (to-array [data_set_id table_name])))))]
+        (if-let [table_ids (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = ? and m.table_name = ?") (to-array [data_set_id (str/lower-case table_name)])))))]
             (if (> (count table_ids) 0)
                 (if-let [lst_items (getMyTableIndexItemCache ignite id index_items_obj)]
                     (if (> (count lst_items) 0)
@@ -211,24 +211,29 @@
 ;    (if-let [m (get_ddl_obj ignite sql_line)]
 ;        (MyDdlUtil/runDdl ignite m)))
 
-(defn get_sql_line_all
-    ([^Ignite ignite ^clojure.lang.PersistentArrayMap m]
-     (if-let [lst_ds (my-lexical/get_all_ds ignite (-> m :table_name))]
-         (get_sql_line_all lst_ds m [(get_sql_line m)])
-         [(get_sql_line m)]))
-    ([[f & r] m lst]
-     (if (some? f)
-         (recur r m (conj lst (get_sql_line_ds m f)))
-         lst)))
+;(defn get_sql_line_all
+;    ([^Ignite ignite ^clojure.lang.PersistentArrayMap m]
+;     (if-let [lst_ds (my-lexical/get_all_ds ignite (-> m :table_name))]
+;         (get_sql_line_all lst_ds m [(get_sql_line m)])
+;         [(get_sql_line m)]))
+;    ([[f & r] m lst]
+;     (if (some? f)
+;         (recur r m (conj lst (get_sql_line_ds m f)))
+;         lst)))
+(defn get_sql_line_all [^Ignite ignite ^clojure.lang.PersistentArrayMap m]
+    ())
 
-(defn get_un_sql_line_all
-    ([^Ignite ignite ^clojure.lang.PersistentArrayMap m]
-     (if-let [lst_ds (my-lexical/get_all_ds ignite (-> m :table_name))]
-         (get_un_sql_line_all lst_ds m [(get_un_sql_line m)])))
-    ([[f & r] m lst]
-     (if (some? f)
-         (recur r m (conj lst (get_un_sql_line_ds m f)))
-         lst)))
+;(defn get_un_sql_line_all
+;    ([^Ignite ignite ^clojure.lang.PersistentArrayMap m]
+;     (if-let [lst_ds (my-lexical/get_all_ds ignite (-> m :table_name))]
+;         (get_un_sql_line_all lst_ds m [(get_un_sql_line m)])))
+;    ([[f & r] m lst]
+;     (if (some? f)
+;         (recur r m (conj lst (get_un_sql_line_ds m f)))
+;         lst)))
+
+(defn get_un_sql_line_all [^Ignite ignite ^clojure.lang.PersistentArrayMap m]
+    ())
 
 ; 实时数据集
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
@@ -255,27 +260,13 @@
         (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
 ; 新增 index
-(defn create_index [^Ignite ignite ^Long group_id ^String sql_line]
+(defn create_index [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= group_id 0)
             (run_ddl_real_time ignite sql_code 0 group_id)
-            (if-let [my_group (.get (.cache ignite "my_users_group") group_id)]
-                (let [group_type (.getGroup_type my_group) dataset (.get (.cache ignite "my_dataset") (.getData_set_id my_group))]
-                    (if (contains? #{"ALL" "DDL"} group_type)
-                        (if (true? (.getIs_real dataset))
-                            (run_ddl_real_time ignite sql_code (.getId dataset) group_id)
-                            (if-let [m (get_create_index_obj sql_code)]
-                                (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
-                                    (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
-                                        (if (> (first tables) 0)
-                                            (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
-                                            (run_ddl ignite sql_code (.getId dataset) sql_line)
-                                            ))
-                                    (throw (Exception. "没有执行语句的权限！")))
-                                (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
-                        (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))
-                (throw (Exception. "不存在该用户组！"))
-                )
+            (if (contains? #{"ALL" "DDL"} group_type)
+                (run_ddl_real_time ignite sql_code dataset_id group_id)
+                (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))
             )))
 
 

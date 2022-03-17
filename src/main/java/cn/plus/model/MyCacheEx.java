@@ -22,4 +22,14 @@ public class MyCacheEx extends MyCache {
     public void setSqlType(SqlType sqlType) {
         this.sqlType = sqlType;
     }
+
+    @Override
+    public String toString() {
+        return "MyCacheEx{" +
+                "sqlType=" + sqlType +
+                ", cache=" + getCache() +
+                ", key=" + getKey() +
+                ", value=" + getValue() +
+                '}';
+    }
 }

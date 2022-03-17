@@ -65,6 +65,17 @@ public class MySelectViews implements Serializable {
     public void setCode(String code) {
         this.code = code;
     }
+
+    @Override
+    public String toString() {
+        return "MySelectViews{" +
+                "id=" + id +
+                ", view_name='" + view_name + '\'' +
+                ", table_name='" + table_name + '\'' +
+                ", data_set_id=" + data_set_id +
+                ", code='" + code + '\'' +
+                '}';
+    }
 }
 
 

@@ -10,5 +10,4 @@ public class MScenesTrans implements Serializable {
     private String param_name;
     private String param_type;
 
-
 }

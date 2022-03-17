@@ -62,4 +62,15 @@ public class MyFunc implements Serializable {
     public void setDescrip(String descrip) {
         this.descrip = descrip;
     }
+
+    @Override
+    public String toString() {
+        return "MyFunc{" +
+                "method_name='" + method_name + '\'' +
+                ", java_method_name='" + java_method_name + '\'' +
+                ", cls_name='" + cls_name + '\'' +
+                ", return_type='" + return_type + '\'' +
+                ", descrip='" + descrip + '\'' +
+                '}';
+    }
 }

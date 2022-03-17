@@ -32,4 +32,12 @@ public class MyScenesParamsPk implements Serializable {
     public void setPs_index(Integer ps_index) {
         this.ps_index = ps_index;
     }
+
+    @Override
+    public String toString() {
+        return "MyScenesParamsPk{" +
+                "scenes_name='" + scenes_name + '\'' +
+                ", ps_index=" + ps_index +
+                '}';
+    }
 }

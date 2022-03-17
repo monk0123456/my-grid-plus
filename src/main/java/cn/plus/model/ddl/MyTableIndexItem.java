@@ -56,4 +56,13 @@ public class MyTableIndexItem implements Serializable {
         this.index_no = index_no;
     }
 
+    @Override
+    public String toString() {
+        return "MyTableIndexItem{" +
+                "id=" + id +
+                ", index_item='" + index_item + '\'' +
+                ", sort_order='" + sort_order + '\'' +
+                ", index_no=" + index_no +
+                '}';
+    }
 }

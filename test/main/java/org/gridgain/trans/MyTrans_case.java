@@ -20,6 +20,26 @@ import java.util.ArrayList;
 public class MyTrans_case {
 
     @Test
+    public void lst_case()
+    {
+        ArrayList<String> lst = new ArrayList<>();
+        ArrayList<String> lst1 = new ArrayList<>();
+
+        lst.add("a");
+        lst.add("b");
+
+        lst1.add("c");
+        lst1.add("d");
+
+        lst.addAll(lst1);
+
+        for (String s : lst)
+        {
+            System.out.println(s);
+        }
+    }
+
+    @Test
     public void trans_case() throws IgniteCheckedException {
         String springCfgPath = "/Users/chenfei/Documents/Java/MyGridGain/my-grid-plus/resources/default-config.xml";
         Ignite ignite = IgnitionEx.start(springCfgPath);

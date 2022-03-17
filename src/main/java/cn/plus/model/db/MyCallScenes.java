@@ -56,6 +56,16 @@ public class MyCallScenes implements Serializable {
     public void setScenes_name(String scenes_name) {
         this.scenes_name = scenes_name;
     }
+
+    @Override
+    public String toString() {
+        return "MyCallScenes{" +
+                "id=" + id +
+                ", group_id=" + group_id +
+                ", to_group_id=" + to_group_id +
+                ", scenes_name='" + scenes_name + '\'' +
+                '}';
+    }
 }
 
 

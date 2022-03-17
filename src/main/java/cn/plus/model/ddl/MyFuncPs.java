@@ -42,4 +42,13 @@ public class MyFuncPs implements Serializable {
     public void setPs_type(String ps_type) {
         this.ps_type = ps_type;
     }
+
+    @Override
+    public String toString() {
+        return "MyFuncPs{" +
+                "method_name='" + method_name + '\'' +
+                ", ps_index=" + ps_index +
+                ", ps_type='" + ps_type + '\'' +
+                '}';
+    }
 }

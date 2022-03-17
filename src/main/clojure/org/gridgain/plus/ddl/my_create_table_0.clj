@@ -1,4 +1,4 @@
-(ns org.gridgain.plus.ddl.my-create-table
+(ns org.gridgain.plus.ddl.my-create-table-0
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select]
@@ -20,11 +20,11 @@
              )
     (:gen-class
         ; 生成 class 的类名
-        :name org.gridgain.plus.dml.MyCreateTable
+        :name org.gridgain.plus.dml.MyCreateTable_0
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [plus_create_table [org.apache.ignite.Ignite Long String String Long String String] void]]
+        :methods [^:static [plus_create_table [org.apache.ignite.Ignite Long String String String] void]]
         ))
 
 (defn get_tmp_item [^String item_line]
@@ -233,26 +233,20 @@
          lst)))
 
 (defn get_pk_index_ds
-    ([pk_sets ^String schema_name ^String table_name ^String data_set_name] (if-let [lst_rs (get_pk_index_ds pk_sets schema_name table_name [] data_set_name)]
+    ([pk_sets ^String table_name ^String data_set_name] (if-let [lst_rs (get_pk_index_ds pk_sets table_name [] data_set_name)]
                                                       (if-let [{name :name value :value} (get_pk_name_vs pk_sets)]
-                                                          (cond (and (= schema_name "") (not (= data_set_name ""))) (conj lst_rs {:sql (format "CREATE INDEX IF NOT EXISTS %s_%s_%s_idx ON %s.%s (%s)" data_set_name table_name name data_set_name table_name (str/lower-case value)) :un_sql (format "DROP INDEX IF EXISTS %s_%s_%s_idx" data_set_name table_name name) :is_success nil})
-                                                                (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) (conj lst_rs {:sql (format "CREATE INDEX IF NOT EXISTS %s_%s_%s_idx ON %s.%s (%s)" schema_name table_name name schema_name table_name (str/lower-case value)) :un_sql (format "DROP INDEX IF EXISTS %s_%s_%s_idx" schema_name table_name name) :is_success nil})
-                                                                :else
-                                                                (throw (Exception. "没有创建表语句的权限！"))
-                                                                )
+                                                          (conj lst_rs {:sql (format "CREATE INDEX IF NOT EXISTS %s_%s_%s_idx ON %s_%s (%s)" data_set_name table_name name data_set_name table_name (str/lower-case value)) :un_sql (format "DROP INDEX IF EXISTS %s_%s_%s_idx" data_set_name table_name name) :is_success nil})
                                                           (throw (Exception. "创建表的语句错误！")))
                                                       (throw (Exception. "创建表的语句错误！"))))
-    ([[f & r] ^String schema_name ^String table_name lst ^String data_set_name]
+    ([[f & r] ^String table_name lst ^String data_set_name]
      (if (some? f)
-         (cond (and (= schema_name "") (not (= data_set_name ""))) (recur r schema_name table_name (conj lst {:sql (format "CREATE INDEX IF NOT EXISTS %s_%s_%s_idx ON %s.%s (%s)" data_set_name table_name f data_set_name table_name (str/lower-case f)) :un_sql (format "DROP INDEX IF EXISTS %s_%s_%s_idx" data_set_name table_name f) :is_success nil}) data_set_name)
-               (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) (recur r schema_name table_name (conj lst {:sql (format "CREATE INDEX IF NOT EXISTS %s_%s_%s_idx ON %s.%s (%s)" schema_name table_name f schema_name table_name (str/lower-case f)) :un_sql (format "DROP INDEX IF EXISTS %s_%s_%s_idx" schema_name table_name f) :is_success nil}) data_set_name)
-               :else
-               (throw (Exception. "没有创建表语句的权限！"))
-               )
+         (recur r table_name (conj lst {:sql (format "CREATE INDEX IF NOT EXISTS %s_%s_%s_idx ON %s_%s (%s)" data_set_name table_name f data_set_name table_name (str/lower-case f)) :un_sql (format "DROP INDEX IF EXISTS %s_%s_%s_idx" data_set_name table_name f) :is_success nil}) data_set_name)
          lst)))
 
-(defn get_pk_index [pk_sets ^String schema_name ^String table_name ^String data_set_name]
-    (get_pk_index_ds pk_sets schema_name table_name data_set_name))
+(defn get_pk_index [pk_sets ^String table_name ^String data_set_name]
+    (if (not (Strings/isNullOrEmpty data_set_name))
+        (get_pk_index_ds pk_sets table_name data_set_name)
+        (get_pk_index_no_ds pk_sets table_name)))
 
 (defn table_items
     ([lst_table_item] (table_items lst_table_item []))
@@ -264,11 +258,11 @@
          lst)))
 
 (defn get_obj_ds
-    ([items ^String schema_name ^String table_name ^String data_set_name] (if-let [{lst_table_item :lst_table_item code_sb :code_sb pk_sets :pk_sets} (get_obj_ds items (ArrayList.) (StringBuilder.) #{} data_set_name)]
+    ([items ^String table_name data_set_name] (if-let [{lst_table_item :lst_table_item code_sb :code_sb pk_sets :pk_sets} (get_obj_ds items (ArrayList.) (StringBuilder.) #{} data_set_name)]
                                                   (cond (= (count pk_sets) 1) {:lst_table_item (set_pk_set lst_table_item pk_sets) :code_sb (format "%s PRIMARY KEY (%s)" (.toString code_sb) (nth pk_sets 0))}
                                                         (> (count pk_sets) 1) (if-let [pk_set (set_pk_set lst_table_item pk_sets)]
                                                                                   {:lst_table_item pk_set :code_sb (format "%s %s PRIMARY KEY (%s)" (.toString code_sb) (new_pk pk_sets pk_set (StringBuilder.)) (pk_line pk_sets))
-                                                                                   :indexs (get_pk_index pk_sets schema_name table_name data_set_name)}
+                                                                                   :indexs (get_pk_index pk_sets table_name data_set_name)}
                                                                                   (throw (Exception. "主键设置错误！")))
                                                         :else
                                                         (throw (Exception. "主键设置错误！"))
@@ -284,29 +278,31 @@
              (throw (Exception. "创建表的语句错误！")))
          {:lst_table_item (table_items lst) :code_sb sb :pk_sets pk_sets})))
 
-;(defn get_obj_no_ds
-;    ([items ^String table_name] (if-let [{lst_table_item :lst_table_item code_sb :code_sb pk_sets :pk_sets} (get_obj_no_ds items (ArrayList.) (StringBuilder.) #{})]
-;                                                    (cond (= (count pk_sets) 1) {:lst_table_item (set_pk_set lst_table_item pk_sets) :code_sb (format "%s PRIMARY KEY (%s)" (.toString code_sb) (nth pk_sets 0))}
-;                                                          (> (count pk_sets) 1) (if-let [pk_set (set_pk_set lst_table_item pk_sets)]
-;                                                                                    {:lst_table_item pk_set :code_sb (format "%s %s PRIMARY KEY (%s)" (.toString code_sb) (new_pk pk_sets pk_set (StringBuilder.)) (pk_line pk_sets))
-;                                                                                     :indexs (get_pk_index pk_sets table_name nil)}
-;                                                                                    (throw (Exception. "主键设置错误！")))
-;                                                          :else
-;                                                          (throw (Exception. "主键设置错误！"))
-;                                                          )
-;                                                    (throw (Exception. "创建表的语句错误！"))))
-;    ([[f & r] ^ArrayList lst ^StringBuilder sb pk_sets]
-;     (if (some? f)
-;         (if-let [{table_item :table_item code_line :code pk :pk} (to_item f)]
-;             (do (.add lst table_item)
-;                 (if (not (nil? (last (.trim (.toString code_line)))))
-;                     (.append sb (.concat (.trim (.toString code_line)) ",")))
-;                 (recur r lst sb (concat pk_sets pk)))
-;             (throw (Exception. "创建表的语句错误！")))
-;         {:lst_table_item (table_items lst) :code_sb sb :pk_sets pk_sets})))
+(defn get_obj_no_ds
+    ([items ^String table_name] (if-let [{lst_table_item :lst_table_item code_sb :code_sb pk_sets :pk_sets} (get_obj_no_ds items (ArrayList.) (StringBuilder.) #{})]
+                                                    (cond (= (count pk_sets) 1) {:lst_table_item (set_pk_set lst_table_item pk_sets) :code_sb (format "%s PRIMARY KEY (%s)" (.toString code_sb) (nth pk_sets 0))}
+                                                          (> (count pk_sets) 1) (if-let [pk_set (set_pk_set lst_table_item pk_sets)]
+                                                                                    {:lst_table_item pk_set :code_sb (format "%s %s PRIMARY KEY (%s)" (.toString code_sb) (new_pk pk_sets pk_set (StringBuilder.)) (pk_line pk_sets))
+                                                                                     :indexs (get_pk_index pk_sets table_name nil)}
+                                                                                    (throw (Exception. "主键设置错误！")))
+                                                          :else
+                                                          (throw (Exception. "主键设置错误！"))
+                                                          )
+                                                    (throw (Exception. "创建表的语句错误！"))))
+    ([[f & r] ^ArrayList lst ^StringBuilder sb pk_sets]
+     (if (some? f)
+         (if-let [{table_item :table_item code_line :code pk :pk} (to_item f)]
+             (do (.add lst table_item)
+                 (if (not (nil? (last (.trim (.toString code_line)))))
+                     (.append sb (.concat (.trim (.toString code_line)) ",")))
+                 (recur r lst sb (concat pk_sets pk)))
+             (throw (Exception. "创建表的语句错误！")))
+         {:lst_table_item (table_items lst) :code_sb sb :pk_sets pk_sets})))
 
-(defn get_obj [items ^String schema_name ^String table_name ^String data_set_name]
-    (get_obj_ds items schema_name table_name data_set_name))
+(defn get_obj [items ^String table_name data_set_name]
+    (if (and (some? data_set_name) (not (Strings/isNullOrEmpty (first (first data_set_name)))))
+        (get_obj_ds items table_name (first (first data_set_name)))
+        (get_obj_no_ds items table_name)))
 
 ; items: "( CategoryID INTEGER NOT NULL auto comment ( '产品类型ID' ) , CategoryName VARCHAR ( 15 ) NOT NULL comment ( '产品类型名' ) , Description VARCHAR comment ( '类型说明' ) , Picture VARCHAR comment ( '产品样本' ) , PRIMARY KEY ( CategoryID )"
 ; items: "( id int PRIMARY KEY , city_id int , name varchar , age int , company varchar"
@@ -318,13 +314,10 @@
     (when-let [my_items (items_obj (get_items (drop-last 1 (rest items-lst))))]
         my_items))
 
-(defn get_template [^Ignite ignite ^String table_name ^String schema_name ^String data_set_name ^String template]
-    (cond (and (= schema_name "") (not (= data_set_name ""))) (format "%scache_name=f_%s_%s\"" (get_tmp_line ignite template) data_set_name table_name)
-          (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) (format "%scache_name=f_%s_%s\"" (get_tmp_line ignite template) schema_name table_name)
-          :else
-          (throw (Exception. "没有创建表语句的权限！"))
-          )
-    )
+(defn get_template [^Ignite ignite ^String table_name data_set_name ^String template]
+    (if (and (some? data_set_name) (= (count data_set_name) 1) (not (Strings/isNullOrEmpty (first (first data_set_name)))))
+        (format "%scache_name=f_%s_%s\"" (get_tmp_line ignite template) (first (first data_set_name)) table_name)
+        (format "%scache_name=f_%s\"" (get_tmp_line ignite template) table_name)))
 
 ; 输入 sql_line 返回 {:create_table "" :table_name "" :line_rs ""}
 ;(defn get_table_line_obj [^Ignite ignite ^String sql_line & data_set_name]
@@ -358,7 +351,7 @@
 ;                ))
 ;        (throw (Exception. "创建表的语句错误！"))))
 
-(defn get_table_line_obj [^Ignite ignite ^String sql_line ^String data_set_name]
+(defn get_table_line_obj [^Ignite ignite ^String sql_line & data_set_name]
     (letfn [(is-no-exists [lst]
                 (let [items (take 4 lst)]
                     (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))
@@ -366,7 +359,7 @@
             (is-exists [lst]
                 (let [items (take 7 lst)]
                     (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (my-lexical/is-eq? (nth items 2) "IF") (my-lexical/is-eq? (nth items 3) "NOT") (my-lexical/is-eq? (nth items 4) "EXISTS") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))
-                        (assoc (my-lexical/get-schema (nth items 5)) :create_table "CREATE TABLE IF NOT EXISTS" :items_line (drop-last 2 (drop 6 lst)) :template (last lst)))))
+                        (assoc (my-lexical/get-schema (nth items 5)) :create_table "CREATE TABLE IF NOT EXISTS" :items_line (drop-last 5 (drop 6 lst)) :template (last lst)))))
             (get-segment [lst]
                 (if-let [m (is-no-exists lst)]
                     m
@@ -377,27 +370,25 @@
                     table_name
                     (str schema_name "." table_name)))]
         (let [{schema_name :schema_name table_name :table_name create_table :create_table items_line :items_line template :template} (get-segment (my-lexical/to-back sql_line)) schema_table (get-table-name schema_name table_name)]
-            (if-let [{lst_table_item :lst_table_item code_sb :code_sb indexs :indexs} (get_obj (get_items_obj_lst items_line) schema_name table_name data_set_name)]
+            (if-let [{lst_table_item :lst_table_item code_sb :code_sb indexs :indexs} (get_obj (get_items_obj_lst items_line) schema_table data_set_name)]
                 {:create_table create_table
                  :schema_name schema_name
-                 :table_name table_name
+                 :table_name schema_table
                  :lst_table_item lst_table_item
                  :code_sb (.toString code_sb)
                  :indexs indexs
-                 :template (get_template ignite table_name schema_name data_set_name (str/join (rest template)))
+                 :template (get_template ignite table_name data_set_name (str/join (rest template)))
                  }
                 (throw (Exception. "创建表的语句错误！")))
             ))
     )
 
 ; json 转换为 ddl 序列
-(defn to_ddl_lst [^Ignite ignite ^String sql_line ^String data_set_name]
+(defn to_ddl_lst [^Ignite ignite ^String sql_line & data_set_name]
     (if-let [{schema_name :schema_name create_table :create_table table_name :table_name lst_table_item :lst_table_item code_sb :code_sb indexs :indexs template :template} (get_table_line_obj ignite sql_line data_set_name)]
-        (cond (and (= schema_name "") (not (= data_set_name ""))) {:schema_name data_set_name :table_name table_name :lst_table_item lst_table_item :lst_ddl (concat (conj [] {:sql (format "%s %s.%s (%s) WITH \"%s" create_table data_set_name table_name code_sb template) :un_sql (format "DROP TABLE IF EXISTS %s.%s" data_set_name table_name) :is_success nil}) indexs)}
-              (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) {:schema_name schema_name :table_name table_name :lst_table_item lst_table_item :lst_ddl (concat (conj [] {:sql (format "%s %s.%s (%s) WITH \"%s" create_table schema_name table_name code_sb template) :un_sql (format "DROP TABLE IF EXISTS %s.%s" schema_name table_name) :is_success nil}) indexs)}
-              :else
-              (throw (Exception. "没有创建表语句的权限！"))
-              )
+        (if (and (some? data_set_name) (not (Strings/isNullOrEmpty (first data_set_name))))
+            {:schema_name schema_name :table_name table_name :lst_table_item lst_table_item :lst_ddl (concat (conj [] {:sql (format "%s %s_%s (%s) WITH \"%s" create_table (first data_set_name) table_name code_sb template) :un_sql (format "DROP TABLE IF EXISTS %s_%s" (first data_set_name) table_name) :is_success nil}) indexs)}
+            {:schema_name schema_name :table_name table_name :lst_table_item lst_table_item :lst_ddl (concat (conj [] {:sql (format "%s %s (%s) WITH \"%s" create_table table_name code_sb template) :un_sql (format "DROP TABLE IF EXISTS %s" table_name) :is_success nil}) indexs)})
         (throw (Exception. "创建表的语句错误！"))))
 
 ; 生成 my_meta_tables
@@ -443,7 +434,7 @@
 (defn create-table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String code]
     (let [sql_line (str/lower-case code) descrip ""]
         (if (= group_id 0)
-            (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
+            (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line)]
                 (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item 0))]
                     (if (true? (.isDataSetEnabled (.configuration ignite)))
                         (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
@@ -453,25 +444,24 @@
                 (throw (Exception. "创建表的语句错误！")))
             (if (contains? #{"ALL" "DDL"} group_type)
                 (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
-                    (if (and (not (my-lexical/is-eq? schema_name "my_meta")) (my-lexical/is-eq? schema_name dataset_name))
-                        (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item dataset_id))]
+                    (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item dataset_id))]
+                        (if-not (my-lexical/is-eq? schema_name "my_meta")
                             (if (true? (.isDataSetEnabled (.configuration ignite)))
                                 (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
                                     (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id code dataset_id) (SqlType/INSERT))))))
                                 (run_ddl_dml ignite lst_ddl lst_dml_table))
-                            (throw (Exception. "创建表的语句错误！"))
-                            )
-                        )
+                            (throw (Exception. "没有执行创建 table 语句的权限！")))
+                        (throw (Exception. "创建表的语句错误！")))
                     (throw (Exception. "创建表的语句错误！")))
                 (throw (Exception. "该用户组没有创建表的权限！"))))))
 
 ; 执行 json
 ; 1、查询 group_id 看是否有 ddl 的权限
 ; 2、有权限就执行 sql_line
-(defn my_create_table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String descrip ^String code]
+(defn my_create_table [^Ignite ignite ^Long group_id ^String table_name ^String descrip ^String code]
     (let [sql_line (str/lower-case code)]
         (if (= group_id 0)
-            (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
+            (if-let [{lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line)]
                 (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item 0))]
                     (if (true? (.isDataSetEnabled (.configuration ignite)))
                         (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
@@ -479,24 +469,37 @@
                         (run_ddl_dml ignite lst_ddl lst_dml_table))
                     (throw (Exception. "创建表的语句错误！")))
                 (throw (Exception. "创建表的语句错误！")))
-            (if (contains? #{"ALL" "DDL"} group_type)
-                (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
-                    (if (and (not (my-lexical/is-eq? schema_name "my_meta")) (my-lexical/is-eq? schema_name dataset_name))
-                        (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item dataset_id))]
-                            (if (true? (.isDataSetEnabled (.configuration ignite)))
-                                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                                    (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id code dataset_id) (SqlType/INSERT))))))
-                                (run_ddl_dml ignite lst_ddl lst_dml_table))
-                            (throw (Exception. "创建表的语句错误！"))
-                            )
-                        )
-                    (throw (Exception. "创建表的语句错误！")))
-                (throw (Exception. "该用户组没有创建表的权限！")))))
+            (if-let [my_group (.get (.cache ignite "my_users_group") group_id)]
+                (let [group_type (.getGroup_type my_group) dataset (.get (.cache ignite "my_dataset") (.getData_set_id my_group))]
+                    (if (contains? #{"ALL" "DDL"} group_type)
+                        (if (and (some? dataset) (false? (.getIs_real dataset)))
+                            (if-let [{schema_name :schema_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line (.getDataset_name dataset))]
+                                (if-not (my-lexical/is-eq? schema_name "my_meta")
+                                    (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item (.getId dataset)))]
+                                        (if (true? (.isDataSetEnabled (.configuration ignite)))
+                                            (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+                                                (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id code (.getData_set_id my_group)) (SqlType/INSERT))))))
+                                            (run_ddl_dml ignite lst_ddl lst_dml_table))
+                                        (throw (Exception. "创建表的语句错误！")))
+                                    (throw (Exception. "没有执行创建 table 语句的权限！")))
+                                (throw (Exception. "创建表的语句错误！")))
+                            (if-let [{schema_name :schema_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line)]
+                                (if-not (my-lexical/is-eq? schema_name "my_meta")
+                                    (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item 0))]
+                                        (if (true? (.isDataSetEnabled (.configuration ignite)))
+                                            (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+                                                (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id code (.getData_set_id my_group)) (SqlType/INSERT))))))
+                                            (run_ddl_dml ignite lst_ddl lst_dml_table))
+                                        (throw (Exception. "创建表的语句错误！")))
+                                    (throw (Exception. "没有执行创建 table 语句的权限！")))
+                                (throw (Exception. "创建表的语句错误！"))))
+                        (throw (Exception. "该用户组没有创建表的权限！"))))
+                (throw (Exception. "不存在该用户组！")))))
     )
 
 ; java 中调用
-(defn -plus_create_table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String descrip ^String code]
-    (my_create_table ignite group_id dataset_name group_type dataset_id descrip code))
+(defn -plus_create_table [^Ignite ignite ^Long group_id ^String table_name ^String descrip ^String code]
+    (my_create_table ignite group_id table_name descrip code))
 
 
 

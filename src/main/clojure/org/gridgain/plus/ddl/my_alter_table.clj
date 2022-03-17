@@ -68,11 +68,11 @@
     (if-let [sql (my-create-table/get_sql sql_line)]
         (let [alter_table (re-find #"^(?i)ALTER\sTABLE\sIF\sEXISTS\s|^(?i)ALTER\sTABLE\s" sql) last_line (str/replace sql #"^(?i)ALTER\sTABLE\sIF\sEXISTS\s|^(?i)ALTER\sTABLE\s" "")]
             (if (some? alter_table)
-                (let [table_name (re-find #"^(?i)\w+\s" last_line) last_line_1 (str/replace last_line #"^(?i)\w+\s" "")]
+                (let [table_name (re-find #"^(?i)\w+\.\w+\s|^(?i)\w+\s" last_line) last_line_1 (str/replace last_line #"^(?i)\w+\.\w+\s|^(?i)\w+\s" "")]
                     (if (some? table_name)
                         (let [add_or_drop_line (re-find #"^(?i)ADD\sCOLUMN\sIF\sNOT\sEXISTS\s|^(?i)DROP\sCOLUMN\sIF\sNOT\sEXISTS\s|^(?i)ADD\sCOLUMN\sIF\sEXISTS\s|^(?i)DROP\sCOLUMN\sIF\sEXISTS\s|^(?i)ADD\sCOLUMN\s|^(?i)DROP\sCOLUMN\s|^(?i)ADD\s|^(?i)DROP\s" last_line_1) colums_line (str/replace last_line_1 #"^(?i)ADD\sCOLUMN\sIF\sNOT\sEXISTS\s|^(?i)DROP\sCOLUMN\sIF\sNOT\sEXISTS\s|^(?i)ADD\sCOLUMN\sIF\sEXISTS\s|^(?i)DROP\sCOLUMN\sIF\sEXISTS\s|^(?i)ADD\sCOLUMN\s|^(?i)DROP\sCOLUMN\s|^(?i)ADD\s|^(?i)DROP\s" "")]
                             ;(println (get_items_obj colums_line))
-                            {:alter_table alter_table :table_name table_name :add_or_drop (add_or_drop add_or_drop_line) :colums (get_obj (get_items_obj colums_line))}
+                            (assoc (my-lexical/get-schema table_name) :alter_table alter_table :add_or_drop (add_or_drop add_or_drop_line) :colums (get_obj (get_items_obj colums_line)))
                             )
                         (throw (Exception. (format "修改表的语句错误！位置：%s" table_name)))))
                 (throw (Exception. "修改表的语句错误！"))))
@@ -84,8 +84,8 @@
         (.toString (doto sb
                        (.append (-> table_obj :alter_table))
                        (.append (-> table_obj :table_name))
-                       (.append (-> (-> table_obj :add_or_drop) :line))
-                       (.append (-> (-> table_obj :colums) :code_line))
+                       (.append (-> table_obj :add_or_drop :line))
+                       (.append (-> table_obj :colums :code_line))
                        ))))
 
 (defn get_un_sql_line [table_obj]
@@ -102,15 +102,28 @@
                        (.append (-> (-> table_obj :colums) :code_line))
                        ))))
 
+(defn get-drop-lst [^Ignite ignite ^String table_name ^Long data_set_id lst]
+    (if-not (empty? lst)
+        (letfn [(get-table-item-id [^Ignite ignite ^Long table_id ^String table_item]
+                    (first (first (.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. "select id from MY_META.table_item where table_id = ? and column_name = ?") (to-array [table_id table_item])))))))]
+            (if-let [table_id (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = ? and m.table_name = ?") (to-array [data_set_id table_name]))))))]
+                (loop [[f & r] lst lst-rs []]
+                    (if (some? f)
+                        (let [item_id (get-table-item-id ignite table_id (.getColumn_name f))]
+                            (recur r (conj lst-rs (doto f (.setId item_id)
+                                                          (.setTable_id table_id)))))
+                        lst-rs))))
+        ))
+
 ; lst 为 obj 的 lst_table_item
 (defn myTableItemToMyCacheEx
     ([^Ignite ignite ^Boolean is_add ^String table_name ^Long data_set_id lst]
      (if (true? is_add)
          (if-let [ids (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = ? and m.table_name = ?") (to-array [data_set_id table_name])))))]
              (if (and (some? ids) (> (count ids) 0))
-                 (myTableItemToMyCacheEx data_set_id ignite is_add (nth ids 0) lst []))
+                 (myTableItemToMyCacheEx data_set_id ignite is_add (first ids) lst []))
              (throw (Exception. (format "%s: 表不存在！" table_name))))
-         (myTableItemToMyCacheEx data_set_id ignite is_add nil lst []))
+         (myTableItemToMyCacheEx data_set_id ignite is_add nil (get-drop-lst ignite table_name data_set_id lst) []))
      )
     ([^Long data_set_id ^Ignite ignite ^Boolean is_add ^Long table_id [f & r] lst]
      (if (some? f)
@@ -125,17 +138,29 @@
 ;        {:sql (get_sql_line m) :un_sql (get_un_sql_line m) :lst_cachex (myTableItemToMyCacheEx ignite (-> m :add_or_drop :is_add) (str/trim (str/lower-case (-> m :table_name))) (-> (-> m :colums) :lst_table_item))}
 ;        (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
-(defn get_ds_obj [^Ignite ignite ^Long data_set_id [f & r] m lst]
-    (if (some? f)
-        (let [m1 (assoc m :table_name (format "%s_%s" (first f) (-> m :table_name)))]
-            (recur ignite data_set_id r m (concat lst [{:sql (get_sql_line m1) :un_sql (get_un_sql_line m1)}])))
-        (concat lst [{:sql (get_sql_line m) :un_sql (get_un_sql_line m) :lst_cachex (myTableItemToMyCacheEx ignite (-> m :add_or_drop :is_add) (str/trim (-> m :table_name)) data_set_id (-> (-> m :colums) :lst_table_item))}])))
+;(defn get_ds_obj [^Ignite ignite ^Long data_set_id [f & r] m lst]
+;    (if (some? f)
+;        (let [m1 (assoc m :table_name (format "%s_%s" (first f) (-> m :table_name)))]
+;            (recur ignite data_set_id r m (concat lst [{:sql (get_sql_line m1) :un_sql (get_un_sql_line m1)}])))
+;        (concat lst [{:sql (get_sql_line m) :un_sql (get_un_sql_line m) :lst_cachex (myTableItemToMyCacheEx ignite (-> m :add_or_drop :is_add) (str/trim (-> m :table_name)) data_set_id (-> (-> m :colums) :lst_table_item))}])))
+
+(defn get_ds_obj [^Ignite ignite ^Long data_set_id ^String data_set_name m lst]
+    (let [{schema_name :schema_name} m]
+        (cond (and (= schema_name "") (not (= data_set_name ""))) (let [m1 (assoc m :table_name (format "%s.%s" data_set_name (-> m :table_name)))]
+                                                                      (concat lst [{:sql (get_sql_line m1) :un_sql (get_un_sql_line m1) :lst_cachex (myTableItemToMyCacheEx ignite (-> m :add_or_drop :is_add) (str/trim (str/lower-case (-> m :table_name))) data_set_id (-> m :colums :lst_table_item))}]))
+              (or (and (not (= schema_name "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= schema_name "")) (my-lexical/is-eq? schema_name data_set_name))) (let [m1 (assoc m :table_name (format "%s.%s" schema_name (-> m :table_name)))]
+                                                                                                                                                                               (concat lst [{:sql (get_sql_line m1) :un_sql (get_un_sql_line m1) :lst_cachex (myTableItemToMyCacheEx ignite (-> m :add_or_drop :is_add) (str/trim (str/lower-case (-> m :table_name))) data_set_id (-> m :colums :lst_table_item))}]))
+              :else
+              (throw (Exception. "没有创建表语句的权限！"))
+              ))
+    )
+
 
 (defn get_lst_obj
-    ([^Ignite ignite ^String sql_line ^Long data_set_id] (get_lst_obj ignite sql_line data_set_id []))
-    ([^Ignite ignite ^String sql_line ^Long data_set_id ^clojure.lang.PersistentVector lst]
+    ([^Ignite ignite ^String sql_line ^Long data_set_id ^String dataset_name] (get_lst_obj ignite sql_line data_set_id dataset_name []))
+    ([^Ignite ignite ^String sql_line ^Long data_set_id ^String dataset_name ^clojure.lang.PersistentVector lst]
      (if-let [m (get_table_alter_obj sql_line)]
-         (get_ds_obj ignite data_set_id (my-lexical/get_all_ds ignite (str/trim (-> m :table_name))) m lst))))
+         (get_ds_obj ignite data_set_id dataset_name m lst))))
 
 (defn get_ddl_objs
     ([lst ^Long group_id ^String sql_line ^Ignite ignite data_set_id] (get_ddl_objs lst [] [] [] group_id sql_line ignite data_set_id))
@@ -158,38 +183,46 @@
 ;        (MyDdlUtil/runDdl ignite m)))
 
 ; 执行实时数据集中的 ddl
-(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
-    (MyDdlUtil/runDdl ignite (get_ddl_objs (get_lst_obj ignite sql_line data_set_id) group_id sql_line ignite data_set_id)))
+(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id ^String dataset_name]
+    (MyDdlUtil/runDdl ignite (get_ddl_objs (get_lst_obj ignite sql_line data_set_id dataset_name) group_id sql_line ignite data_set_id)))
 
 ; 1、如果要修改的是实时数据集，则修改实时数据集的时候要同步修改在其它数据集中的表
 ; 2、判断要修改的表是否是实时数据集映射到，批处理数据集中的，如果是就不能修改，如果不是就可以修改
 ; 执行 alter table
-(defn my_alter_table [^Ignite ignite ^Long group_id ^String sql_line]
+(defn alter_table [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= group_id 0)
-            (run_ddl_real_time ignite sql_code 0 group_id)
-            (if-let [my_group (.get (.cache ignite "my_users_group") group_id)]
-                (let [group_type (.getGroup_type my_group) dataset (.get (.cache ignite "my_dataset") (.getData_set_id my_group))]
-                    (if (contains? #{"ALL" "DDL"} group_type)
-                        (if (true? (.getIs_real dataset))
-                            (run_ddl_real_time ignite sql_code (.getId dataset) group_id)
-                            (if-let [m (get_table_alter_obj sql_code)]
-                                (if-not (my-lexical/is-eq? (-> (my-lexical/get-schema (-> m :table_name)) :schema_name) "my_meta")
-                                    (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
-                                        (if (> (first tables) 0)
-                                            (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
-                                            (let [ds_m (assoc m :table_name (format "%s_%s" (.getDataset_name dataset) (-> m :table_name)))]
-                                                (if (true? (.isDataSetEnabled (.configuration ignite)))
-                                                    (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                                                        (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (doto (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item))) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line (.getData_set_id my_group)) (SqlType/INSERT))))}))
-                                                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item)))}))
-                                                )
-                                            ))
-                                    (throw (Exception. "没有执行语句的权限！")))
-                                (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
-                        (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))
-                (throw (Exception. "不存在该用户组！"))
-                ))))
+            (run_ddl_real_time ignite sql_code -1 group_id dataset_name)
+            (if (contains? #{"ALL" "DDL"} group_type)
+                (run_ddl_real_time ignite sql_code dataset_id group_id dataset_name)
+                (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
+
+;(defn alter_table [^Ignite ignite ^Long group_id ^String sql_line]
+;    (let [sql_code (str/lower-case sql_line)]
+;        (if (= group_id 0)
+;            (run_ddl_real_time ignite sql_code 0 group_id)
+;            (if-let [my_group (.get (.cache ignite "my_users_group") group_id)]
+;                (let [group_type (.getGroup_type my_group) dataset (.get (.cache ignite "my_dataset") (.getData_set_id my_group))]
+;                    (if (contains? #{"ALL" "DDL"} group_type)
+;                        (if (true? (.getIs_real dataset))
+;                            (run_ddl_real_time ignite sql_code (.getId dataset) group_id)
+;                            (if-let [m (get_table_alter_obj sql_code)]
+;                                (if-not (my-lexical/is-eq? (-> (my-lexical/get-schema (-> m :table_name)) :schema_name) "my_meta")
+;                                    (if-let [tables (first (.getAll (.query (.cache ignite "my_dataset_table") (.setArgs (SqlFieldsQuery. "select COUNT(t.id) from my_dataset_table as t WHERE t.dataset_id = ? and t.table_name = ?") (to-array [(.getData_set_id my_group) (str/trim (-> m :table_name))])))))]
+;                                        (if (> (first tables) 0)
+;                                            (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
+;                                            (let [ds_m (assoc m :table_name (format "%s_%s" (.getDataset_name dataset) (-> m :table_name)))]
+;                                                (if (true? (.isDataSetEnabled (.configuration ignite)))
+;                                                    (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+;                                                        (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (doto (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item))) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line (.getData_set_id my_group)) (SqlType/INSERT))))}))
+;                                                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item)))}))
+;                                                )
+;                                            ))
+;                                    (throw (Exception. "没有执行语句的权限！")))
+;                                (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
+;                        (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))
+;                (throw (Exception. "不存在该用户组！"))
+;                ))))
 
 
 

@@ -93,4 +93,17 @@ public class MScenesCache implements Serializable {
     public void setParams(List<MyScenesParams> params) {
         this.params = params;
     }
+
+    @Override
+    public String toString() {
+        return "MScenesCache{" +
+                "group_id=" + group_id +
+                ", scenes_name='" + scenes_name + '\'' +
+                ", sql_code='" + sql_code + '\'' +
+                ", descrip='" + descrip + '\'' +
+                ", is_batch=" + is_batch +
+                ", params=" + params +
+                ", scenesType=" + scenesType +
+                '}';
+    }
 }

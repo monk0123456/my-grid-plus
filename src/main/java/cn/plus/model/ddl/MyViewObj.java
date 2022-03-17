@@ -73,4 +73,16 @@ public class MyViewObj implements Serializable {
     public void setCode(String code) {
         this.code = code;
     }
+
+    @Override
+    public String toString() {
+        return "MyViewObj{" +
+                "operate=" + operate +
+                ", code_type=" + code_type +
+                ", view_name='" + view_name + '\'' +
+                ", table_name='" + table_name + '\'' +
+                ", data_set_name='" + data_set_name + '\'' +
+                ", code='" + code + '\'' +
+                '}';
+    }
 }

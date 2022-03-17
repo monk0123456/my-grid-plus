@@ -57,4 +57,14 @@ public class MCron implements Serializable {
     public void setDescrip(String descrip) {
         this.descrip = descrip;
     }
+
+    @Override
+    public String toString() {
+        return "MCron{" +
+                "cron_name='" + cron_name + '\'' +
+                ", cron='" + cron + '\'' +
+                ", descrip='" + descrip + '\'' +
+                ", ast=" + ast +
+                '}';
+    }
 }

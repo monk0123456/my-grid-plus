@@ -45,6 +45,70 @@ public 公有：Customers:客户表
 
 (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "update MY_META.my_users_group set group_name = 'wuxiaohua' where id =2")))
 
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "select id from MY_META.table_item where table_id = 1 and column_name = 'city'")))
+
+(def sql "select id from MY_META.table_item where table_id = ? and column_name = ?")
+(.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. sql) (to-array [1 "city"]))))
+
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "drop table public.Customers")))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

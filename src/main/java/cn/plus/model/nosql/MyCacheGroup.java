@@ -32,4 +32,12 @@ public class MyCacheGroup implements Serializable {
     public void setGroup_id(Long group_id) {
         this.group_id = group_id;
     }
+
+    @Override
+    public String toString() {
+        return "MyCacheGroup{" +
+                "cache_name='" + cache_name + '\'' +
+                ", group_id=" + group_id +
+                '}';
+    }
 }

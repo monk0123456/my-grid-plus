@@ -158,4 +158,21 @@ public class MyTableItem implements Serializable {
     public void setDefault_value(String default_value) {
         this.default_value = default_value;
     }
+
+    @Override
+    public String toString() {
+        return "MyTableItem{" +
+                "id=" + id +
+                ", column_name='" + column_name + '\'' +
+                ", column_len=" + column_len +
+                ", scale=" + scale +
+                ", column_type='" + column_type + '\'' +
+                ", not_null=" + not_null +
+                ", pkid=" + pkid +
+                ", comment='" + comment + '\'' +
+                ", auto_increment=" + auto_increment +
+                ", table_id=" + table_id +
+                ", default_value='" + default_value + '\'' +
+                '}';
+    }
 }

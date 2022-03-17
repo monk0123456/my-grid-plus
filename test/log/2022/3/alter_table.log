@@ -1,0 +1,2 @@
+(def sql_line "ALTER TABLE Customers ADD COLUMN city varchar")
+(my-alter-table/get_lst_obj ignite sql_line 0 "my_mate")

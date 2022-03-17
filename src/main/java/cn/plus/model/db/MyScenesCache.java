@@ -118,6 +118,20 @@ public class MyScenesCache implements Serializable {
     public void setAst(PersistentArrayMap ast) {
         this.ast = ast;
     }
+
+    @Override
+    public String toString() {
+        return "MyScenesCache{" +
+                "group_id=" + group_id +
+                ", scenes_name='" + scenes_name + '\'' +
+                ", sql_code='" + sql_code + '\'' +
+                ", descrip='" + descrip + '\'' +
+                ", is_batch=" + is_batch +
+                ", params=" + params +
+                ", ast=" + ast +
+                ", scenesType=" + scenesType +
+                '}';
+    }
 }
 
 

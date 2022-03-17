@@ -52,4 +52,14 @@ public class MyDatasetTable implements Serializable {
     public void setTo_real(Boolean to_real) {
         this.to_real = to_real;
     }
+
+    @Override
+    public String toString() {
+        return "MyDatasetTable{" +
+                "id=" + id +
+                ", table_name='" + table_name + '\'' +
+                ", dataset_id=" + dataset_id +
+                ", to_real=" + to_real +
+                '}';
+    }
 }

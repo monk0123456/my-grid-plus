@@ -55,6 +55,16 @@ public class MyTableIndex implements Serializable {
     public void setTable_id(Long table_id) {
         this.table_id = table_id;
     }
+
+    @Override
+    public String toString() {
+        return "MyTableIndex{" +
+                "id=" + id +
+                ", index_name='" + index_name + '\'' +
+                ", spatial=" + spatial +
+                ", table_id=" + table_id +
+                '}';
+    }
 }
 
 

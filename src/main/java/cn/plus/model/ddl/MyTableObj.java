@@ -33,4 +33,12 @@ public class MyTableObj implements Serializable {
     public void setMyTableItems(List<MyTableItem> myTableItems) {
         this.myTableItems = myTableItems;
     }
+
+    @Override
+    public String toString() {
+        return "MyTableObj{" +
+                "myTable=" + myTable +
+                ", myTableItems=" + myTableItems +
+                '}';
+    }
 }

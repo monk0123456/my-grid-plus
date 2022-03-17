@@ -70,6 +70,17 @@ public class DdlLog implements Serializable {
     public void setCreate_date(Timestamp create_date) {
         this.create_date = create_date;
     }
+
+    @Override
+    public String toString() {
+        return "DdlLog{" +
+                "id=" + id +
+                ", group_id=" + group_id +
+                ", data_set_id=" + data_set_id +
+                ", sql_code='" + sql_code + '\'' +
+                ", create_date=" + create_date +
+                '}';
+    }
 }
 
 

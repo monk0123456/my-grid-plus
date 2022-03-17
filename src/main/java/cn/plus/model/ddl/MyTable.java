@@ -70,4 +70,15 @@ public class MyTable implements Serializable {
     public void setData_set_id(Long data_set_id) {
         this.data_set_id = data_set_id;
     }
+
+    @Override
+    public String toString() {
+        return "MyTable{" +
+                "id=" + id +
+                ", table_name='" + table_name + '\'' +
+                ", descrip='" + descrip + '\'' +
+                ", code='" + code + '\'' +
+                ", data_set_id=" + data_set_id +
+                '}';
+    }
 }

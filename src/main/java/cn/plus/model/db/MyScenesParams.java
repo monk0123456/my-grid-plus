@@ -45,6 +45,15 @@ public class MyScenesParams implements Serializable {
     public void setPs_index(Integer ps_index) {
         this.ps_index = ps_index;
     }
+
+    @Override
+    public String toString() {
+        return "MyScenesParams{" +
+                "ps_name='" + ps_name + '\'' +
+                ", ps_type='" + ps_type + '\'' +
+                ", ps_index=" + ps_index +
+                '}';
+    }
 }
 
 
