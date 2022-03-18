@@ -106,134 +106,49 @@
                 (throw (Exception. "创建索引语句错误！"))))
         (throw (Exception. "创建索引语句错误！"))))
 
-; 获取 sql
-; index_obj = (get_create_index_obj "create index ...")
-(defn get_sql_line [index_obj]
-    (let [sb (StringBuilder.) sb_items (StringBuilder.)]
-        (loop [[f & r] (-> index_obj :index_items_obj)]
-            (if (some? f)
-                (do
-                    (if (and (contains? f :asc_desc) (not (Strings/isNullOrEmpty (-> f :asc_desc))))
-                        (doto sb_items
-                            (.append (-> f :item_name))
-                            (.append " ")
-                            (.append (-> f :asc_desc))
-                            )
-                        (doto sb_items
-                            (.append (-> f :item_name))
-                            ))
-                    (if (> (count r) 0)
-                        (doto sb_items (.append ",")))
-                    (recur r))))
-        (.toString (doto sb
-                       (.append (-> index_obj :create_index :create_index_line))
-                       (.append " ")
-                       (.append (-> index_obj :index_name))
-                       (.append " ON ")
-                       (.append (-> index_obj :table_name))
-                       (.append " (")
-                       (.append (.toString sb_items))
-                       (.append ")")
-                       ))))
-
-(defn get_sql_line_ds [^clojure.lang.PersistentArrayMap index_obj ^String data_set_name]
-    (let [sb (StringBuilder.) sb_items (StringBuilder.)]
-        (loop [[f & r] (-> index_obj :index_items_obj)]
-            (if (some? f)
-                (do
-                    (if (and (contains? f :asc_desc) (not (Strings/isNullOrEmpty (-> f :asc_desc))))
-                        (doto sb_items
-                            (.append (-> f :item_name))
-                            (.append " ")
-                            (.append (-> f :asc_desc))
-                            )
-                        (doto sb_items
-                            (.append (-> f :item_name))
-                            ))
-                    (if (> (count r) 0)
-                        (doto sb_items (.append ",")))
-                    (recur r))))
-        (.toString (doto sb
-                       (.append (-> index_obj :create_index :create_index_line))
-                       (.append " ")
-                       (.append (format "%s_%s" data_set_name (-> index_obj :index_name)))
-                       (.append " ON ")
-                       (.append (format "%s_%s" data_set_name (-> index_obj :table_name)))
-                       (.append " (")
-                       (.append (.toString sb_items))
-                       (.append ")")
-                       ))))
-
-; 获取反的 ddl
-(defn get_un_sql_line [index_obj]
-    (let [{index_name :index_name} index_obj sb (StringBuilder.)]
-        (.toString (doto sb
-                       (.append "DROP INDEX IF EXISTS ")
-                       (.append index_name)))))
-
-(defn get_un_sql_line_ds [^clojure.lang.PersistentArrayMap index_obj ^String data_set_name]
-    (let [{index_name :index_name} index_obj sb (StringBuilder.)]
-        (.toString (doto sb
-                       (.append "DROP INDEX IF EXISTS ")
-                       (.append (format "%s_%s" data_set_name index_name))))))
-
-; 获取 table_index_item 的 mycacheex
-(defn getMyTableIndexItemCache
-    ([^Ignite ignite ^Long index_no index_items_obj] (getMyTableIndexItemCache ignite index_no index_items_obj []))
-    ([^Ignite ignite ^Long index_no [f & r] lst]
-     (if (some? f)
-         (if-let [id (.incrementAndGet (.atomicSequence ignite "table_index_item" 0 true))]
-             (recur ignite index_no r (conj lst (MyCacheEx. (.cache ignite "table_index_item") (MyTableItemPK. id index_no) (MyTableIndexItem. id (-> f :item_name) (-> f :asc_desc) index_no) (SqlType/INSERT))))
-             )
-         lst)))
-
-; 获取 mycacheex
-(defn myIndexToMyCacheEx [^Ignite ignite index_obj ^Long data_set_id]
-    (let [id (.incrementAndGet (.atomicSequence ignite "table_index" 0 true)) {table_name :table_name index_name :index_name index_items_obj :index_items_obj} index_obj]
-        (if-let [table_ids (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = ? and m.table_name = ?") (to-array [data_set_id (str/lower-case table_name)])))))]
-            (if (> (count table_ids) 0)
-                (if-let [lst_items (getMyTableIndexItemCache ignite id index_items_obj)]
-                    (if (> (count lst_items) 0)
-                        (cons (MyCacheEx. (.cache ignite "table_index") (MyTableItemPK. id (nth table_ids 0)) (MyTableIndex. id index_name (-> index_items_obj :spatial) (nth table_ids 0)) (SqlType/INSERT)) lst_items)
-                        (throw (Exception. "添加索引的列必须存在！"))))
-                (throw (Exception. "表不存在，不能添加索引！")))
-            (throw (Exception. "表不存在，不能添加索引！"))))
-    )
-
-; 整个 ddl 的 obj
-;(defn get_ddl_obj [^Ignite ignite ^String sql_line]
-;    (if-let [m (get_create_index_obj sql_line)]
-;        {:sql (get_sql_line m) :un_sql (get_un_sql_line m) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m))}
-;        (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
-
-; run ddl obj
-;(defn run_ddl [^Ignite ignite ^String sql_line]
-;    (if-let [m (get_ddl_obj ignite sql_line)]
-;        (MyDdlUtil/runDdl ignite m)))
-
-;(defn get_sql_line_all
-;    ([^Ignite ignite ^clojure.lang.PersistentArrayMap m]
-;     (if-let [lst_ds (my-lexical/get_all_ds ignite (-> m :table_name))]
-;         (get_sql_line_all lst_ds m [(get_sql_line m)])
-;         [(get_sql_line m)]))
-;    ([[f & r] m lst]
-;     (if (some? f)
-;         (recur r m (conj lst (get_sql_line_ds m f)))
-;         lst)))
-(defn get_sql_line_all [^Ignite ignite ^clojure.lang.PersistentArrayMap m]
-    ())
-
-;(defn get_un_sql_line_all
-;    ([^Ignite ignite ^clojure.lang.PersistentArrayMap m]
-;     (if-let [lst_ds (my-lexical/get_all_ds ignite (-> m :table_name))]
-;         (get_un_sql_line_all lst_ds m [(get_un_sql_line m)])))
-;    ([[f & r] m lst]
-;     (if (some? f)
-;         (recur r m (conj lst (get_un_sql_line_ds m f)))
-;         lst)))
-
-(defn get_un_sql_line_all [^Ignite ignite ^clojure.lang.PersistentArrayMap m]
-    ())
+(defn create-index-obj [^Ignite ignite ^String data_set_name ^String sql_line]
+    (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
+                (if (my-lexical/is-eq? "public" data_set_name)
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [table_name]))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [data_set_name table_name])))))))
+                )
+            (get-cachex [^Ignite ignite ^clojure.lang.PersistentArrayMap m ^ArrayList lst]
+                (let [{index_name :index_name schema_name :schema_name table_name :table_name index_items_obj :index_items_obj {spatial :spatial} :create_index} m]
+                    (if-let [table_id (get-table-id ignite schema_name table_name)]
+                        (let [index_id (.incrementAndGet (.atomicSequence ignite "table_index" 0 true))]
+                            (loop [[f & r] index_items_obj]
+                                (if (some? f)
+                                    (do
+                                        (let [index_item_id (.incrementAndGet (.atomicSequence ignite "table_index_item" 0 true)) {index_item :item_name sort_order :asc_desc} f]
+                                            (doto lst (.add (MyCacheEx. (.cache ignite "table_index_item") (MyTableItemPK. index_item_id index_id) (MyTableIndexItem. index_item_id index_item sort_order index_id) (SqlType/INSERT)))))
+                                        (recur r))))
+                            (doto lst (.add (MyCacheEx. (.cache ignite "table_index") (MyTableItemPK. index_id table_id) (MyTableIndex. index_id (format "%s_%s" schema_name index_name) spatial table_id) (SqlType/INSERT))))
+                            ))))
+            (get-index-obj [^String data_set_name ^String sql_line]
+                (let [m (my-create-index/get_create_index_obj sql_line)]
+                    (cond (and (= (-> m :schema_name) "") (not (= data_set_name ""))) (assoc m :schema_name data_set_name)
+                          (or (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? (-> m :schema_name) data_set_name))) m
+                          :else
+                          (throw (Exception. "没有创建索引的权限！"))
+                          )))
+            (get-index-items-line
+                ([index_items_obj] (get-index-items-line index_items_obj (StringBuilder.)))
+                ([[f & r] ^StringBuilder sb]
+                 (letfn [(item-line [item]
+                             (if (contains? item :asc_desc)
+                                 (format "%s %s" (-> item :item_name) (-> item :asc_desc))
+                                 (-> item :item_name)))]
+                     (if (some? f)
+                         (if (nil? r)
+                             (recur r (doto sb (.append (item-line f))))
+                             (recur r (doto sb (.append (str (item-line f) ","))))
+                             )
+                         (.toString sb)))))
+            ]
+        (let [m (get-index-obj data_set_name sql_line)]
+            {:sql (format "%s %s_%s ON %s.%s (%s)" (-> m :create_index :create_index_line) (-> m :schema_name) (-> m :index_name) (-> m :schema_name) (-> m :table_name) (get-index-items-line (-> m :index_items_obj)))
+             :un_sql (format  "DROP INDEX IF EXISTS %s_%s" (-> m :schema_name) (-> m :index_name))
+             :lst_cachex (get-cachex ignite m (ArrayList.))})))
 
 ; 实时数据集
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
@@ -244,18 +159,6 @@
                     (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
                     )
                 (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
-            (throw (Exception. "没有执行语句的权限！")))
-        (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
-
-; 批处理数据集
-(defn run_ddl [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
-    (if-let [m (get_create_index_obj sql_line)]
-        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
-            (if (true? (.isDataSetEnabled (.configuration ignite)))
-                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                    (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList [(get_sql_line m)]) :un_sql (my-lexical/to_arryList [(get_un_sql_line m)]) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
-                    )
-                (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList [(get_sql_line m)]) :un_sql (my-lexical/to_arryList [(get_un_sql_line m)]) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
             (throw (Exception. "没有执行语句的权限！")))
         (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
