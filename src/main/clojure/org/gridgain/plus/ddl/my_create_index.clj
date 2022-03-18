@@ -151,14 +151,25 @@
              :lst_cachex (get-cachex ignite m (ArrayList.))})))
 
 ; 实时数据集
-(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
+;(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^Long data_set_id ^Long group_id]
+;    (if-let [m (get_create_index_obj sql_line)]
+;        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
+;            (if (true? (.isDataSetEnabled (.configuration ignite)))
+;                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
+;                    (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
+;                    )
+;                (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
+;            (throw (Exception. "没有执行语句的权限！")))
+;        (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
+
+(defn run_ddl_real_time [^Ignite ignite ^String sql_line ^String dataset_name]
     (if-let [m (get_create_index_obj sql_line)]
         (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
-            (if (true? (.isDataSetEnabled (.configuration ignite)))
-                (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
-                    (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (doto (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id)) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line data_set_id) (SqlType/INSERT))))})
-                    )
-                (MyDdlUtil/runDdl ignite {:sql (my-lexical/to_arryList (get_sql_line_all ignite m)) :un_sql (my-lexical/to_arryList (get_un_sql_line_all ignite m)) :lst_cachex (my-lexical/to_arryList (myIndexToMyCacheEx ignite m data_set_id))}))
+            (let [{sql :sql un_sql :un_sql lst_cachex :lst_cachex} (create-index-obj ignite dataset_name sql_line)]
+                (if-not (nil? lst_cachex)
+                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql (doto (ArrayList.) (.add un_sql)) :lst_cachex lst_cachex})
+                    (throw (Exception. "没有执行语句的权限！")))
+                ))
             (throw (Exception. "没有执行语句的权限！")))
         (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
@@ -166,9 +177,9 @@
 (defn create_index [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String sql_line]
     (let [sql_code (str/lower-case sql_line)]
         (if (= group_id 0)
-            (run_ddl_real_time ignite sql_code 0 group_id)
+            (run_ddl_real_time ignite dataset_name sql_code)
             (if (contains? #{"ALL" "DDL"} group_type)
-                (run_ddl_real_time ignite sql_code dataset_id group_id)
+                (run_ddl_real_time ignite dataset_name sql_code)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！")))
             )))
 
