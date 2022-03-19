@@ -10,12 +10,12 @@ import java.util.Date;
 public class MyLog implements Serializable {
     private static final long serialVersionUID = 3195276982783527627L;
 
-    private Long id;
+    private String id;
     private String table_name;
     private byte[] mycacheex;
     private Timestamp create_date;
 
-    public MyLog(final Long id, final String table_name, final byte[] mycacheex)
+    public MyLog(final String id, final String table_name, final byte[] mycacheex)
     {
         this.id = id;
         this.table_name = table_name;
@@ -28,11 +28,11 @@ public class MyLog implements Serializable {
         this.create_date = new Timestamp((new Date()).getTime());
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 

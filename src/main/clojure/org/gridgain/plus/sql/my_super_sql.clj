@@ -171,7 +171,7 @@
                                                                                                                       (.append sb "select show_msg('true') as tip;")
                                                                                                                       (.append sb "select show_msg('false') as tip;")))
                       ; drop index
-                      (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id sql)]
+                      (and (my-lexical/is-eq? (first lst) "DROP") (my-lexical/is-eq? (second lst) "INDEX")) (let [rs (my-drop-index/drop_index ignite group_id dataset_name group_type dataset_id sql)]
                                                                                                                 (if (nil? rs)
                                                                                                                     (.append sb "select show_msg('true') as tip;")
                                                                                                                     (.append sb "select show_msg('false') as tip;")))

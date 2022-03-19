@@ -53,66 +53,66 @@
                         (println "******************")
                         (recur r)))))))
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE Customers ADD COLUMN city varchar")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE Customers ADD COLUMN city varchar")
+(my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers ADD COLUMN city varchar")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE public.Customers ADD COLUMN city varchar")
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE Customers ADD COLUMN IF NOT EXISTS population int")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE Customers ADD COLUMN IF NOT EXISTS population int")
+(my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers ADD COLUMN IF NOT EXISTS population int")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE public.Customers ADD COLUMN IF NOT EXISTS population int")
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE IF EXISTS Customers ADD COLUMN number long")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE IF EXISTS Customers ADD COLUMN number long")
+(my-alter-table/get_table_alter_obj "ALTER TABLE IF EXISTS public.Customers ADD COLUMN number long")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE IF EXISTS public.Customers ADD COLUMN number long")
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE Customers ADD COLUMN (code varchar, gdp double)")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE Customers ADD COLUMN (code varchar, gdp double)")
+(my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers ADD COLUMN (code varchar, gdp double)")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE public.Customers ADD COLUMN (code varchar, gdp double)")
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE Customers DROP COLUMN city")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE Customers DROP COLUMN city")
+(my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers DROP COLUMN city")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE public.Customers DROP COLUMN city")
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE Customers DROP COLUMN IF EXISTS population")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE Customers DROP COLUMN IF EXISTS population")
+(my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers DROP COLUMN IF EXISTS population")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE public.Customers DROP COLUMN IF EXISTS population")
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE IF EXISTS Customers DROP COLUMN number")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE IF EXISTS Customers DROP COLUMN number")
+(my-alter-table/get_table_alter_obj "ALTER TABLE IF EXISTS public.Customers DROP COLUMN number")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE IF EXISTS public.Customers DROP COLUMN number")
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE Customers DROP COLUMN (code, gdp)")
-(my-alter-table/get_ddl_obj ignite "ALTER TABLE Customers DROP COLUMN (code, gdp)")
+(my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers DROP COLUMN (code, gdp)")
+(my-alter-table/get_ddl_obj ignite "ALTER TABLE public.Customers DROP COLUMN (code, gdp)")
 
 (def ignite (IgnitionEx/start "/Users/chenfei/Documents/Java/MyPlus/my-plus-deploy/src/main/resources/default-config.xml"))
 
-(def colums_line (-> (my-alter-table/get_table_alter_obj "ALTER TABLE Customers DROP COLUMN IF EXISTS population") :colums_line))
+(def colums_line (-> (my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers DROP COLUMN IF EXISTS population") :colums_line))
 
 (get_items_obj colums_line)
 (get_obj (get_items_obj colums_line))
 
 
 DROP TABLE [IF EXISTS] tableName
-DROP TABLE IF EXISTS "Customers";
+DROP TABLE IF EXISTS "public.Customers";
 
 CREATE INDEX title_idx ON books (title);
-(my-create-index/get_create_index_obj "CREATE INDEX title_idx ON Customers (CompanyName)")
-(my-create-index/get_ddl_obj ignite "CREATE INDEX title_idx ON Customers (CompanyName)")
+(my-create-index/get_create_index_obj "CREATE INDEX title_idx ON public.Customers (CompanyName)")
+(my-create-index/get_ddl_obj ignite "CREATE INDEX title_idx ON public.Customers (CompanyName)")
 
 CREATE INDEX IF NOT EXISTS name_idx ON persons (firstName DESC);
-(my-create-index/get_create_index_obj "CREATE INDEX IF NOT EXISTS name_idx ON Customers (ContactName DESC)")
-(my-create-index/get_ddl_obj ignite "CREATE INDEX IF NOT EXISTS name_idx ON Customers (ContactName DESC)")
+(my-create-index/get_create_index_obj "CREATE INDEX IF NOT EXISTS name_idx ON public.Customers (ContactName DESC)")
+(my-create-index/get_ddl_obj ignite "CREATE INDEX IF NOT EXISTS name_idx ON public.Customers (ContactName DESC)")
 
 CREATE INDEX city_idx ON sales (country, city);
-(my-create-index/get_create_index_obj "CREATE INDEX city_idx ON Customers (CompanyName, ContactName)")
-(my-create-index/get_ddl_obj ignite "CREATE INDEX city_idx ON Customers (CompanyName, ContactName)")
+(my-create-index/get_create_index_obj "CREATE INDEX city_idx ON public.Customers (CompanyName, ContactName)")
+(my-create-index/get_ddl_obj ignite "CREATE INDEX city_idx ON public.Customers (CompanyName, ContactName)")
 
 CREATE INDEX fast_city_idx ON sales (country, city) INLINE_SIZE 60;
-(my-create-index/get_create_index_obj "CREATE INDEX fast_city_idx ON Customers (CompanyName, ContactName) INLINE_SIZE 60")
-(my-create-index/get_ddl_obj ignite "CREATE INDEX fast_city_idx ON Customers (CompanyName, ContactName) INLINE_SIZE 60")
+(my-create-index/get_create_index_obj "CREATE INDEX fast_city_idx ON public.Customers (CompanyName, ContactName) INLINE_SIZE 60")
+(my-create-index/get_ddl_obj ignite "CREATE INDEX fast_city_idx ON public.Customers (CompanyName, ContactName) INLINE_SIZE 60")
 
-CREATE SPATIAL INDEX idx_person_address ON Customers (address);
-(my-create-index/get_create_index_obj "CREATE SPATIAL INDEX idx_person_address ON Customers (CompanyName)")
-(my-create-index/get_ddl_obj ignite "CREATE SPATIAL INDEX idx_person_address ON Customers (CompanyName)")
+CREATE SPATIAL INDEX idx_person_address ON public.Customers (address);
+(my-create-index/get_create_index_obj "CREATE SPATIAL INDEX idx_person_address ON public.Customers (CompanyName)")
+(my-create-index/get_ddl_obj ignite "CREATE SPATIAL INDEX idx_person_address ON public.Customers (CompanyName)")
 
 (my-drop-index/get_ddl_obj ignite "DROP INDEX my_index_name")
 (my-drop-index/get_ddl_obj ignite "DROP INDEX IF EXISTS my_index_name")
 
-(my-drop-table/get_ddl_obj ignite "DROP TABLE Customers")
-(my-drop-table/get_ddl_obj ignite "DROP TABLE IF EXISTS Customers")
+(my-drop-table/get_ddl_obj ignite "DROP TABLE public.Customers")
+(my-drop-table/get_ddl_obj ignite "DROP TABLE IF EXISTS public.Customers")
 
 DROP INDEX [IF EXISTS] indexName
 DROP INDEX idx_person_name;
@@ -123,17 +123,17 @@ DROP INDEX idx_person_name;
 (my-alter-dataset/get_data_set_alter_obj "alter dataset CRM_DATA_SET add (product)")
 (my-alter-dataset/get_data_set_alter_obj "alter dataset CRM_DATA_SET drop (product)")
 
-(my-drop-dataset/get_drop_data_set_obj "DROP DATASET Customers")
-(my-drop-dataset/get_drop_data_set_obj "DROP DATASET IF EXISTS Customers")
+(my-drop-dataset/get_drop_data_set_obj "DROP DATASET public.Customers")
+(my-drop-dataset/get_drop_data_set_obj "DROP DATASET IF EXISTS public.Customers")
 
 
-(my-alter-table/get_table_alter_obj "ALTER TABLE Customers ADD COLUMN city varchar")
+(my-alter-table/get_table_alter_obj "ALTER TABLE public.Customers ADD COLUMN city varchar")
 => nil
 => cn.plus.model.scene.MyInputParamEx
 [[city {:type varchar}]]
 =>
 {:alter_table "ALTER TABLE ",
- :table_name "Customers ",
+ :table_name "public.Customers ",
  :add_or_drop "ADD COLUMN ",
  :colums_line {:lst_table_item [#object[cn.plus.model.ddl.MyTableItem
                                         0x54c53460

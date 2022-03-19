@@ -204,7 +204,7 @@
           ))
 
 (defn convert_to_type [column_type]
-    (cond (re-find #"^(?i)integer$|^(?i)int$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$|^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$" column_type) column_type
+    (cond (re-find #"^(?i)integer$|^(?i)int$|^(?i)long$|^(?i)double$|^(?i)float$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$|^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$" column_type) column_type
           (re-find #"^(?i)REAL$" column_type) "DECIMAL"
           (re-find #"^(?i)SMALLINT$" column_type) "INTEGER"
           :else

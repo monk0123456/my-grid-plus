@@ -5,5 +5,6 @@ import java.io.Serializable;
 public enum SqlType {
     UPDATE,
     DELETE,
-    INSERT
+    INSERT,
+    RUN
 }

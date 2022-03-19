@@ -342,6 +342,8 @@ CREATE INDEX IF NOT EXISTS my_log_idx ON my_log (table_name, create_date);
   记录DDL操作的表，作用是回溯复盘
   数据集中 ddl 的 log 即 table 的 ddl
   更新数据集时，先执行 更新数据集、在更新表、在更新表中的数据
+
+  取消掉整个 ddl_log 合并到 my_log 里面去 table_name：ddl_log, mycacheex: 为处理过后的 sql_code
 */
 DROP TABLE IF EXISTS ddl_log;
 CREATE TABLE IF NOT EXISTS ddl_log (

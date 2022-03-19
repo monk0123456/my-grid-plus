@@ -125,7 +125,7 @@
                             (doto lst (.add (MyCacheEx. (.cache ignite "table_index") (MyTableItemPK. index_id table_id) (MyTableIndex. index_id (format "%s_%s" schema_name index_name) spatial table_id) (SqlType/INSERT))))
                             ))))
             (get-index-obj [^String data_set_name ^String sql_line]
-                (let [m (my-create-index/get_create_index_obj sql_line)]
+                (let [m (get_create_index_obj sql_line)]
                     (cond (and (= (-> m :schema_name) "") (not (= data_set_name ""))) (assoc m :schema_name data_set_name)
                           (or (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? data_set_name "MY_META")) (and (not (= (-> m :schema_name) "")) (my-lexical/is-eq? (-> m :schema_name) data_set_name))) m
                           :else
@@ -163,15 +163,11 @@
 ;        (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
 
 (defn run_ddl_real_time [^Ignite ignite ^String sql_line ^String dataset_name]
-    (if-let [m (get_create_index_obj sql_line)]
-        (if-not (my-lexical/is-eq? (-> m :schema_name) "my_meta")
-            (let [{sql :sql un_sql :un_sql lst_cachex :lst_cachex} (create-index-obj ignite dataset_name sql_line)]
-                (if-not (nil? lst_cachex)
-                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql (doto (ArrayList.) (.add un_sql)) :lst_cachex lst_cachex})
-                    (throw (Exception. "没有执行语句的权限！")))
-                ))
+    (let [{sql :sql un_sql :un_sql lst_cachex :lst_cachex} (create-index-obj ignite dataset_name sql_line)]
+        (if-not (nil? lst_cachex)
+            (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.add sql)) :un_sql (doto (ArrayList.) (.add un_sql)) :lst_cachex lst_cachex})
             (throw (Exception. "没有执行语句的权限！")))
-        (throw (Exception. "修改表语句错误！请仔细检查并参考文档"))))
+        ))
 
 ; 新增 index
 (defn create_index [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id ^String sql_line]

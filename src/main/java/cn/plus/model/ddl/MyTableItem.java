@@ -9,14 +9,14 @@ public class MyTableItem implements Serializable {
     private String column_name;
     private Integer column_len;
     private Integer scale;
-    private String column_type;
+    private String column_type = "";
     private Boolean not_null = true;
     private Boolean pkid = false;
-    private String comment;
+    private String comment = "";
     //private Integer comment_len;
     private Boolean auto_increment = false;
     private Long table_id;
-    private String default_value;
+    private String default_value = "";
     //private Long ex_table_id_;
 
     public MyTableItem(final Long id, final Long table_id, final String column_name, final Integer column_len, final Integer scale, final String column_type, final Boolean not_null, final Boolean pkid,
