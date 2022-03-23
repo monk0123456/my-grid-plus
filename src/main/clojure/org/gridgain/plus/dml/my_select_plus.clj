@@ -162,45 +162,83 @@
             ; 对括号的处理
             ; 例如：(a + b * c)
             (parenthesis
-                ([lst] (if (instance? clojure.lang.LazySeq lst) (parenthesis lst (memoize my-comma-fn) (memoize arithmetic-fn) (memoize get-where-line)
-                                                                             (memoize get-where-item-line) (memoize sql-to-ast))
-                                                                (parenthesis (my-lexical/to-lazy lst) (memoize my-comma-fn) (memoize arithmetic-fn) (memoize get-where-line)
-                                                                             (memoize get-where-item-line) (memoize sql-to-ast))))
-                ([lst my-comma-fn-m arithmetic-fn-m get-where-line-m get-where-item-line-m sql-to-ast-m]
-                 (letfn [(is-sql-obj? [f m]
-                             (let [sql-obj (f m)]
-                                 (if (and (some? sql-obj) (instance? clojure.lang.LazySeq sql-obj) (map? (first sql-obj)) (contains? (first sql-obj) :sql_obj))
-                                     (let [{sqlObj :sql_obj} (first sql-obj)]
-                                         (if (and (> (count (-> sqlObj :query-items)) 0) (> (count (-> sqlObj :table-items)) 0)) true false)) false)))]
-                     (when-let [m (is-operate-fn? lst)]
-                         (cond
-                             (is-sql-obj? sql-to-ast-m m)  {:parenthesis (sql-to-ast-m m)}
-                             (is-true? get-where-line-m m) {:parenthesis (map get-token (get-where-line-m m))}
-                             (is-true? get-where-item-line-m m) {:parenthesis (map get-token (get-where-item-line-m m))}
-                             (is-true? my-comma-fn-m m) {:parenthesis (map get-token (my-comma-fn-m m))}
-                             (is-true? arithmetic-fn-m m) {:parenthesis (map get-token (arithmetic-fn-m m))}
-                             )))))
+                [lst]
+                (letfn [(is-sql-obj? [sql-obj]
+                            (if (and (some? sql-obj) (instance? clojure.lang.LazySeq sql-obj) (map? (first sql-obj)) (contains? (first sql-obj) :sql_obj))
+                                (let [{sqlObj :sql_obj} (first sql-obj)]
+                                    (if (and (> (count (-> sqlObj :query-items)) 0) (> (count (-> sqlObj :table-items)) 0)) true false)) false)
+                            )
+                        (get-lazy [lst]
+                            (if (instance? clojure.lang.LazySeq lst)
+                                lst
+                                (my-lexical/to-lazy lst)))]
+                    (when-let [m (is-operate-fn? (get-lazy lst))]
+                        (let [ast-m (sql-to-ast m)]
+                            (if (is-sql-obj? ast-m)
+                                {:parenthesis ast-m}
+                                (let [where-line-m (get-where-line m)]
+                                    (if (and (some? where-line-m) (not (empty? where-line-m)))
+                                        {:parenthesis (map get-token where-line-m)}
+                                        (let [where-item-line-m (get-where-item-line m)]
+                                            (if (and (some? where-item-line-m) (not (empty? where-item-line-m)))
+                                                {:parenthesis (map get-token where-item-line-m)}
+                                                (let [comma-fn-m (my-comma-fn m)]
+                                                    (if (and (some? comma-fn-m) (not (empty? comma-fn-m)))
+                                                        {:parenthesis (map get-token comma-fn-m)}
+                                                        (let [fn-m (arithmetic-fn m)]
+                                                            (if (and (some? fn-m) (not (empty? fn-m)))
+                                                                {:parenthesis (map get-token fn-m)}
+                                                                ))))))))))
+
+                        ;(cond
+                        ;    (is-sql-obj? sql-to-ast-m m)  {:parenthesis (sql-to-ast-m m)}
+                        ;    (is-true? get-where-line-m m) {:parenthesis (map get-token (get-where-line-m m))}
+                        ;    (is-true? get-where-item-line-m m) {:parenthesis (map get-token (get-where-item-line-m m))}
+                        ;    (is-true? my-comma-fn-m m) {:parenthesis (map get-token (my-comma-fn-m m))}
+                        ;    (is-true? arithmetic-fn-m m) {:parenthesis (map get-token (arithmetic-fn-m m))}
+                        ;    )
+                        )))
             ; 判断执行 f 函数 p 参数
             (is-true? [f p]
                 (and (some? (f p)) (> (count (f p)) 1)))
             ; 获取 token ast
             (get-token
-                ([lst] (get-token lst (memoize get-token-line) (memoize func-fn) (memoize operation) (memoize parenthesis)
-                                  (memoize get-where-line) (memoize get-where-item-line)))
-                ([lst get-token-line-m func-fn-m operation-m parenthesis-m get-where-line-m
-                  get-where-item-line-m]
-                 (if (some? lst)
-                     (if (instance? String lst)
-                         (get-token-line-m lst)
-                         (cond (and (= (count lst) 1) (instance? String (first lst))) (get-token-line-m (first lst))
-                               (is-true? get-where-line-m lst) (map get-token (get-where-line-m lst))
-                               (is-true? get-where-item-line-m lst) (map get-token (get-where-item-line-m lst))
-                               (some? (func-fn-m lst)) (when-let [m (func-fn-m lst)] m)
-                               (some? (operation-m lst)) (when-let [m (operation-m lst)] m)
-                               (some? (parenthesis-m lst)) (when-let [m (parenthesis-m lst)] m)
-                               (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? (parenthesis-m (rest (rest lst))))) (when-let [m (parenthesis-m (rest (rest lst)))] {:exists "not exists" :select_sql m})
-                               (and (my-lexical/is-eq? (first lst) "exists") (some? (parenthesis-m (rest lst)))) (when-let [m (parenthesis-m (rest lst))] {:exists "exists" :select_sql m})
-                               )))))
+                [lst]
+                (if (some? lst)
+                    (if (instance? String lst)
+                        (get-token-line lst)
+                        (if (and (= (count lst) 1) (instance? String (first lst)))
+                            (get-token-line (first lst))
+                            (let [where-line-m (get-where-line lst)]
+                                (if (and (some? where-line-m) (not (empty? where-line-m)))
+                                    (map get-token where-line-m)
+                                    (let [where-item-line-m (get-where-item-line lst)]
+                                        (if (and (some? where-item-line-m) (not (empty? where-item-line-m)))
+                                            (map get-token where-item-line-m)
+                                            (if-let [fn-m (func-fn lst)]
+                                                fn-m
+                                                (if-let [oprate-m (operation lst)]
+                                                    oprate-m
+                                                    (if-let [p-m (parenthesis lst)]
+                                                        p-m
+                                                        (let [not-exists-m (parenthesis (rest (rest lst)))]
+                                                            (if (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? not-exists-m))
+                                                                {:exists "not exists" :select_sql not-exists-m}
+                                                                (let [exists-m (parenthesis (rest lst))]
+                                                                    (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
+                                                                        {:exists "exists" :select_sql exists-m})))))))
+                                            ))))
+                            )
+                        ;(cond (and (= (count lst) 1) (instance? String (first lst))) (get-token-line (first lst))
+                        ;      (is-true? get-where-line-m lst) (map get-token (get-where-line-m lst))
+                        ;      (is-true? get-where-item-line-m lst) (map get-token (get-where-item-line-m lst))
+                        ;      (some? (func-fn-m lst)) (when-let [m (func-fn-m lst)] m)
+                        ;      (some? (operation-m lst)) (when-let [m (operation-m lst)] m)
+                        ;      (some? (parenthesis-m lst)) (when-let [m (parenthesis-m lst)] m)
+                        ;      (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? (parenthesis-m (rest (rest lst))))) (when-let [m (parenthesis-m (rest (rest lst)))] {:exists "not exists" :select_sql m})
+                        ;      (and (my-lexical/is-eq? (first lst) "exists") (some? (parenthesis-m (rest lst)))) (when-let [m (parenthesis-m (rest lst))] {:exists "exists" :select_sql m})
+                        ;      )
+                        )))
             ; 预处理 get-query-items 输入
             (pre-query-lst [[f & rs]]
                 (if (some? f)
@@ -299,12 +337,9 @@
                  (if (and (some? f) (some? l))
                      {:order-item (map get-token f) :order l})))
             ; 获取 limit
-            (get-limit
-                ([lst] (get-limit lst (memoize my-comma-fn)))
-                ([lst my-comma-fn-m]
-                 (if (true? (is-true? my-comma-fn-m lst))
-                     (let [m (my-comma-fn-m lst)]
-                         (if (= (count m) 3) (map get-token m))))))
+            (get-limit [lst]
+                (let [m (my-comma-fn lst)]
+                    (if (= (count m) 3) (map get-token m))))
             ; query items 处理
             (get-query-items [lst]
                 (when-let [[f & rs] (pre-query-lst lst)]

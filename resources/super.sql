@@ -345,20 +345,20 @@ CREATE INDEX IF NOT EXISTS my_log_idx ON my_log (table_name, create_date);
 
   取消掉整个 ddl_log 合并到 my_log 里面去 table_name：ddl_log, mycacheex: 为处理过后的 sql_code
 */
-DROP TABLE IF EXISTS ddl_log;
-CREATE TABLE IF NOT EXISTS ddl_log (
-                  id BIGINT,
-                  group_id BIGINT,
-                  data_set_id BIGINT,
-                  sql_code VARCHAR,
-                  create_date TIMESTAMP,
-                  PRIMARY KEY (id)
-                ) WITH "template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.DdlLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=ddl_log,cache_group=my_data";
-
-DROP INDEX IF EXISTS ddl_log_group_id_idx;
-CREATE INDEX IF NOT EXISTS ddl_log_group_id_idx ON ddl_log (group_id, create_date);
-CREATE INDEX IF NOT EXISTS ddl_log_ds_id_idx ON ddl_log (data_set_id, create_date);
-CREATE INDEX IF NOT EXISTS ddl_log_gp_ds_id_idx ON ddl_log (group_id, data_set_id, create_date);
+--DROP TABLE IF EXISTS ddl_log;
+--CREATE TABLE IF NOT EXISTS ddl_log (
+--                  id BIGINT,
+--                  group_id BIGINT,
+--                  data_set_id BIGINT,
+--                  sql_code VARCHAR,
+--                  create_date TIMESTAMP,
+--                  PRIMARY KEY (id)
+--                ) WITH "template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.DdlLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=ddl_log,cache_group=my_data";
+--
+--DROP INDEX IF EXISTS ddl_log_group_id_idx;
+--CREATE INDEX IF NOT EXISTS ddl_log_group_id_idx ON ddl_log (group_id, create_date);
+--CREATE INDEX IF NOT EXISTS ddl_log_ds_id_idx ON ddl_log (data_set_id, create_date);
+--CREATE INDEX IF NOT EXISTS ddl_log_gp_ds_id_idx ON ddl_log (group_id, data_set_id, create_date);
 
 /**
   数据集的 ddl log 即 data set 的 ddl

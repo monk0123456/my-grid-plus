@@ -35,33 +35,6 @@
     CREATE INDEX IF NOT EXISTS my_dataset_idx ON my_dataset (dataset_name);
 
     /**
-    3、批处理数据集中的表：my_dataset_table
-    DROP TABLE IF EXISTS my_dataset_table;
-    */
-    /*
-    CREATE TABLE IF NOT EXISTS my_dataset_table (
-                    id BIGINT,
-                    table_name VARCHAR,
-                    to_real BOOLEAN DEFAULT true,
-                    dataset_id BIGINT,
-                    PRIMARY KEY (id, dataset_id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_dataset_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
-    */
-
-    /**
-    4、批处理数据集中的表：my_dataset_table
-    DROP TABLE IF EXISTS my_dataset_real_table;
-    */
-    /*
-    CREATE TABLE IF NOT EXISTS my_dataset_real_table (
-                    id BIGINT,
-                    table_name VARCHAR,
-                    dataset_id BIGINT,
-                    PRIMARY KEY (id, dataset_id)
-                    ) WITH \"template=MyMeta_template,cache_name=my_dataset_real_table,KEY_TYPE=cn.plus.model.ddl.MyDatasetTablePK,VALUE_TYPE=cn.plus.model.ddl.MyDatasetRealTable,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";
-    */
-
-    /**
     5、存储元表： my_meta_tables
     DROP TABLE IF EXISTS my_meta_tables;
     */
@@ -295,41 +268,6 @@
     CREATE INDEX IF NOT EXISTS my_log_idx ON my_log (table_name, create_date);
 
     /**
-    21、记录DDL操作的表，作用是回溯复盘：ddl_log
-    记录DDL操作的表，作用是回溯复盘
-    DROP TABLE IF EXISTS ddl_log;
-    DROP INDEX IF EXISTS ddl_log_group_id_idx;
-    */
-    CREATE TABLE IF NOT EXISTS ddl_log (
-                    id BIGINT,
-                    group_id BIGINT,
-                    data_set_id BIGINT,
-                    sql_code VARCHAR,
-                    create_date TIMESTAMP,
-                    PRIMARY KEY (id)
-                    ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.DdlLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=ddl_log,cache_group=my_meta_log\";
-                    
-    CREATE INDEX IF NOT EXISTS ddl_log_group_id_idx ON ddl_log (group_id, create_date);
-
-    /**
-    22、记录DDL操作数据集的语句，作用是回溯复盘：ddl_log
-    记录DDL操作数据集的语句，作用是回溯复盘
-
-    DROP TABLE IF EXISTS dataset_ddl_log;
-    DROP INDEX IF EXISTS ds_ddl_log_idx;
-    */
-    CREATE TABLE IF NOT EXISTS dataset_ddl_log (
-                    id BIGINT,
-                    data_set_name VARCHAR,
-                    ds_ddl_type VARCHAR,
-                    sql_code VARCHAR,
-                    create_date TIMESTAMP,
-                    PRIMARY KEY (id)
-                    ) WITH \"template=partitioned,backups=3,VALUE_TYPE=cn.plus.model.DataSetDdlLog,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_name=dataset_ddl_log,cache_group=my_meta_log\";
-                    
-    CREATE INDEX IF NOT EXISTS ds_ddl_log_idx ON dataset_ddl_log (data_set_name, create_date);
-
-    /**
     23、定时任务
     DROP TABLE IF EXISTS my_cron;
     */
@@ -403,10 +341,6 @@
      "DROP TABLE IF EXISTS my_group_view"
      "DROP TABLE IF EXISTS my_log"
      "DROP INDEX IF EXISTS my_log_idx"
-     "DROP TABLE IF EXISTS ddl_log"
-     "DROP INDEX IF EXISTS ddl_log_group_id_idx"
-     "DROP TABLE IF EXISTS dataset_ddl_log"
-     "DROP INDEX IF EXISTS ds_ddl_log_idx"
      "DROP TABLE IF EXISTS my_cache;"
      ])
 
@@ -427,6 +361,4 @@
                           "my_delete_views"
                           "my_group_view"
                           "my_log"
-                          "ddl_log"
-                          "dataset_ddl_log"
                           "my_cache"})

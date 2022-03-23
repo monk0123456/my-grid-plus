@@ -1,0 +1,45 @@
+(def lst (my-lexical/to-back "function getFirst (sql, args)\n{\n   let lst = query_sql(sql, args);\n   for (rs in lst)\n   {\n      b = a + c;\n      switch {\n         (notNil(rs)): rs;\n         (a +b > 100): println(\"吴大富是帅哥1\");\n         else println(\"吴大贵是美女！\");\n      }\n      break;\n   }\n}"))
+(def body-lst (-> (my-smart-sql/get-func-name lst) :body-lst))
+
+(defn split-pair-item
+    ([lst] (split-pair-item lst [] [] []))
+    ([[f & r] stack stack-lst lst]
+     (if (some? f)
+         (cond (= f "(") (recur r (conj stack f) (conj stack-lst f) lst)
+               (= f ")") (recur r (pop stack) (conj stack-lst f) lst)
+               (and (= f ":") (empty? stack) (not (empty? stack-lst))) (recur r [] [] (conj lst stack-lst))
+               :else
+               (recur r stack (conj stack-lst f) lst)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst stack-lst)
+             lst))))
+
+(defn body-segment
+    ([lst] (body-segment lst [] []))
+    ([[f & r] stack-lst lst]
+     (if (some? f)
+         (cond (and (empty? stack-lst) (my-lexical/is-eq? f "for") (= (first r) "(")) (let [{args-lst :args-lst body-lst :body-lst} (my-smart-sql/get-small r)]
+                                                                                          (if-not (empty? body-lst)
+                                                                                              (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big body-lst)]
+                                                                                                  (recur rest-lst [] (conj lst {:expression "for" :args (my-smart-sql/get-for-in-args args-lst) :body (body-segment big-lst)})))))
+               (and (empty? stack-lst) (my-lexical/is-eq? f "switch") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big r)]
+                                                                                             (recur rest-lst [] (conj lst {:expression "switch" :pair (body-segment big-lst)})))
+               (= f ";") (cond (and (my-lexical/is-eq? (first stack-lst) "let") (= (second (rest stack-lst)) "=")) (let [my-let-vs (my-select-plus/sql-to-ast (rest (rest (rest stack-lst))))]
+                                                                                                                (recur r [] (conj lst {:let-name (second stack-lst) :let-vs my-let-vs})))
+                               (my-lexical/is-eq? (first stack-lst) "else") (recur r [] (conj lst {:else-vs (my-select-plus/sql-to-ast (rest stack-lst))}))
+                               (my-lexical/is-eq? (first stack-lst) "break") (recur r [] (conj lst {:break-vs true}))
+                               :else
+                               (let [pair-item (split-pair-item stack-lst)]
+                                   (cond (= (count pair-item) 2) (recur r [] (conj lst {:pair (my-select-plus/sql-to-ast (first pair-item)) :pair-vs (my-select-plus/sql-to-ast (second pair-item))}))
+                                         (= (count pair-item) 1) (recur r [] (conj lst {:express (my-select-plus/sql-to-ast (first pair-item))}))
+                                         :else
+                                         (throw (Exception. "switch 中的判断要成对出现！"))
+                                       ))
+                               )
+               :else
+               (recur r (conj stack-lst f) lst)
+               )
+         lst)))
+
+(body-segment (my-lexical/get-contain-lst body-lst))

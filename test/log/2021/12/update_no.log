@@ -17,6 +17,7 @@
     '[org.gridgain.plus.dml.my-scenes-util :as my-scenes-util]
     '[org.gridgain.plus.dml.select-lexical :as my-lexical]
     '[org.gridgain.plus.dml.my-expression :as my-expression]
+    '[org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
     '[org.gridgain.plus.sql.my-super-sql :as my-super-sql]
     '[org.gridgain.plus.context.my-context :as my-context]
     '[org.gridgain.plus.init.plus-init-sql :as plus-init-sql]

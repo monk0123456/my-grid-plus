@@ -1,0 +1,51 @@
+(def my-add (eval (read-string "(defn add [a b]\n    (+ a b))")))
+=> #'user/my-add
+(my-add 12345.54321 9876.6789)
+=> 22222.222110000002
+(add 12345.54321 9876.6789)
+=> 22222.222110000002
+(eval (read-string "(defn add [a b]\n    (+ a b))"))
+=> #'user/add
+(type (eval (read-string "(defn add [a b]\n    (+ a b))")))
+=> clojure.lang.Var
+(def my-func-cache (.getOrCreateCache ignite (doto (CacheConfiguration. "func_meta")
+                                                 (.setCacheMode (CacheMode/REPLICATED))
+                                                 (.setReadFromBackup true)
+                                                 (.setSqlSchema "PUBLIC"))))
+=> #'user/my-func-cache
+(.put my-func-cache "add" (eval (read-string "(defn add [a b]\n    (+ a b))")))
+=> nil
+((.get my-func-cache "add") 1 2)
+=> 3
+
+Iterator 转 loop 执行
+(defn my-iterator [it]
+    (if (.hasNext it)
+        [(.next it) it]))
+(def it (.iterator (.query (.cache ignite "public_meta") (SqlFieldsQuery. "select * from public.Customers"))))
+(loop [lst (my-iterator it)]
+    (if (some? (first lst))
+        (do
+            (println (first lst))
+            (recur (my-iterator (second lst))))))
+
+; 推荐使用
+(def it (.iterator (.query (.cache ignite "public_meta") (SqlFieldsQuery. "select * from public.Customers"))))
+(loop [[f & r] (my-iterator it)]
+    (if (some? f)
+        (do
+            (println f)
+            (recur (my-iterator (first r))))))
+
+(into [] (concat [1 2 3] [4 5 6]))
+
+模仿 break
+(def lst [1 2 3 4 5 6 7 8 9])
+=> #'user/lst
+(loop [[f & r] lst]
+    (if (some? f)
+        (if (> f 5)
+            (recur nil)
+            (do
+                (println f)
+                (recur r)))))

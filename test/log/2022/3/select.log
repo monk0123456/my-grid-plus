@@ -28,7 +28,7 @@ public 公有：Customers:客户表
 
 (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "select * from MY_META.my_users_group")))
 
-
+(.getAll (.query (.cache ignite "public_meta") (SqlFieldsQuery. "CREATE TABLE IF NOT EXISTS Customers (\n    -- 客户ID\n    CustomerID VARCHAR(5) NOT NULL,\n    -- 所在公司名称\n    CompanyName VARCHAR(40) NOT NULL,\n    -- 客户姓名\n    ContactName VARCHAR(30),\n    -- 客户头衔\n    ContactTitle VARCHAR(30),\n    -- 联系地址\n    Address VARCHAR(60),\n    -- 所在城市\n    City VARCHAR(15),\n    -- 所在地区\n    Region VARCHAR(15),\n    -- 邮编\n    PostalCode VARCHAR(10),\n    -- 国家\n    Country VARCHAR(15),\n    -- 电话\n    Phone VARCHAR(24),\n    -- 传真\n    Fax VARCHAR(24),\n    PRIMARY KEY (CustomerID)\n) WITH \"template=partitioned,backups=3,ATOMICITY=TRANSACTIONAL_SNAPSHOT\"")))
 
 (def line "-- 添加美羊羊 ; 用户组\ninsert INTO MY_META.my_users_group (id, group_name, user_token, group_type) values (1, 'myy', 'myy', 'all');")
 (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. line)))
