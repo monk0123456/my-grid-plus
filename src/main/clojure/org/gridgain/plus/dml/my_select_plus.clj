@@ -177,16 +177,16 @@
                             (if (is-sql-obj? ast-m)
                                 {:parenthesis ast-m}
                                 (let [where-line-m (get-where-line m)]
-                                    (if (and (some? where-line-m) (not (empty? where-line-m)))
+                                    (if (is-true? where-line-m)
                                         {:parenthesis (map get-token where-line-m)}
                                         (let [where-item-line-m (get-where-item-line m)]
-                                            (if (and (some? where-item-line-m) (not (empty? where-item-line-m)))
+                                            (if (is-true? where-item-line-m)
                                                 {:parenthesis (map get-token where-item-line-m)}
                                                 (let [comma-fn-m (my-comma-fn m)]
-                                                    (if (and (some? comma-fn-m) (not (empty? comma-fn-m)))
+                                                    (if (is-true? comma-fn-m)
                                                         {:parenthesis (map get-token comma-fn-m)}
                                                         (let [fn-m (arithmetic-fn m)]
-                                                            (if (and (some? fn-m) (not (empty? fn-m)))
+                                                            (if (is-true? fn-m)
                                                                 {:parenthesis (map get-token fn-m)}
                                                                 ))))))))))
 
@@ -199,8 +199,8 @@
                         ;    )
                         )))
             ; 判断执行 f 函数 p 参数
-            (is-true? [f p]
-                (and (some? (f p)) (> (count (f p)) 1)))
+            (is-true? [obj]
+                (and (some? obj) (> (count obj) 1)))
             ; 获取 token ast
             (get-token
                 [lst]
@@ -210,10 +210,10 @@
                         (if (and (= (count lst) 1) (instance? String (first lst)))
                             (get-token-line (first lst))
                             (let [where-line-m (get-where-line lst)]
-                                (if (and (some? where-line-m) (not (empty? where-line-m)))
+                                (if (is-true? where-line-m)
                                     (map get-token where-line-m)
                                     (let [where-item-line-m (get-where-item-line lst)]
-                                        (if (and (some? where-item-line-m) (not (empty? where-item-line-m)))
+                                        (if (is-true? where-item-line-m)
                                             (map get-token where-item-line-m)
                                             (if-let [fn-m (func-fn lst)]
                                                 fn-m

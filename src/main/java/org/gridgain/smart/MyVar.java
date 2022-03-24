@@ -1,6 +1,7 @@
-package org.gridgain.spirit;
+package org.gridgain.smart;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * spirit sql 里面的对变量的赋值
@@ -16,6 +17,16 @@ public class MyVar implements Serializable {
     public MyVar(final Object var)
     {
         this.var = var;
+        if (var instanceof List)
+        {
+            this.varType = "List";
+        }
+    }
+
+    public MyVar(final Object var, final String varType)
+    {
+        this.var = var;
+        this.varType = varType;
     }
 
     public Object getVar() {
@@ -32,5 +43,13 @@ public class MyVar implements Serializable {
 
     public void setVarType(String varType) {
         this.varType = varType;
+    }
+
+    @Override
+    public String toString() {
+        return "MyVar{" +
+                "var=" + var +
+                ", varType='" + varType + '\'' +
+                '}';
     }
 }

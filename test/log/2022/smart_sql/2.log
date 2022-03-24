@@ -43,3 +43,34 @@
          lst)))
 
 (body-segment (my-lexical/get-contain-lst body-lst))
+
+
+
+[["let" "lst" "=" "query_sql" "(" "sql" "," "args" ")"]
+ {:expression "for",
+  :args {:tmp_val "rs", :seq ("lst")},
+  :body [["b" "=" "a" "+" "c"]
+         {:expression "switch",
+          :pair [["(" "notNil" "(" "rs" ")" ")" ":" "rs"]
+                 ["(" "a" "+" "b" ">" "100" ")" ":" "println" "(" "\"吴大富是帅哥1\"" ")"]
+                 ["else" "println" "(" "\"吴大贵是美女！\"" ")"]]}
+         ["break"]]}]
+(def lst ["let" "lst" "=" "query_sql" "(" "sql" "," "args" ")"])
+
+(defn lst-to-token [lst]
+    (cond (and (my-lexical/is-eq? (first lst) "let") (= (second (rest lst)) "=")) (let [my-let-vs (my-select-plus/sql-to-ast (rest (rest (rest lst))))]
+                                                                                      {:let-name (second lst) :let-vs my-let-vs})
+          (my-lexical/is-eq? (first lst) "else") {:else-vs (my-select-plus/sql-to-ast (rest lst))}
+          (my-lexical/is-eq? (first lst) "break") {:break-vs true}
+          :else
+          (let [pair-item (my-smart-sql/split-pair-item lst)]
+              (cond (= (count pair-item) 2) {:pair (my-select-plus/sql-to-ast (first pair-item)) :pair-vs (my-select-plus/sql-to-ast (second pair-item))}
+                    (= (count pair-item) 1) {:express (my-select-plus/sql-to-ast (first pair-item))}
+                    :else
+                    (throw (Exception. "switch 中的判断要成对出现！"))
+                    ))
+          ))
+
+(lst-to-token lst)
+
+(def lst-item ["query_sql" "(" "sql" "," "args" ")"])

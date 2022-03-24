@@ -8,11 +8,8 @@ function getFirst (sql, args)
    let lst = query_sql(sql, args);
    for (rs in lst)
    {
-      b = a + c;
       switch {
          (notNil(rs)): rs;
-         (a +b > 100): println("吴大富是帅哥1");
-         else println("吴大贵是美女！");
       }
       break;
    }
