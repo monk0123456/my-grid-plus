@@ -252,6 +252,13 @@
             (let [{sqlObj :sql_obj} (first sql-obj)]
                 (if (and (> (count (-> sqlObj :query-items)) 0) (> (count (-> sqlObj :table-items)) 0)) true false)) false)))
 
+(defn eliminate-parentheses [lst]
+                       (if (and (= (first lst) "(") (= (last lst) ")"))
+                           (let [m (get-token (my-lexical/get-contain-lst lst))]
+                               (if-not (nil? m)
+                                   m
+                                   (eliminate-parentheses (my-lexical/get-contain-lst lst))))))
+
 ; 4、对括号的处理
 ; 例如：(a + b * c)
 (defn parenthesis
@@ -267,6 +274,9 @@
              (is-true? get-where-item-line-m m) {:parenthesis (map get-token (get-where-item-line-m m))}
              (is-true? my-comma-fn-m m) {:parenthesis (map get-token (my-comma-fn-m m))}
              (is-true? arithmetic-fn-m m) {:parenthesis (map get-token (arithmetic-fn-m m))}
+             (is-true? get-token m) (get-token m)
+             :else
+             (eliminate-parentheses m)
              ))))
 
 ; 获取 token ast

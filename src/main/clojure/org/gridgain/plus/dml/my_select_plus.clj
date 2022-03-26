@@ -171,7 +171,13 @@
                         (get-lazy [lst]
                             (if (instance? clojure.lang.LazySeq lst)
                                 lst
-                                (my-lexical/to-lazy lst)))]
+                                (my-lexical/to-lazy lst)))
+                        (eliminate-parentheses [lst]
+                            (if (and (= (first lst) "(") (= (last lst) ")"))
+                                (let [m (get-token (my-lexical/get-contain-lst lst))]
+                                    (if-not (nil? m)
+                                        m
+                                        (eliminate-parentheses (my-lexical/get-contain-lst lst))))))]
                     (when-let [m (is-operate-fn? (get-lazy lst))]
                         (let [ast-m (sql-to-ast m)]
                             (if (is-sql-obj? ast-m)
@@ -188,7 +194,10 @@
                                                         (let [fn-m (arithmetic-fn m)]
                                                             (if (is-true? fn-m)
                                                                 {:parenthesis (map get-token fn-m)}
-                                                                ))))))))))
+                                                                (let [tk-m (get-token m)]
+                                                                    (if (is-true? tk-m)
+                                                                        tk-m
+                                                                        (eliminate-parentheses m)))))))))))))
 
                         ;(cond
                         ;    (is-sql-obj? sql-to-ast-m m)  {:parenthesis (sql-to-ast-m m)}

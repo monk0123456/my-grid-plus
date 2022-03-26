@@ -85,6 +85,35 @@
                     )]
             (get-big-lst lst))))
 
+(defn my-re-match
+    ([lst] (my-re-match lst []))
+    ([[f & r] lst]
+     (if (some? f)
+         (cond (contains? f :pair) (recur r (conj lst f))
+               (contains? f :else-vs) (recur r (conj lst f))
+               :else (let [my-last-item (peek lst)]
+                         (if (nil? my-last-item)
+                             (throw (Exception. "match 语句块语法错误！"))
+                             (cond (contains? my-last-item :pair) (cond (map? (-> my-last-item :pair-vs)) (let [new-peek (assoc my-last-item :pair-vs [(-> my-last-item :pair-vs) f])]
+                                                                                                              (recur r (conj (pop lst) new-peek)))
+                                                                        (or (vector? (-> my-last-item :pair-vs)) (seq? (-> my-last-item :pair-vs))) (let [new-peek (assoc my-last-item :pair-vs (conj (-> my-last-item :pair-vs) f))]
+                                                                                                                                                        (recur r (conj (pop lst) new-peek)))
+                                                                        :else
+                                                                        (throw (Exception. "match 语句块语法错误！"))
+                                                                        )
+                                   (contains? my-last-item :else-vs) (cond (map? (-> my-last-item :else-vs)) (let [new-peek (assoc my-last-item :else-vs [(-> my-last-item :else-vs) f])]
+                                                                                                                 (recur r (conj (pop lst) new-peek)))
+                                                                           (or (vector? (-> my-last-item :else-vs)) (seq? (-> my-last-item :else-vs))) (let [new-peek (assoc my-last-item :else-vs (conj (-> my-last-item :else-vs) f))]
+                                                                                                                                                           (recur r (conj (pop lst) new-peek)))
+                                                                           :else
+                                                                           (throw (Exception. "match 语句块语法错误！"))
+                                                                           )
+                                   :else
+                                   (throw (Exception. "match 语句块语法错误！"))
+                                   )))
+               )
+         lst)))
+
 ; 获取 func 的名字 和 参数
 (defn get-func-name [[f & r]]
     (if (and (my-lexical/is-eq? f "function") (= (second r) "("))
@@ -106,9 +135,11 @@
               (cond (= (count pair-item) 2) {:pair (my-select-plus/sql-to-ast (first pair-item)) :pair-vs (my-select-plus/sql-to-ast (second pair-item))}
                     (= (count pair-item) 1) {:express (my-select-plus/sql-to-ast (first pair-item))}
                     :else
-                    (throw (Exception. "switch 中的判断要成对出现！"))
+                    (throw (Exception. "match 中的判断要成对出现！"))
                     ))
           ))
+
+(declare body-segment get-ast-lst get-ast)
 
 (defn body-segment
     ([lst] (body-segment lst [] []))
@@ -118,18 +149,30 @@
                                                                                           (if-not (empty? body-lst)
                                                                                               (let [{big-lst :big-lst rest-lst :rest-lst} (get-big body-lst)]
                                                                                                   (recur rest-lst [] (conj lst {:expression "for" :args (get-for-in-args args-lst) :body (body-segment big-lst)})))))
-               (and (empty? stack-lst) (my-lexical/is-eq? f "switch") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
-                                                                                             (recur rest-lst [] (conj lst {:expression "switch" :pair (body-segment big-lst)})))
+               (and (empty? stack-lst) (my-lexical/is-eq? f "match") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
+                                                                                             (recur rest-lst [] (conj lst {:expression "match" :pairs (my-re-match (body-segment big-lst))})))
+               (and (empty? stack-lst) (my-lexical/is-eq? f "innerFunction") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
+                                                                                                    (recur rest-lst [] (conj lst {:functions (get-ast-lst big-lst)})))
                (= f ";") (recur r [] (conj lst (lst-to-token stack-lst)))
                :else
                (recur r (conj stack-lst f) lst)
                )
          lst)))
 
+(defn get-ast-lst [lst]
+    (let [{func-name :func-name  args-lst :args-lst body-lst :body-lst} (get-func-name lst)]
+        (let [{big-lst :big-lst rest-lst :rest-lst} (get-big body-lst)]
+            (if-not (nil? rest-lst)
+                (concat [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}] (get-ast-lst rest-lst))
+                (if (nil? func-name)
+                    (throw (Exception. "smart sql 程序有误！"))
+                    [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}])
+                ))))
+
 (defn get-ast [^String sql]
     (if-let [lst (my-lexical/to-back sql)]
-        (let [m (get-func-name lst)]
-            (assoc m :body-lst (body-segment (my-lexical/get-contain-lst (-> m :body-lst)))))))
+        (get-ast-lst lst)
+        ))
 
 (defn contains-context? [my-context token-name]
     (cond (contains? (-> my-context :input-params) token-name) true
@@ -150,7 +193,7 @@
             (get-my-let my-context)
             m)))
 
-(declare token-to-clj for-seq body-to-clj for-seq-func)
+(declare token-to-clj for-seq body-to-clj for-seq-func match-to-clj)
 
 
 (defn token-to-clj [token my-context]
@@ -165,15 +208,22 @@
                                                                %s\n
                                                                (recur %s)\n
                                                                )))\n
-                        (vector? %s) (loop [[f & r] %s]\n
-                                         (if (some? f)\n
+                        (vector? %s) (loop [[%s & r] %s]\n
+                                         (if (some? %s)\n
                                              (do\n
                                                   %s\n
                                              (recur r))))\n
                         :else\n
                         (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                         )"
-                    seq-name my-it seq-name my-it tmp-val-name my-it for-inner-clj my-it seq-name seq-name for-inner-clj)
+                    seq-name my-it seq-name
+                    my-it
+                    tmp-val-name my-it
+                    for-inner-clj
+                    my-it
+                    seq-name tmp-val-name seq-name
+                    tmp-val-name
+                    for-inner-clj)
             )
         ))
 
@@ -187,16 +237,29 @@
                                                                        %s\n
                                                                        (recur %s)\n
                                                                        )))\n
-                                (vector? %s) (loop [[f & r] %s]\n
-                                                  (if (some? f)\n
+                                (vector? %s) (loop [[%s & r] %s]\n
+                                                  (if (some? %s)\n
                                                       (do\n
                                                            %s\n
                                                       (recur r))))\n
                                 :else\n
                                 (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                                 ))"
-                    seq-name func-clj seq-name my-it seq-name my-it tmp-val-name my-it for-inner-clj my-it seq-name seq-name for-inner-clj))
+                    seq-name func-clj
+                    seq-name my-it seq-name
+                    my-it
+                    tmp-val-name my-it
+                    for-inner-clj
+                    my-it
+                    seq-name tmp-val-name seq-name
+                    tmp-val-name
+                    for-inner-clj))
         ))
+
+; 处理 match
+; 第一个参数：(-> f :pairs)
+(defn match-to-clj [[f & r] my-context]
+    ())
 
 ; my-context 初始化的时候，记录了输入参数 和 定义的变量
 ; my-context: {:input-params #{} :let-params #{}}
@@ -208,6 +271,7 @@
                                                                                  :else
                                                                                  (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
                                                                                  )
+              (and (contains? f :expression) (= (-> f :expression) "match")) ()
 
               )))
 

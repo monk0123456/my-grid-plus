@@ -6,10 +6,38 @@
 function getFirst (sql, args)
 {
    let lst = query_sql(sql, args);
+   innerFunction {
+       function notNil(rs)
+       {
+           match {
+              rs <> nil:
+                        log("执行成功！");
+                        true;
+              else
+                  false;
+           }
+       }
+
+       function myCase(rs)
+       {
+           match {
+              rs.nth(1) == true: true;
+              else
+                   false;
+           }
+       }
+   }
    for (rs in lst)
    {
-      switch {
-         (notNil(rs)): rs;
+      match {
+         (notNil(rs)):
+                       log("wudafu");
+                       rs;
+         my-case(rs):
+                       log("这个是例子");
+                        a+b;
+         else
+                       println("吴大富是帅哥！");
       }
       break;
    }
@@ -35,7 +63,7 @@ function public.login (username, passwrod)
     },
     body: [
         {
-            expression: "switch",
+            expression: "match",
             pair: [],
             else: {}
         },
@@ -92,15 +120,15 @@ function public.login (username, passwrod)
                                                                                       (if-not (empty? body-lst)
                                                                                           (let [{big-lst :big-lst rest-lst :rest-lst} (get-big body-lst)]
                                                                                               (recur rest-lst [] [] (conj lst {:expression "for" :args (get-for-in-args args-lst) :body (body-segment big-lst)})))))
-               (and (empty? stack) (my-lexical/is-eq? f "switch") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
-                                                                                         (recur rest-lst [] [] (conj lst {:expression "switch" :pair (body-segment big-lst)})))
+               (and (empty? stack) (my-lexical/is-eq? f "match") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
+                                                                                         (recur rest-lst [] [] (conj lst {:expression "match" :pair (body-segment big-lst)})))
 
 
                ))))
 
 
 
-(def line "function getFirst (sql, args)\n{\n   let lst = query_sql(sql, args);\n   for (rs in lst)\n   {\n      switch {\n         (notNil(rs)): rs;\n         else println();\n      }\n      break;\n   }\n}")
+(def line "function getFirst (sql, args)\n{\n   let lst = query_sql(sql, args);\n   for (rs in lst)\n   {\n      match {\n         (notNil(rs)): rs;\n         else println();\n      }\n      break;\n   }\n}")
 (def lst (my-lexical/to-back line))
 
 (def body-lst (-> (get-func-name lst) :body-lst))
@@ -108,7 +136,7 @@ function public.login (username, passwrod)
 
 
 
-(def lst (my-lexical/to-back "function getFirst (sql, args)\n{\n   let lst = query_sql(sql, args);\n   for (rs in lst)\n   {\n      b = a + c;\n      switch {\n         (notNil(rs)): rs;\n         (a +b > 100): println(\"吴大富是帅哥1\");\n         else println(\"吴大贵是美女！\");\n      }\n      break;\n   }\n}"))
+(def lst (my-lexical/to-back "function getFirst (sql, args)\n{\n   let lst = query_sql(sql, args);\n   for (rs in lst)\n   {\n      b = a + c;\n      match {\n         (notNil(rs)): rs;\n         (a +b > 100): println(\"吴大富是帅哥1\");\n         else println(\"吴大贵是美女！\");\n      }\n      break;\n   }\n}"))
 (def body-lst (-> (my-smart-sql/get-func-name lst) :body-lst))
 (defn body-segment
     ([lst] (body-segment lst [] []))
@@ -118,8 +146,8 @@ function public.login (username, passwrod)
                                                                                           (if-not (empty? body-lst)
                                                                                               (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big body-lst)]
                                                                                                   (recur rest-lst [] (conj lst {:expression "for" :args (my-smart-sql/get-for-in-args args-lst) :body (body-segment big-lst)})))))
-               (and (empty? stack-lst) (my-lexical/is-eq? f "switch") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big r)]
-                                                                                             (recur rest-lst [] (conj lst {:expression "switch" :pair (body-segment big-lst)})))
+               (and (empty? stack-lst) (my-lexical/is-eq? f "match") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big r)]
+                                                                                             (recur rest-lst [] (conj lst {:expression "match" :pair (body-segment big-lst)})))
                (= f ";") (recur r [] (conj lst stack-lst))
                :else
                (recur r (conj stack-lst f) lst)
