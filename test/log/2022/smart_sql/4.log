@@ -1,0 +1,3 @@
+(def ast (first (my-smart-sql/get-ast "function my_test()\n{\n   match {\n            (notNil(rs)):\n                          log(\"wudafu\");\n                          rs;\n            my-case(rs):\n                          log(\"这个是例子\");\n                           a+b;\n            else\n                          println(\"吴大富是帅哥！\");\n         }\n}")))
+(def pairs (-> (first (-> ast :body-lst)) :pairs))
+

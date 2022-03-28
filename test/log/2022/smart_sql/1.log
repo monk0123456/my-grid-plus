@@ -2,7 +2,7 @@
 如果成功就返回 {is_long: true, userToken: "XXX"}
 如果错误就返回 {is_long: false, errMsg: "XXX"}
 
-// 开发一个函数，要求只返回第一条数据
+-- 开发一个函数，要求只返回第一条数据
 function getFirst (sql, args)
 {
    let lst = query_sql(sql, args);
@@ -41,6 +41,20 @@ function getFirst (sql, args)
       }
       break;
    }
+}
+
+function my_test()
+{
+   match {
+            (notNil(rs)):
+                          log("wudafu");
+                          rs;
+            my-case(rs):
+                          log("这个是例子");
+                           a+b;
+            else
+                          println("吴大富是帅哥！");
+         }
 }
 
 function public.login (username, passwrod)

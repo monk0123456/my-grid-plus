@@ -193,7 +193,7 @@
             (get-my-let my-context)
             m)))
 
-(declare token-to-clj for-seq body-to-clj for-seq-func match-to-clj)
+(declare token-to-clj for-seq body-to-clj for-seq-func pair-to-clj pair-lst-to-clj match-to-clj)
 
 
 (defn token-to-clj [token my-context]
@@ -258,8 +258,19 @@
 
 ; 处理 match
 ; 第一个参数：(-> f :pairs)
-(defn match-to-clj [[f & r] my-context]
-    ())
+(defn pair-to-clj [pair my-context]
+    (cond (contains? pair :pair) (format "(%s) (%s)" (body-to-clj (-> pair :pair) my-context) (body-to-clj (-> pair :pair-vs) my-context))
+          (contains? pair :else-vs) (format ":else (%s)" (body-to-clj (-> pair :else-vs) my-context)))
+    )
+
+(defn pair-lst-to-clj [[f & r] lst my-context]
+    (if (some? f)
+        (recur r (conj lst (pair-to-clj f my-context)))
+        (str/join " " lst)))
+
+(defn match-to-clj [lst-pairs my-context]
+    (if-not (empty? lst-pairs)
+        (format "(cond %s)" (pair-lst-to-clj lst-pairs [] my-context))))
 
 ; my-context 初始化的时候，记录了输入参数 和 定义的变量
 ; my-context: {:input-params #{} :let-params #{}}
@@ -271,7 +282,7 @@
                                                                                  :else
                                                                                  (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
                                                                                  )
-              (and (contains? f :expression) (= (-> f :expression) "match")) ()
+              (and (contains? f :expression) (= (-> f :expression) "match")) (match-to-clj (-> f :pairs) my-context)
 
               )))
 
