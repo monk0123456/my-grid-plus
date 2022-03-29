@@ -193,6 +193,43 @@
             (get-my-let my-context)
             m)))
 
+; 判断符号优先级
+; f symbol 的优先级大于等于 s 返回 true 否则返回 false
+(defn is-symbol-priority [f s]
+    (cond (or (= (-> f :operation_symbol) "*") (= (-> f :operation_symbol) "/")) true
+          (and (or (= (-> f :operation_symbol) "+") (= (-> f :operation_symbol) "-")) (or (= (-> s :operation_symbol) "+") (= (-> s :operation_symbol) "-"))) true
+          :else
+          false))
+
+(defn run-express [stack_number stack_symbo]
+    (if (some? (peek stack_symbo))
+        (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbo)]
+            (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo)))
+        (-> (first stack_number) :item_name)))
+
+(defn calculate
+    ([lst] (calculate lst [] []))
+    ([[f & r] stack_number stack_symbol]
+     (if (some? f)
+         (cond (contains? f :operation_symbol) (cond
+                                                   ; 若符号栈为空，则符号直接压入符号栈
+                                                   (= (count stack_symbol) 0) (recur r stack_number (conj stack_symbol f))
+                                                   ; f 符号的优先级高于或等于符号栈栈顶的优先级，则直接入栈
+                                                   (is-symbol-priority f (peek stack_symbol)) (recur r stack_number (conj stack_symbol f))
+                                                   ; f 符号的优先级低于栈顶的优先级，则将符号栈顶，弹出参与计算后，在压入，数据栈
+                                                   :else
+                                                   (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbol)]
+                                                       (recur r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f)))
+                                                   )
+               (contains? f :parenthesis) (let [m (calculate (reverse (-> f :parenthesis)))]
+                                              (recur r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol))
+               (contains? f :item_name) (recur r (conj stack_number f) stack_symbol)
+               ;(contains? f :func-name)
+               :else
+               (recur r (conj stack_number f) stack_symbol)
+               )
+         (run-express stack_number stack_symbol))))
+
 (declare token-to-clj for-seq body-to-clj for-seq-func pair-to-clj pair-lst-to-clj match-to-clj)
 
 
@@ -259,22 +296,32 @@
 ; 处理 match
 ; 第一个参数：(-> f :pairs)
 (defn pair-to-clj [pair my-context]
-    (cond (contains? pair :pair) (format "(%s) (%s)" (body-to-clj (-> pair :pair) my-context) (body-to-clj (-> pair :pair-vs) my-context))
-          (contains? pair :else-vs) (format ":else (%s)" (body-to-clj (-> pair :else-vs) my-context)))
+    (cond (contains? pair :pair) (if (= (count (-> pair :pair-vs)) 1)
+                                     (format "(%s) (%s)" (body-to-clj [(-> pair :pair)] my-context) (body-to-clj (-> pair :pair-vs) my-context))
+                                     (format "(%s) (do %s)" (body-to-clj [(-> pair :pair)] my-context) (body-to-clj (-> pair :pair-vs) my-context)))
+          (contains? pair :else-vs) (if (= (count (-> pair :else-vs)) 1)
+                                        (format ":else (%s)" (body-to-clj (-> pair :else-vs) my-context))
+                                        (format ":else (do %s)" (body-to-clj (-> pair :else-vs) my-context)))
+          )
     )
 
 (defn pair-lst-to-clj [[f & r] lst my-context]
     (if (some? f)
-        (recur r (conj lst (pair-to-clj f my-context)))
+        (recur r (conj lst (pair-to-clj f my-context)) my-context)
         (str/join " " lst)))
 
-(defn match-to-clj [lst-pairs my-context]
+(defn match-to-clj [lst-pairs r my-context]
     (if-not (empty? lst-pairs)
-        (format "(cond %s)" (pair-lst-to-clj lst-pairs [] my-context))))
+        (let [last-line (body-to-clj r my-context)]
+            (if-not (Strings/isNullOrEmpty last-line)
+                (format "(cond %s) %s" (pair-lst-to-clj lst-pairs [] my-context) last-line)
+                (format "(cond %s)" (pair-lst-to-clj lst-pairs [] my-context))))
+        ))
 
 ; my-context 初始化的时候，记录了输入参数 和 定义的变量
 ; my-context: {:input-params #{} :let-params #{}}
-(defn body-to-clj [[f & r] my-context]
+(defn body-to-clj
+    [[f & r] my-context]
     (if (some? f)
         (cond (contains? f :let-name) (format "(let [%s (MyVar. %s)]\n    (%s))" (-> f :let-name) (token-to-clj (-> f :let-vs) my-context) (body-to-clj r (conj my-context (-> f :let-name))))
               (and (contains? f :expression) (= (-> f :expression) "for")) (cond (and (contains? (-> f :args :tmp_val) :item_name) (contains? (-> f :args :seq) :item_name)) (for-seq f r my-context)
@@ -282,9 +329,29 @@
                                                                                  :else
                                                                                  (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
                                                                                  )
-              (and (contains? f :expression) (= (-> f :expression) "match")) (match-to-clj (-> f :pairs) my-context)
+              (and (contains? f :expression) (= (-> f :expression) "match")) (match-to-clj (-> f :pairs) r my-context)
+              (contains? f :express) (cond (contains? (-> f :express) :item_name) (-> f :express :item_name)
+                                           (contains? (-> f :express) :operation) (calculate (reverse (-> f :operation)))
+                                           (contains? (-> f :express) :parenthesis) (calculate (reverse (-> f :parenthesis)))
+                                           (contains? (-> f :express) :func-name) (calculate (reverse (-> f :operation)))
+                                           )
 
               )))
+
+;(defn body-to-clj [[f & r] my-context]
+;    (if (some? f)
+;        (cond (contains? f :let-name) (format "(let [%s (MyVar. %s)]\n    (%s))" (-> f :let-name) (token-to-clj (-> f :let-vs) my-context) (body-to-clj r (conj my-context (-> f :let-name))))
+;              (and (contains? f :expression) (= (-> f :expression) "for")) (cond (and (contains? (-> f :args :tmp_val) :item_name) (contains? (-> f :args :seq) :item_name)) (for-seq f r my-context)
+;                                                                                 (and (contains? (-> f :args :tmp_val) :item_name) (contains? (-> f :args :seq) :func-name)) (for-seq-func f r my-context)
+;                                                                                 :else
+;                                                                                 (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
+;                                                                                 )
+;              (and (contains? f :expression) (= (-> f :expression) "match")) (match-to-clj (-> f :pairs) my-context)
+;              (contains? f :express) (cond (contains? (-> f :express) :item_name) (-> f :express :item_name)
+;                                           (contains? (-> f :express) :operation)
+;                                           )
+;
+;              )))
 
 (defn ast-to-clj [ast]
     (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast]

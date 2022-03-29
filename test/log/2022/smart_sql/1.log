@@ -43,18 +43,10 @@ function getFirst (sql, args)
    }
 }
 
-function my_test()
+function my_test(a, b)
 {
-   match {
-            (notNil(rs)):
-                          log("wudafu");
-                          rs;
-            my-case(rs):
-                          log("这个是例子");
-                           a+b;
-            else
-                          println("吴大富是帅哥！");
-         }
+   let c = 10;
+   a + b +c;
 }
 
 function public.login (username, passwrod)
