@@ -159,8 +159,8 @@ CREATE TABLE IF NOT EXISTS my_scenes (
                   --ps_code VARCHAR,
                   descrip VARCHAR,
                   is_batch BOOLEAN DEFAULT false,
-                  PRIMARY KEY (scenes_name)
-                ) WITH "template=MyMeta_template,VALUE_TYPE=cn.plus.model.db.MyScenesCache,cache_name=my_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
+                  PRIMARY KEY (scenes_name, group_id)
+                ) WITH "template=MyMeta_template,KEY_TYPE=cn.plus.model.db.MyScenesCachePk,VALUE_TYPE=cn.plus.model.db.MyScenesCache,cache_name=my_scenes,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta";
 
 DROP TABLE IF EXISTS my_scenes_params;
 CREATE TABLE IF NOT EXISTS my_scenes_params (
