@@ -9,7 +9,8 @@
              (org.gridgain.smart MyVar)
              (com.google.common.base Strings)
              (org.tools MyConvertUtil MyDbUtil KvSql)
-             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk)
+             (org.gridgain.dml.util MyCacheExUtil)
+             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
              (java.util List ArrayList Date Iterator)
@@ -252,7 +253,8 @@
                )
          (run-express stack_number stack_symbol my-context))))
 
-(declare token-lst-to-clj token-lst-clj token-to-clj map-token-to-clj func-to-clj item-to-clj for-seq body-to-clj for-seq-func pair-to-clj pair-lst-to-clj match-to-clj)
+(declare token-lst-to-clj token-lst-clj token-to-clj map-token-to-clj func-to-clj item-to-clj for-seq body-to-clj for-seq-func pair-to-clj pair-lst-to-clj match-to-clj
+         my-args pk-rs-clj data-rs-clj insert-to-cache lst-to-cache)
 
 ; 判断 func
 (defn is-func? [^Ignite ignite ^String func-name]
@@ -265,7 +267,22 @@
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m is-set my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
-        (cond (my-lexical/is-eq? func-name "trans") ()
+        (cond (my-lexical/is-eq? func-name "trans") (let [t_f (gensym "t_f") t_r (gensym "t_r") lst-rs (gensym "lst-rs-")]
+                                                        (format "(loop [[f_%s & r_%s] %s lst-rs-%s []]
+                                                                   (if (some? f_%s)
+                                                                         (let [[sql args] f_%s]
+                                                                                 (let [sql-lst (my-lexical/to-back (apply format sql (my-args args)))]
+                                                                                     (cond (my-lexical/is-eq? (first sql-lst) \"insert\") (recur r_%s (conj lst-rs-%s (insert-to-cache ignite group_id my-context sql-lst)))
+                                                                                           (my-lexical/is-eq? (first sql-lst) \"update\") ()
+                                                                                           (my-lexical/is-eq? (first sql-lst) \"delete\") ()
+                                                                                     )))
+                                                                         (if-not (empty? lst-rs-%s)
+                                                                             (MyCacheExUtil/transCache ignite lst-rs-%s))
+                                                                   ))" t_f t_r (-> (first lst_ps) :item_name) lst-rs
+                                                                t_f
+                                                                t_f
+                                                                lst-rs
+                                                                ))
               (is-func? ignite func-name) (format "(my_func %s %s)" func-name (token-to-clj ignite group_id lst_ps is-set my-context))
               (is-scenes? ignite group_id func-name) (format "(my_scenes %s %s)" func-name (token-to-clj ignite group_id lst_ps is-set my-context))
               )))
@@ -384,6 +401,49 @@
                 (format "(cond %s) %s" (pair-lst-to-clj ignite group_id lst-pairs [] my-context) last-line)
                 (format "(cond %s)" (pair-lst-to-clj ignite group_id lst-pairs [] my-context))))
         ))
+
+; trans
+(defn my-args
+    ([agrs] (my-args agrs []))
+    ([[f & r] lst]
+     (if (some? f)
+         (cond (string? f) (recur r (conj lst (format "'%s'" f)))
+               :else
+               (recur r (conj lst f))
+               )
+         lst)))
+
+(defn pk-rs-clj [ignite group_id my-context pk-rs]
+    (if (= (count pk-rs) 1)
+        (token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> (first pk-rs) :item_value)) false my-context)
+        (loop [[f & r] pk-rs lst-line []]
+            (if (some? f)
+                (recur r (conj lst-line (format "(MyKeyValue. %s %s)" (format "%s_pk" (-> f :column_name)) (token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) false my-context))))
+                (format "[%s]" (str/join " " lst-line))))))
+
+(defn data-rs-clj [ignite group_id my-context data-rs]
+    (loop [[f & r] data-rs lst-line []]
+        (if (some? f)
+            (recur r (conj lst-line (format "(MyKeyValue. %s %s)" (-> f :column_name) (token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) false my-context))))
+            (format "[%s]" (str/join " " lst-line)))))
+
+(defn insert-to-cache [ignite group_id my-context sql-lst]
+    (let [insert_obj (my-insert/get_insert_obj sql-lst)]
+        (let [pk_with_data (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
+            (let [{pk-rs :pk_rs data-rs :data_rs} (my-insert/insert_obj_to_db ignite 0 (-> insert_obj :table_name) pk_with_data)]
+                (let [line (format "(MyLogCache. %s %s %s (SqlType/INSERT))" (-> insert_obj :table_name) (pk-rs-clj ignite group_id my-context pk-rs) (data-rs-clj ignite group_id my-context data-rs))]
+                    (eval (read-string line)))))))
+
+(defn lst-to-cache [ignite group_id my-context lst]
+    (loop [[f & r] lst lst-rs []]
+        (if (some? f)
+            (let [[sql args] f]
+                (let [sql-lst (my-lexical/to-back (apply format sql (my-args args)))]
+                    (cond (my-lexical/is-eq? (first sql-lst) "insert") (recur r (conj lst-rs (insert-to-cache ignite group_id my-context sql-lst)))
+                          (my-lexical/is-eq? (first sql-lst) "update") ()
+                          (my-lexical/is-eq? (first sql-lst) "delete") ()
+                          )))
+            lst-rs)))
 
 ; my-context 初始化的时候，记录了输入参数 和 定义的变量
 ; my-context: {:input-params #{} :let-params #{}}

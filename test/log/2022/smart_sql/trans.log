@@ -1,0 +1,158 @@
+; lst to cache
+(defn lst-to-cache [lst]
+    (loop [[f & r] lst lst-rs []]
+        (if (some? f)
+            (let [[sql args] f]
+                (let [sql-lst (my-lexical/to-back sql)]
+                    (cond (my-lexical/is-eq? (first sql-lst) "insert") ()
+                          (my-lexical/is-eq? (first sql-lst) "update") ()
+                          (my-lexical/is-eq? (first sql-lst) "delete") ()
+                          )))
+            lst-rs)))
+
+(def line "INSERT INTO categories (categoryid, categoryname, description) VALUES (?*(?+1+?), '白酒', '喝的')")
+(def lst-sql (my-lexical/to-back line))
+(my-insert/get_insert_obj lst-sql)
+(def insert_obj (my-insert/get_insert_obj lst-sql))
+
+(my-insert/get_pk_data ignite (-> insert_obj :table_name))
+(def pk_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)))
+(my-insert/get_pk_data_with_data pk_data insert_obj)
+
+
+(defn insert-to-cache [ignite sql-lst args]
+    (let [insert_obj (my-insert/get_insert_obj sql-lst)]
+        (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
+            )))
+
+(defn lst-to-cache [ignite lst]
+    (loop [[f & r] lst lst-rs []]
+        (if (some? f)
+            (let [[sql args] f]
+                (let [sql-lst (my-lexical/to-back sql)]
+                    (cond (my-lexical/is-eq? (first sql-lst) "insert") ()
+                          (my-lexical/is-eq? (first sql-lst) "update") ()
+                          (my-lexical/is-eq? (first sql-lst) "delete") ()
+                          )))
+            lst-rs)))
+
+
+
+
+function my_trans(a, b)
+{
+   let lst = [["INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(? + 1+ ?,?,'Seaweed and fish', '')", [a, b, "吴大富"]]];
+   trans(lst);
+}
+
+["INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(? + 1+ ?,?,'Seaweed and fish', '')", [a, b, "吴大富"]
+转换成
+"INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(a + 1+ b, '吴大富','Seaweed and fish', '')"
+经过转换
+将表达式是转换成
+a + 1+ b ==》 (+ a (+ 1 b))
+
+(defn my_trans [a b]
+    (MyCacheEx. (.cache ignite "f_Categories") (+ a (+ 1 b)) nil (SqlType/INSERT)))
+
+(defn my_trans [a b]
+    (MyCacheEx. (.cache ignite "f_Categories") (eval (read-string (format "(+ %s (+ 1 %s)" a b))) nil (SqlType/INSERT)))
+
+
+(defn insert-to-cache [ignite sql-lst]
+    (let [insert_obj (my-insert/get_insert_obj sql-lst)]
+        (let [pk_with_data (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
+            (my-insert/insert_obj_to_db ignite 0 (-> insert_obj :table_name) pk_with_data))))
+
+(defn my-args
+    ([agrs] (my-args agrs []))
+    ([[f & r] lst]
+     (if (some? f)
+         (cond (string? f) (recur r (conj lst (format "'%s'" f)))
+               :else
+               (recur r (conj lst f))
+               )
+         lst)))
+
+(defn my_trans [ignite a b]
+    (let [lst [["INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(? + 1+ ?,?,'Seaweed and fish', '')", [a, b, "吴大富"]]]]
+        (loop [[f & r] lst lst-cache []]
+            (if (some? f)
+                (let [[sql args] f]
+                    (recur r (concat lst-cache (insert-to-cache ignite (apply format sql (my-args args)))))
+                    )
+                lst-cache))))
+
+
+
+
+(def line "INSERT INTO categories (categoryid, categoryname, description) VALUES (?*(?+1+?), '白酒', '喝的')")
+(def lst-sql (my-lexical/to-back line))
+(my-insert/get_insert_obj lst-sql)
+(def insert_obj (my-insert/get_insert_obj lst-sql))
+
+(my-insert/get_pk_data ignite (-> insert_obj :table_name))
+(def pk_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)))
+
+(defn pk-rs-clj [ignite group_id my-context pk-rs]
+    (if (= (count pk-rs) 1)
+        (my-smart-sql/token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> (first pk-rs) :item_value)) false my-context)
+        (loop [[f & r] pk-rs lst-line []]
+            (if (some? f)
+                (recur r (conj lst-line (format "(MyKeyValue. %s %s)" (format "%s_pk" (-> f :column_name)) (my-smart-sql/token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) false my-context))))
+                (format "[%s]" (str/join " " lst-line))))))
+
+(defn data-rs-clj [ignite group_id my-context data-rs]
+    (loop [[f & r] data-rs lst-line []]
+        (if (some? f)
+            (recur r (conj lst-line (format "(MyKeyValue. %s %s)" (-> f :column_name) (my-smart-sql/token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) false my-context))))
+            (format "[%s]" (str/join " " lst-line)))))
+
+(defn insert-to-cache [ignite group_id my-context sql-lst]
+    (let [insert_obj (my-insert/get_insert_obj sql-lst)]
+        (let [pk_with_data (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
+            (let [{pk-rs :pk_rs data-rs :data_rs} (my-insert/insert_obj_to_db ignite 0 (-> insert_obj :table_name) pk_with_data)]
+                (format "(MyLogCache. %s %s %s (SqlType/INSERT))" (-> insert_obj :table_name) (pk-rs-clj ignite group_id my-context pk-rs) (data-rs-clj ignite group_id my-context data-rs))))))
+
+
+
+
+
+
+(insert-to-cache ignite 0 {} (my-insert/get_pk_data_with_data pk_data insert_obj))
+(my-insert/get_pk_data_with_data pk_data insert_obj)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

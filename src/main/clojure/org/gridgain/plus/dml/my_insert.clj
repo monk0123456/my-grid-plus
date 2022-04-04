@@ -30,10 +30,10 @@
     ([[f & rs] stack lst result-lst]
      (if (some? f)
          (cond (and (= f ",") (= (count stack) 0)) (if (> (count lst) 0) (recur rs stack [] (concat result-lst [lst f])) (recur rs stack [] result-lst))
-               (= f "(") (recur rs (concat stack [f]) (concat lst [f]) result-lst)
-               (= f ")") (recur rs (pop stack) (concat lst [f]) result-lst)
+               (= f "(") (recur rs (conj stack f) (conj lst f) result-lst)
+               (= f ")") (recur rs (pop stack) (conj lst f) result-lst)
                :else
-               (recur rs stack (concat lst [f]) result-lst)
+               (recur rs stack (conj lst f) result-lst)
                )
          (if (> (count lst) 0) (concat result-lst [lst]) result-lst))))
 
@@ -67,7 +67,7 @@
 
 (defn get-insert-items
     ([tokens] (when-let [[columns items] (get-insert-items tokens [] [])]
-                  (let [my-columns (my-comma-fn (get-item-line columns))  my-items (my-comma-fn (get-item-line items))]
+                  (let [my-columns (my-comma-fn (get-item-line columns)) my-items (my-comma-fn (get-item-line items))]
                       (loop [[f_c & r_c] my-columns [f_m & r_m] my-items lst_kv []]
                           (if (and (some? f_c) (some? f_m))
                               (if-not (= (first f_c) \,)

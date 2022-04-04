@@ -10,3 +10,18 @@
 
 (def rs (.executeQuery stmt))
 
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+
+(def line-insert "select*from public.customers")
+(def stmt (.prepareStatement conn line-insert))
+(def rs (.executeQuery stmt))
+
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (do
+            (println (.getString rs 1))
+            (recur rs))
+        ))
+
+(show-rs rs)

@@ -52,6 +52,15 @@ public 公有：Customers:客户表
 
 (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "drop table public.Customers")))
 
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(1,'Beverages','Soft drinks, coffees, teas, beers, and ales', '')")))
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(2,'Condiments','Sweet and savory sauces, relishes, spreads, and seasonings', '')")))
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(3,'Confections','Desserts, candies, and sweet breads', '')")))
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(4,'Dairy Products','Cheeses', '')")))
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(5,'Grains/Cereals','Breads, crackers, pasta, and cereal', '')")))
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(6,'Meat/Poultry','Prepared meats', '')")))
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(7,'Produce','Dried fruit and bean curd', '')")))
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(8,'Seafood','Seaweed and fish', '')")))
+
 
 
 

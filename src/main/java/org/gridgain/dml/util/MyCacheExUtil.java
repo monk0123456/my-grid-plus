@@ -1,8 +1,13 @@
 package org.gridgain.dml.util;
 
+import clojure.lang.*;
 import cn.plus.model.MyCacheEx;
 import cn.plus.model.MyKeyValue;
 import cn.plus.model.MyLogCache;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.transactions.Transaction;
 import org.tools.KvSql;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -12,9 +17,64 @@ import org.tools.MyLineToBinary;
 
 import java.io.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MyCacheExUtil implements Serializable {
     private static final long serialVersionUID = 7714300623488330841L;
+
+    public static void transCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
+    {
+        List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
+
+        transMyCache(ignite, lstCache);
+    }
+
+    public static void transCache(final Ignite ignite, final PersistentVector lstLogCache)
+    {
+        transMyCache(ignite, (List<MyCacheEx>) lstLogCache.stream().map(m -> convertToCacheEx(ignite, (MyLogCache)m)).collect(Collectors.toList()));
+    }
+
+    public static void transCache(final Ignite ignite, final PersistentList lstLogCache)
+    {
+        transMyCache(ignite, (List<MyCacheEx>) lstLogCache.stream().map(m -> convertToCacheEx(ignite, (MyLogCache)m)).collect(Collectors.toList()));
+    }
+
+    public static void transCache(final Ignite ignite, final LazySeq lstLogCache)
+    {
+        transMyCache(ignite, (List<MyCacheEx>) lstLogCache.stream().map(m -> convertToCacheEx(ignite, (MyLogCache)m)).collect(Collectors.toList()));
+    }
+
+    private static void transMyCache(final Ignite ignite, final List<MyCacheEx> lstCache) {
+        //List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
+
+        IgniteTransactions transactions = ignite.transactions();
+        Transaction tx = null;
+        try {
+            tx = transactions.txStart();
+            lstCache.stream().forEach(m -> {
+                switch (m.getSqlType()) {
+                    case UPDATE:
+                        m.getCache().replace(m.getKey(), m.getValue());
+                        break;
+                    case INSERT:
+                        m.getCache().put(m.getKey(), m.getValue());
+                        break;
+                    case DELETE:
+                        m.getCache().remove(m.getKey());
+                        break;
+                }
+            });
+            tx.commit();
+        } catch (Exception ex) {
+            if (tx != null) {
+                tx.rollback();
+            }
+        } finally {
+            if (tx != null) {
+                tx.close();
+            }
+        }
+    }
 
     /**
      * MyLogCache 转换到 MyCacheEx

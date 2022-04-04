@@ -3,6 +3,7 @@ package org.tools;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 
@@ -38,5 +39,21 @@ public class KvSql {
         } else {
             throw new RuntimeException(String.format("cache[%s] not find value type", cacheName));
         }
+    }
+
+    /**
+     * 获取 Key Builder
+     * */
+    public static BinaryObjectBuilder getKeyBuilder(Ignite ignite, String cacheName)
+    {
+        return ignite.binary().builder(KvSql.getKeyType(ignite, cacheName));
+    }
+
+    /**
+     * 获取 Value Builder
+     * */
+    public static BinaryObjectBuilder getValueBuilder(Ignite ignite, String cacheName)
+    {
+        return ignite.binary().builder(KvSql.getValueType(ignite, cacheName));
     }
 }
