@@ -190,7 +190,7 @@
           (re-find #"^(?i)BOOLEAN$" column_type) {:java_type Boolean}
           (re-find #"^(?i)BIGINT$" column_type) {:java_type Long}
           (re-find #"^(?i)BINARY$" column_type) {:java_type "byte[]"}
-          (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$" column_type) {:java_type Timestamp}
+          (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) {:java_type Timestamp}
           (re-find #"^(?i)REAL$" column_type) {:java_type BigDecimal}
           (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (when-let [m (to_p_d column_type)]
                                                                             (if (= (count m) 2)
@@ -204,7 +204,7 @@
           ))
 
 (defn convert_to_type [column_type]
-    (cond (re-find #"^(?i)integer$|^(?i)int$|^(?i)long$|^(?i)double$|^(?i)float$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$|^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$" column_type) column_type
+    (cond (re-find #"^(?i)integer$|^(?i)int$|^(?i)long$|^(?i)double$|^(?i)float$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$|^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$" column_type) column_type
           (re-find #"^(?i)REAL$" column_type) "DECIMAL"
           (re-find #"^(?i)SMALLINT$" column_type) "INTEGER"
           :else
@@ -225,7 +225,7 @@
               (re-find #"^(?i)char\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
               (re-find #"^(?i)BOOLEAN$" column_type) (MyConvertUtil/ConvertToBoolean column_value)
               (re-find #"^(?i)BIGINT$" column_type) (MyConvertUtil/ConvertToLong column_value)
-              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp column_value)
+              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp column_value)
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal column_value)
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal column_value)
               (re-find #"^(?i)DECIMAL$" column_type) (MyConvertUtil/ConvertToDecimal column_value)
