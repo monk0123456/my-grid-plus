@@ -7,6 +7,7 @@
     (:import (org.apache.ignite Ignite IgniteCache)
              (org.apache.ignite.internal IgnitionEx)
              (com.google.common.base Strings)
+             (org.log MyCljLogger)
              (org.tools MyConvertUtil KvSql)
              (java.sql Timestamp)
              (java.math BigDecimal)
@@ -128,6 +129,7 @@
 ; vs_line 字符串 (可以是值，函数，表达式)
 (defn get_plus_value [^Ignite ignite ^Long group_id ^String column_type ^String vs_line]
     (cond (re-find #"^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$" column_type) (cond (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$|^\'\'$|^\"\"$" vs_line) (my-lexical/get_str_value vs_line)
+                                                                                                         (my-lexical/is-eq? vs_line "null") ""
                                                                                                          :else
                                                                                                          (MyConvertUtil/ConvertToString (get_plus_value_tokens ignite group_id vs_line)))
           (re-find #"^(?i)BOOLEAN$" column_type) (cond (re-find #"^(?i)true$|^(?i)\'true\'$|^(?i)\"true\"$" vs_line) true
@@ -150,7 +152,7 @@
           )
     )
 
-(defn plus_value [^Ignite ignite ^Long group_id ^String column_type ^clojure.lang.PersistentArrayMap vs]
+(defn plus_value [^Ignite ignite ^Long group_id ^String column_type vs]
     (if (= (count vs) 1)
         (get_plus_value ignite group_id column_type (nth vs 0))
         (cond (re-find #"^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (plus_value_tokens ignite group_id vs))

@@ -1,5 +1,7 @@
 package org.log;
 
+import clojure.lang.PersistentArrayMap;
+import clojure.lang.PersistentVector;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharSink;
 import com.google.common.io.FileWriteMode;
@@ -30,5 +32,20 @@ public class MyCljLogger {
         }
         catch (IOException e)
         {}
+    }
+
+    public static void showParams(Object... ps)
+    {
+        System.out.println(ps);
+    }
+
+    public static void showParams(PersistentArrayMap vs)
+    {
+        System.out.println(vs);
+    }
+
+    public static void showParams(PersistentVector vs)
+    {
+        System.out.println(vs);
     }
 }

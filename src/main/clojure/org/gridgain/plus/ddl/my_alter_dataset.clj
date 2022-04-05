@@ -214,7 +214,7 @@
         (get_run_dll ignite (str/lower-case sql_line))
         (if-let [my_group (.get (.cache ignite "my_users_group") group_id)]
             (let [data_set_id (.getData_set_id my_group) group_type (.getGroup_type my_group)]
-                (if (and (contains? #{"ALL" "DDL"} group_type) (= data_set_id 0))
+                (if (and (contains? #{"ALL" "DDL"} (str/upper-case group_type)) (= data_set_id 0))
                     (get_run_dll ignite (str/lower-case sql_line))
                     (throw (Exception. "用户组没有修改数据集的权限，或者用户组不能的数据集不是元数据集！")))))))
 

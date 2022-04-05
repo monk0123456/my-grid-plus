@@ -30,6 +30,7 @@
 (import (org.apache.ignite Ignite IgniteCache)
         (org.apache.ignite.internal IgnitionEx)
         (org.gridgain.smart MyVar)
+        (org.log MyCljLogger)
         (com.google.common.base Strings)
         (org.tools MyConvertUtil KvSql)
         (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType DdlLog DataSetDdlLog)

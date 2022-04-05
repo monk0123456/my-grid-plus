@@ -1,0 +1,49 @@
+(declare get_binaryObject_pk get_binaryObject get_pk_rs get_data_rs)
+
+(def sql "INSERT INTO myy.Suppliers (SupplierID, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax, HomePage) VALUES (1,'Exotic Liquids','Charlotte Cooper','Purchasing Manager','49 Gilbert St.','London',NULL,'EC1 4SD','UK','(171) 555-2222',NULL,NULL)")
+(def lst-sql (my-lexical/to-back sql))
+(def insert_obj (my-insert/get_insert_obj lst-sql))
+(def schema_name (-> insert_obj :schema_name))
+(def table_name (-> insert_obj :table_name))
+(def pk_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)))
+(def pk_with_data (my-insert/get_pk_data_with_data pk_data insert_obj))
+
+(def group_id 2)
+
+(defn get_binaryObject_pk [^BinaryObjectBuilder builder [f & r] ^List lst]
+    (if (some? f)
+        (let [key (format "%s_pk" (-> f :column_name)) value (my-lexical/get_jave_vs (-> f :column_type) (my-expression/plus_value ignite group_id (-> f :column_type) (-> f :item_value)))]
+            (recur (doto builder (.setField key value)) r (doto lst (.add (MyKeyValue. key value)))))
+        [builder lst]))
+(defn get_binaryObject [^BinaryObjectBuilder builder [f & r] ^List lst]
+    (if (some? f)
+        (do
+            (println (format "%s: %s: %s" (-> f :column_name) (-> f :column_type) (str (-> f :item_value))))
+            (let [key (-> f :column_name) value (my-lexical/get_jave_vs (-> f :column_type) (my-expression/plus_value ignite group_id (-> f :column_type) (-> f :item_value)))]
+                (recur (doto builder (.setField key value)) r (doto lst (.add (MyKeyValue. key value))))))
+        [builder lst]))
+(defn get_pk_rs [pk]
+    (cond (= (count pk) 1) (cond (true? (-> (first pk) :auto_increment)) (if (re-find #"^(?i)integer$|^(?i)int$" (-> (first pk) :column_type))
+                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
+                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
+                                 (false? (-> (first pk) :auto_increment)) (my-lexical/get_jave_vs (-> (first pk) :column_type) (my-expression/plus_value ignite group_id (-> (first pk) :column_type) (-> (first pk) :item_value)))
+                                 )
+          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
+                               (get_binaryObject_pk keyBuilder pk (ArrayList.))
+                               (throw (Exception. "表不存在主键！")))
+          :else
+          (throw (Exception. "表不存在主键！"))
+          ))
+(defn get_data_rs [data pk]
+    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s_%s" schema_name table_name)))]
+        (cond (= (count pk) 1) (get_binaryObject valueBuilder data (ArrayList.))
+              (> (count pk) 1) (get_binaryObject valueBuilder (concat (my-insert/get_plus_pk pk) data) (ArrayList.))
+              :else
+              (throw (Exception. "表不存在主键！")))
+        (throw (Exception. "表不存在主键！"))))
+
+(def pk_rs (-> pk_with_data :pk_rs))
+(def data_rs (-> pk_with_data :data_rs))
+;(-> pk_with_data :pk_rs)
+;(-> pk_with_data :data_rs)
+(get_data_rs data_rs pk_rs)

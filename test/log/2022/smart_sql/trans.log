@@ -125,17 +125,30 @@ a + 1+ b ==》 (+ a (+ 1 b))
 
 
 
+(def my-context {:input-params #{"a" "b"} :let-params #{"wudafu" "wudagui"}})
+
+(defn insert-to-cache [my-context]
+    (let [{let-params :let-params} my-context]
+        (loop [[f & r] let-params lst []]
+            (if (some? f)
+                (recur r (conj lst (format "(MyLogCache. \"%s\" \"%s\" (doto (ArrayList.) (.add (MyKeyValue. \"%s\" \"%s\"))) (SqlType/INSERT))" f f (str "吴大富：" f) (str "吴大贵：" f))))
+                (format "[%s]" (str/join " " lst))))))
+
+(eval (read-string (insert-to-cache my-context)))
+
+(def logCache (first (eval (read-string (insert-to-cache my-context)))))
+
+(defn trans_case [a b my-context]
+    (let [lst (insert-to-cache my-context)]
+        (concat lst [a b])))
+
+(trans_case "a" "大富" my-context)
 
 
 
 
-
-
-
-
-
-
-
+(def my-trans (eval (read-string "(defn trans_case [my-context]\n    (let [lst (eval (read-string (insert-to-cache my-context)))]\n        (concat lst [(MyLogCache. \"美羊羊\" \"大美女\" (doto (ArrayList.) (.add (MyKeyValue. \"美女\" \"大美女\"))) (SqlType/UPDATE))])))")))
+(my-trans my-context)
 
 
 

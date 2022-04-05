@@ -266,7 +266,7 @@
 ;            :auto_increment false,
 ;            :item_value "'Soft drinks, coffees, teas, beers, and ales'"}
 ;           {:column_name "picture", :column_type "varchar", :pkid false, :auto_increment false, :item_value "''"}]}
-(defn insert_obj_to_db_no_log [^Ignite ignite ^Long group_id ^String table_name ^clojure.lang.PersistentArrayMap pk_data]
+(defn insert_obj_to_db_no_log [^Ignite ignite ^Long group_id ^String schema_name ^String table_name ^clojure.lang.PersistentArrayMap pk_data]
     (let [{pk_rs :pk_rs data_rs :data_rs} pk_data]
         (letfn [(get_binaryObject_pk [^BinaryObjectBuilder builder [f & r]]
                     (if (some? f)
@@ -279,28 +279,28 @@
                         builder))
                 (get_pk_rs [pk]
                     (cond (= (count pk) 1) (cond (true? (-> (first pk) :auto_increment)) (if (re-find #"^(?i)integer$|^(?i)int$" (-> (first pk) :column_type))
-                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
-                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
+                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
+                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
                                                  (false? (-> (first pk) :auto_increment)) (my-lexical/get_jave_vs (-> (first pk) :column_type) (my-expression/get_plus_value ignite group_id (-> (first pk) :column_type) (-> (first pk) :item_value)))
                                                  )
-                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                                                (get_binaryObject_pk keyBuilder pk)
                                                (throw (Exception. "表不存在主键！")))
                           :else
                           (throw (Exception. "表不存在主键！"))
                           ))
                 (get_data_rs [data pk]
-                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s" table_name)))]
+                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s_%s" schema_name table_name)))]
                         (cond (= (count pk) 1) (get_binaryObject valueBuilder data)
                               (> (count pk) 1) (get_binaryObject valueBuilder (concat (get_plus_pk pk) data))
                               :else
                               (throw (Exception. "表不存在主键！")))
                         (throw (Exception. "表不存在主键！"))))
                 ]
-            [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) (.build (get_pk_rs pk_rs)) (.build (get_data_rs data_rs)) (SqlType/INSERT))]))
+            [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) (.build (get_pk_rs pk_rs)) (.build (get_data_rs data_rs)) (SqlType/INSERT))]))
     )
 
-(defn insert_obj_to_db_no_log_fun [^Ignite ignite ^Long group_id ^String table_name ^clojure.lang.PersistentArrayMap pk_data ^clojure.lang.PersistentArrayMap dic_paras]
+(defn insert_obj_to_db_no_log_fun [^Ignite ignite ^Long group_id ^String schema_name ^String table_name ^clojure.lang.PersistentArrayMap pk_data ^clojure.lang.PersistentArrayMap dic_paras]
     (let [{pk_rs :pk_rs data_rs :data_rs} pk_data]
         (letfn [(get_binaryObject_pk [^BinaryObjectBuilder builder [f & r]]
                     (if (some? f)
@@ -313,28 +313,28 @@
                         builder))
                 (get_pk_rs [pk]
                     (cond (= (count pk) 1) (cond (true? (-> (first pk) :auto_increment)) (if (re-find #"^(?i)integer$|^(?i)int$" (-> (first pk) :column_type))
-                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
-                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
+                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
+                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
                                                  (false? (-> (first pk) :auto_increment)) (my-lexical/get_jave_vs (-> (first pk) :column_type) (my-expression/plus_value_fun ignite group_id (-> (first pk) :column_type) (-> (first pk) :item_value) dic_paras))
                                                  )
-                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                                                (get_binaryObject_pk keyBuilder pk)
                                                (throw (Exception. "表不存在主键！")))
                           :else
                           (throw (Exception. "表不存在主键！"))
                           ))
                 (get_data_rs [data pk]
-                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s" table_name)))]
+                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s_%s" schema_name table_name)))]
                         (cond (= (count pk) 1) (get_binaryObject valueBuilder data)
                               (> (count pk) 1) (get_binaryObject valueBuilder (concat (get_plus_pk pk) data))
                               :else
                               (throw (Exception. "表不存在主键！")))
                         (throw (Exception. "表不存在主键！"))))
                 ]
-            [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) (.build (get_pk_rs pk_rs)) (.build (get_data_rs data_rs)) (SqlType/INSERT))]))
+            [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) (.build (get_pk_rs pk_rs)) (.build (get_data_rs data_rs)) (SqlType/INSERT))]))
     )
 
-(defn insert_obj_to_db [^Ignite ignite ^Long group_id ^String table_name ^clojure.lang.PersistentArrayMap pk_data]
+(defn insert_obj_to_db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name ^clojure.lang.PersistentArrayMap pk_data]
     (let [{pk_rs :pk_rs data_rs :data_rs} pk_data]
         (letfn [(get_binaryObject_pk [^BinaryObjectBuilder builder [f & r] ^List lst]
                     (if (some? f)
@@ -348,18 +348,18 @@
                         [builder lst]))
                 (get_pk_rs [pk]
                     (cond (= (count pk) 1) (cond (true? (-> (first pk) :auto_increment)) (if (re-find #"^(?i)integer$|^(?i)int$" (-> (first pk) :column_type))
-                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
-                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
+                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
+                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
                                                  (false? (-> (first pk) :auto_increment)) (my-lexical/get_jave_vs (-> (first pk) :column_type) (my-expression/plus_value ignite group_id (-> (first pk) :column_type) (-> (first pk) :item_value)))
                                                  )
-                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                                                (get_binaryObject_pk keyBuilder pk (ArrayList.))
                                                (throw (Exception. "表不存在主键！")))
                           :else
                           (throw (Exception. "表不存在主键！"))
                           ))
                 (get_data_rs [data pk]
-                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s" table_name)))]
+                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s_%s" schema_name table_name)))]
                         (cond (= (count pk) 1) (get_binaryObject valueBuilder data (ArrayList.))
                               (> (count pk) 1) (get_binaryObject valueBuilder (concat (get_plus_pk pk) data) (ArrayList.))
                               :else
@@ -368,15 +368,16 @@
                 ]
             (let [log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true)) pk (get_pk_rs pk_rs) data (get_data_rs data_rs pk_rs)]
                 (if (vector? pk)
-                    [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) (.build (nth pk 0)) (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
-                    [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) pk (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))])
+                    [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) (.build (nth pk 0)) (.build (nth data 0)) (SqlType/INSERT))
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. (str log_id) (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
+                    [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk (.build (nth data 0)) (SqlType/INSERT))
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. (str log_id) (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))
+                     ])
                 )
             ))
     )
 
-(defn insert_obj_to_db_fun [^Ignite ignite ^Long group_id ^String table_name ^clojure.lang.PersistentArrayMap pk_data ^clojure.lang.PersistentArrayMap dic_paras]
+(defn insert_obj_to_db_fun [^Ignite ignite ^Long group_id ^String schema_name ^String table_name ^clojure.lang.PersistentArrayMap pk_data ^clojure.lang.PersistentArrayMap dic_paras]
     (let [{pk_rs :pk_rs data_rs :data_rs} pk_data]
         (letfn [(get_binaryObject_pk [^BinaryObjectBuilder builder [f & r] ^List lst]
                     (if (some? f)
@@ -390,18 +391,18 @@
                         [builder lst]))
                 (get_pk_rs [pk]
                     (cond (= (count pk) 1) (cond (true? (-> (first pk) :auto_increment)) (if (re-find #"^(?i)integer$|^(?i)int$" (-> (first pk) :column_type))
-                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
-                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s" table_name) 0 true)))
+                                                                                             (MyConvertUtil/ConvertToInt (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
+                                                                                             (.incrementAndGet (.atomicSequence ignite (format "f_%s_%s" schema_name table_name) 0 true)))
                                                  (false? (-> (first pk) :auto_increment)) (my-lexical/get_jave_vs (-> (first pk) :column_type) (my-expression/plus_value_fun ignite group_id (-> (first pk) :column_type) (-> (first pk) :item_value) dic_paras))
                                                  )
-                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+                          (> (count pk) 1) (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                                                (get_binaryObject_pk keyBuilder pk (ArrayList.))
                                                (throw (Exception. "表不存在主键！")))
                           :else
                           (throw (Exception. "表不存在主键！"))
                           ))
                 (get_data_rs [data pk]
-                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s" table_name)))]
+                    (if-let [valueBuilder (.builder (.binary ignite) (KvSql/getValueType ignite (format "f_%s_%s" schema_name table_name)))]
                         (cond (= (count pk) 1) (get_binaryObject valueBuilder data (ArrayList.))
                               (> (count pk) 1) (get_binaryObject valueBuilder (concat (get_plus_pk pk) data) (ArrayList.))
                               :else
@@ -410,10 +411,10 @@
                 ]
             (let [log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true)) pk (get_pk_rs pk_rs) data (get_data_rs data_rs pk_rs)]
                 (if (vector? pk)
-                    [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) (.build (nth pk 0)) (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
-                    [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) pk (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))])
+                    [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) (.build (nth pk 0)) (.build (nth data 0)) (SqlType/INSERT))
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
+                    [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk (.build (nth data 0)) (SqlType/INSERT))
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))])
                 )
             ))
     )
@@ -458,7 +459,7 @@
                 (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
                     (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
                         (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                            (insert_obj_to_db ignite group_id (-> insert_obj :table_name) pk_with_data)
+                            (insert_obj_to_db ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data)
                             )
                         )
                     ))
@@ -473,7 +474,7 @@
                 (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
                     (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
                         (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                            (insert_obj_to_db_fun ignite group_id (-> insert_obj :table_name) pk_with_data dic_paras)
+                            (insert_obj_to_db_fun ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data dic_paras)
                             )
                         )
                     ))
@@ -487,7 +488,7 @@
             (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
                 (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
                     (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                        (insert_obj_to_db_no_log ignite group_id (-> insert_obj :table_name) pk_with_data)
+                        (insert_obj_to_db_no_log ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data)
                         )
                     )
                 ))
@@ -500,7 +501,7 @@
             (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
                 (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
                     (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
-                        (insert_obj_to_db_no_log_fun ignite group_id (-> insert_obj :table_name) pk_with_data dic_paras)
+                        (insert_obj_to_db_no_log_fun ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data dic_paras)
                         )
                     )
                 ))
@@ -524,8 +525,8 @@
 (defn get_insert_cache [^Ignite ignite ^Long group_id ^clojure.lang.PersistentArrayMap ast ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
         (if (true? (.isDataSetEnabled (.configuration ignite)))
-            (insert_obj_to_db_fun ignite group_id (-> ast :table_name) ast dic_paras)
-            (insert_obj_to_db_no_log_fun ignite group_id (-> ast :table_name) ast dic_paras)
+            (insert_obj_to_db_fun ignite group_id (-> ast :schema_name) (-> ast :table_name) ast dic_paras)
+            (insert_obj_to_db_no_log_fun ignite group_id (-> ast :schema_name) (-> ast :table_name) ast dic_paras)
             )))
 
 ; 1、判断用户组在实时数据集，还是非实时数据

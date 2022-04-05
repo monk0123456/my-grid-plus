@@ -2,13 +2,16 @@
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+        [org.gridgain.plus.dml.my-insert :as my-insert]
+        [org.gridgain.plus.dml.my-update :as my-update]
+        [org.gridgain.plus.dml.my-delete :as my-delete]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
     (:import (org.apache.ignite Ignite)
              (org.gridgain.smart MyVar)
              (com.google.common.base Strings)
-             (org.tools MyConvertUtil MyDbUtil KvSql)
+             (cn.plus.model MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
@@ -272,7 +275,7 @@
                                                                    (if (some? f_%s)
                                                                          (let [[sql args] f_%s]
                                                                                  (let [sql-lst (my-lexical/to-back (apply format sql (my-args args)))]
-                                                                                     (cond (my-lexical/is-eq? (first sql-lst) \"insert\") (recur r_%s (conj lst-rs-%s (insert-to-cache ignite group_id my-context sql-lst)))
+                                                                                     (cond (my-lexical/is-eq? (first sql-lst) \"insert\") (recur r_%s (conj lst-rs-%s (insert-to-cache ignite group_id %s sql-lst)))
                                                                                            (my-lexical/is-eq? (first sql-lst) \"update\") ()
                                                                                            (my-lexical/is-eq? (first sql-lst) \"delete\") ()
                                                                                      )))
@@ -281,6 +284,8 @@
                                                                    ))" t_f t_r (-> (first lst_ps) :item_name) lst-rs
                                                                 t_f
                                                                 t_f
+                                                                t_r lst-rs (str my-context)
+                                                                lst-rs
                                                                 lst-rs
                                                                 ))
               (is-func? ignite func-name) (format "(my_func %s %s)" func-name (token-to-clj ignite group_id lst_ps is-set my-context))
@@ -427,8 +432,8 @@
             (recur r (conj lst-line (format "(MyKeyValue. %s %s)" (-> f :column_name) (token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) false my-context))))
             (format "[%s]" (str/join " " lst-line)))))
 
-(defn insert-to-cache [ignite group_id my-context sql-lst]
-    (let [insert_obj (my-insert/get_insert_obj sql-lst)]
+(defn insert-to-cache [ignite group_id my-context-line sql-lst]
+    (let [insert_obj (my-insert/get_insert_obj sql-lst) my-context (eval (read-string my-context-line))]
         (let [pk_with_data (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
             (let [{pk-rs :pk_rs data-rs :data_rs} (my-insert/insert_obj_to_db ignite 0 (-> insert_obj :table_name) pk_with_data)]
                 (let [line (format "(MyLogCache. %s %s %s (SqlType/INSERT))" (-> insert_obj :table_name) (pk-rs-clj ignite group_id my-context pk-rs) (data-rs-clj ignite group_id my-context data-rs))]

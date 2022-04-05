@@ -92,7 +92,7 @@
     (let [sql_code (str/lower-case sql_line)]
         (if (= group_id 0)
             (run_ddl_real_time ignite dataset_name sql_code)
-            (if (contains? #{"ALL" "DDL"} group_type)
+            (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
                 (run_ddl_real_time ignite dataset_name sql_code)
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 

@@ -59,4 +59,14 @@ public class MyLogCache implements Serializable {
     public void setSqlType(SqlType sqlType) {
         this.sqlType = sqlType;
     }
+
+    @Override
+    public String toString() {
+        return "MyLogCache{" +
+                "cache_name='" + cache_name + '\'' +
+                ", key=" + key +
+                ", value=" + value +
+                ", sqlType=" + sqlType +
+                '}';
+    }
 }

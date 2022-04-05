@@ -65,7 +65,7 @@
         ))
 
 (defn get_delete_query_sql [^Ignite ignite obj]
-    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (-> obj :table_name))]
+    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
         (letfn [(get_pk_lst [[f & r] dic lst]
                     (if (some? f)
                         (if (contains? dic f)
@@ -76,7 +76,7 @@
         ))
 
 (defn get_delete_query_sql_fun [^Ignite ignite group_id obj ^clojure.lang.PersistentArrayMap dic_paras]
-    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (-> obj :table_name))]
+    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
         (letfn [(get_pk_lst [[f & r] dic lst]
                     (if (some? f)
                         (if (contains? dic f)
@@ -108,152 +108,152 @@
 
 ; 删除数据
 (defn delete_run_log [^Ignite ignite ^clojure.lang.PersistentArrayMap delet_obj]
-    (if-let [{table_name :table_name sql :sql pk_lst :pk_lst} delet_obj]
-        (if-let [it (.iterator (.query (.cache ignite (format "f_%s" table_name)) (doto (SqlFieldsQuery. sql)
+    (if-let [{schema_name :schema_name table_name :table_name sql :sql pk_lst :pk_lst} delet_obj]
+        (if-let [it (.iterator (.query (.cache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                       (.setLazy true))))]
-            (letfn [(get_key_obj [^Ignite ignite ^String table_name row pk_lst]
-                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+            (letfn [(get_key_obj [^Ignite ignite ^String schema_name ^String table_name row pk_lst]
+                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                             (loop [[f & r] row [f_pk & r_pk] pk_lst kp keyBuilder lst_kv (ArrayList.)]
                                 (if (and (some? f) (some? f_pk))
                                     (let [key (format "%s_pk" (-> f_pk :item_name)) value (my-lexical/get_jave_vs (-> f_pk :item_type) f)]
                                         (recur r r_pk (doto kp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value))))
                                         )
                                     [(.build kp) lst_kv]))))
-                    (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
+                    (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
                         (loop [itr it lst []]
                             (if (.hasNext itr)
                                 (if-let [row (.next itr)]
                                     (cond (= (count pk_lst) 1) (recur itr (conj lst (my-lexical/get_jave_vs (-> (first pk_lst) :item_type) (.get row 0))))
-                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite table_name row pk_lst)))
+                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite schema_name table_name row pk_lst)))
                                           :else
                                           (throw (Exception. "表没有主键！"))
                                           ))
                                 lst)))
-                    (get_cache_data [^Ignite ignite ^String table_name it pk_lst]
-                        (if-let [lst_pk (get_cache_pk ignite table_name it pk_lst)]
+                    (get_cache_data [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
+                        (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk lst_rs []]
                                 (if (some? f_pk)
                                     (if (vector? f_pk)
                                         (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) pk nil (SqlType/DELETE))
-                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) kv_pk nil (SqlType/DELETE)))) (SqlType/INSERT))])))
+                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk nil (SqlType/DELETE))
+                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk nil (SqlType/DELETE)))) (SqlType/INSERT))])))
                                         (let [log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) f_pk nil (SqlType/DELETE))
-                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) f_pk nil (SqlType/DELETE)))) (SqlType/INSERT))]))))
+                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk nil (SqlType/DELETE))
+                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) f_pk nil (SqlType/DELETE)))) (SqlType/INSERT))]))))
                                     lst_rs))))
                     ]
-                (get_cache_data ignite table_name it pk_lst))
+                (get_cache_data ignite schema_name table_name it pk_lst))
             (throw (Exception. "要删除的数据为空！")))
         (throw (Exception. "删除语句字符串错误！"))))
 
 ; 删除数据 no log
 (defn delete_run_no_log [^Ignite ignite ^clojure.lang.PersistentArrayMap delet_obj]
-    (if-let [{table_name :table_name sql :sql pk_lst :pk_lst} delet_obj]
-        (if-let [it (.iterator (.query (.cache ignite (format "f_%s" table_name)) (doto (SqlFieldsQuery. sql)
+    (if-let [{schema_name :schema_name table_name :table_name sql :sql pk_lst :pk_lst} delet_obj]
+        (if-let [it (.iterator (.query (.cache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                       (.setLazy true))))]
-            (letfn [(get_key_obj [^Ignite ignite ^String table_name row pk_lst]
-                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+            (letfn [(get_key_obj [^Ignite ignite ^String schema_name ^String table_name row pk_lst]
+                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                             (loop [[f & r] row [f_pk & r_pk] pk_lst kp keyBuilder]
                                 (if (and (some? f) (some? f_pk))
                                     (let [key (format "%s_pk" (-> f_pk :item_name)) value (my-lexical/get_jave_vs (-> f_pk :item_type) f)]
                                         (recur r r_pk (doto kp (.setField key value)))
                                         )
                                     (.build kp)))))
-                    (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
+                    (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
                         (loop [itr it lst []]
                             (if (.hasNext itr)
                                 (if-let [row (.next itr)]
                                     (cond (= (count pk_lst) 1) (recur itr (conj lst (my-lexical/get_jave_vs (-> (first pk_lst) :item_type) (.get row 0))))
-                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite table_name row pk_lst)))
+                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite schema_name table_name row pk_lst)))
                                           :else
                                           (throw (Exception. "表没有主键！"))
                                           ))
                                 lst)))
-                    (get_cache_data [^Ignite ignite ^String table_name it pk_lst]
-                        (if-let [lst_pk (get_cache_pk ignite table_name it pk_lst)]
+                    (get_cache_data [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
+                        (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk lst_rs []]
                                 (if (some? f_pk)
-                                    (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) f_pk nil (SqlType/DELETE))]))
+                                    (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk nil (SqlType/DELETE))]))
                                     lst_rs))))
                     ]
-                (get_cache_data ignite table_name it pk_lst))
+                (get_cache_data ignite schema_name table_name it pk_lst))
             (throw (Exception. "要删除的数据为空！")))
         (throw (Exception. "删除语句字符串错误！"))))
 
 
 ; 删除数据
 (defn delete_run_log_fun [^Ignite ignite ^clojure.lang.PersistentArrayMap delete_obj]
-    (if-let [{table_name :table_name sql :sql args :args pk_lst :pk_lst} delete_obj]
-        (if-let [it (.iterator (.query (.cache ignite (format "f_%s" table_name)) (doto (SqlFieldsQuery. sql)
+    (if-let [{schema_name :schema_name table_name :table_name sql :sql args :args pk_lst :pk_lst} delete_obj]
+        (if-let [it (.iterator (.query (.cache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                       (.setArgs args)
                                                                                       (.setLazy true))))]
-            (letfn [(get_key_obj [^Ignite ignite ^String table_name row pk_lst]
-                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+            (letfn [(get_key_obj [^Ignite ignite ^String schema_name ^String table_name row pk_lst]
+                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                             (loop [[f & r] row [f_pk & r_pk] pk_lst kp keyBuilder lst_kv (ArrayList.)]
                                 (if (and (some? f) (some? f_pk))
                                     (let [key (format "%s_pk" (-> f_pk :item_name)) value (my-lexical/get_jave_vs (-> f_pk :item_type) f)]
                                         (recur r r_pk (doto kp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value))))
                                         )
                                     [(.build kp) lst_kv]))))
-                    (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
+                    (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
                         (loop [itr it lst []]
                             (if (.hasNext itr)
                                 (if-let [row (.next itr)]
                                     (cond (= (count pk_lst) 1) (recur itr (conj lst (my-lexical/get_jave_vs (-> (first pk_lst) :item_type) (.get row 0))))
-                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite table_name row pk_lst)))
+                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite schema_name table_name row pk_lst)))
                                           :else
                                           (throw (Exception. "表没有主键！"))
                                           ))
                                 lst)))
-                    (get_cache_data [^Ignite ignite ^String table_name it pk_lst]
-                        (if-let [lst_pk (get_cache_pk ignite table_name it pk_lst)]
+                    (get_cache_data [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
+                        (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk lst_rs []]
                                 (if (some? f_pk)
                                     (if (vector? f_pk)
                                         (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) pk nil (SqlType/DELETE))
-                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) kv_pk nil (SqlType/DELETE)))) (SqlType/INSERT))])))
+                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk nil (SqlType/DELETE))
+                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk nil (SqlType/DELETE)))) (SqlType/INSERT))])))
                                         (let [log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) f_pk nil (SqlType/DELETE))
-                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) f_pk nil (SqlType/DELETE)))) (SqlType/INSERT))]))))
+                                            (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk nil (SqlType/DELETE))
+                                                                        (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) f_pk nil (SqlType/DELETE)))) (SqlType/INSERT))]))))
                                     lst_rs))))
                     ]
-                (get_cache_data ignite table_name it pk_lst))
+                (get_cache_data ignite schema_name table_name it pk_lst))
             (throw (Exception. "要删除的数据为空！")))
         (throw (Exception. "删除语句字符串错误！"))))
 
 ; 删除数据 no log
 (defn delete_run_no_log_fun [^Ignite ignite ^clojure.lang.PersistentArrayMap delete_obj]
-    (if-let [{table_name :table_name sql :sql args :args pk_lst :pk_lst} delete_obj]
-        (if-let [it (.iterator (.query (.cache ignite (format "f_%s" table_name)) (doto (SqlFieldsQuery. sql)
+    (if-let [{schema_name :schema_name table_name :table_name sql :sql args :args pk_lst :pk_lst} delete_obj]
+        (if-let [it (.iterator (.query (.cache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                       (.setArgs args)
                                                                                       (.setLazy true))))]
-            (letfn [(get_key_obj [^Ignite ignite ^String table_name row pk_lst]
-                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+            (letfn [(get_key_obj [^Ignite ignite ^String schema_name ^String table_name row pk_lst]
+                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                             (loop [[f & r] row [f_pk & r_pk] pk_lst kp keyBuilder]
                                 (if (and (some? f) (some? f_pk))
                                     (let [key (format "%s_pk" (-> f_pk :item_name)) value (my-lexical/get_jave_vs (-> f_pk :item_type) f)]
                                         (recur r r_pk (doto kp (.setField key value)))
                                         )
                                     (.build kp)))))
-                    (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
+                    (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
                         (loop [itr it lst []]
                             (if (.hasNext itr)
                                 (if-let [row (.next itr)]
                                     (cond (= (count pk_lst) 1) (recur itr (conj lst (my-lexical/get_jave_vs (-> (first pk_lst) :item_type) (.get row 0))))
-                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite table_name row pk_lst)))
+                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite schema_name table_name row pk_lst)))
                                           :else
                                           (throw (Exception. "表没有主键！"))
                                           ))
                                 lst)))
-                    (get_cache_data [^Ignite ignite ^String table_name it pk_lst]
-                        (if-let [lst_pk (get_cache_pk ignite table_name it pk_lst)]
+                    (get_cache_data [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
+                        (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk lst_rs []]
                                 (if (some? f_pk)
-                                    (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) f_pk nil (SqlType/DELETE))]))
+                                    (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk nil (SqlType/DELETE))]))
                                     lst_rs))))
                     ]
-                (get_cache_data ignite table_name it pk_lst))
+                (get_cache_data ignite schema_name table_name it pk_lst))
             (throw (Exception. "要删除的数据为空！")))
         (throw (Exception. "删除语句字符串错误！"))))
 

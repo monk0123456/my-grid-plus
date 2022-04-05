@@ -351,9 +351,9 @@
     [lst]
     (if (and (instance? String lst) (my-lexical/is-eq? lst ","))
         (get-token-line lst)
-        (cond (= (count lst) 1) {:table_name (first lst) :table_alias ""}
-              (= (count lst) 2) {:table_name (nth lst 0) :table_alias (nth lst 1)}
-              (and (= (count lst) 3) (my-lexical/is-eq? (nth lst 1) "as")) {:table_name (nth lst 0) :table_alias (nth lst 2)}
+        (cond (= (count lst) 1) (assoc (my-lexical/get-schema (first lst)) :table_alias "")
+              (= (count lst) 2) (assoc (my-lexical/get-schema (nth lst 0)) :table_alias (nth lst 1))
+              (and (= (count lst) 3) (my-lexical/is-eq? (nth lst 1) "as")) (assoc (my-lexical/get-schema (nth lst 0)) :table_alias (nth lst 2))
               :else
               (when-let [m (get-query-items (concat [lst]))]
                   (first m))
@@ -364,12 +364,12 @@
     (if (some? f)
         (cond (contains? f :tables)
               (let [{tables :tables join :join} f]
-                  (cond (and (= (count tables) 1) (empty? join)) (concat [{:table_name (first tables) :table_alias ""}] (table-join rs))
-                        (and (= (count tables) 1) (not (empty? join))) (concat [{:join join} {:table_name (first tables) :table_alias ""}] (table-join rs))
-                        (and (= (count tables) 2) (empty? join)) (concat [{:table_name (nth tables 0) :table_alias (nth tables 1)}] (table-join rs))
-                        (and (= (count tables) 2) (contains? f :join)) (concat [{:join join} {:table_name (nth tables 0) :table_alias (nth tables 1)}] (table-join rs))
-                        (and (= (count tables) 3) (empty? join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [{:table_name (nth tables 0) :table_alias (nth tables 2)}] (table-join rs))
-                        (and (= (count tables) 3) (contains? f :join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [{:table_name (nth tables 0) :table_alias (nth tables 2)} {:join join}] (table-join rs))
+                  (cond (and (= (count tables) 1) (empty? join)) (concat [(assoc (my-lexical/get-schema (first tables)) :table_alias "")] (table-join rs))
+                        (and (= (count tables) 1) (not (empty? join))) (concat [{:join join} (assoc (my-lexical/get-schema (first tables)) :table_alias "")] (table-join rs))
+                        (and (= (count tables) 2) (empty? join)) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 1))] (table-join rs))
+                        (and (= (count tables) 2) (contains? f :join)) (concat [{:join join} (assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 1))] (table-join rs))
+                        (and (= (count tables) 3) (empty? join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 2))] (table-join rs))
+                        (and (= (count tables) 3) (contains? f :join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 2)) {:join join}] (table-join rs))
                         :else
                         (when-let [m (get-query-items tables)]
                             (if (empty? join)
@@ -383,7 +383,7 @@
 (defn get-table-items [table-items]
     (if (= (count table-items) 1)
         (let [m (nth table-items 0)]
-            (cond (instance? String m) (concat [{:table_name m, :table_alias nil}])
+            (cond (instance? String m) (concat [(assoc (my-lexical/get-schema m) :table_alias nil)])
                   (and (instance? clojure.lang.LazySeq m) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
                   :else
                   (if (my-lexical/is-contains? (nth table-items 0) "join")
@@ -603,7 +603,7 @@
 ; 获取 table_select_view 的 ast
 ; 重新生成新的 ast
 ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
-(defn get_select_view [ignite group_id talbe_name]
+(defn get_select_view [ignite group_id schema_name talbe_name]
     (when-let [code (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m, my_group_view as v where m.id = v.view_id and m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [talbe_name group_id "查"])))))]
         (when-let [sql_objs (sql-to-ast (my-lexical/to-back (nth code 0)))]
             (if (= (count sql_objs) 1)
@@ -619,7 +619,7 @@
     ([ignite group_id [f & rs] m]
      (if (some? f)
          (if (contains? f :table_name)
-             (let [table_ast (get_select_view ignite group_id (get f :table_name))]
+             (let [table_ast (get_select_view ignite group_id (-> f :schema_name) (get f :table_name))]
                  (if (some? table_ast)
                      (if (contains? f :table_alias)
                          (recur ignite group_id rs (assoc m (get f :table_alias) (table_select_view. (str/lower-case (str/trim (get f :table_name))) table_ast)))
@@ -696,16 +696,22 @@
 ; table item 转换成 line
 (defn table-to-line [ignite group_id m]
     (if (some? m)
-        (if-let [{table_name :table_name table_alias :table_alias} m]
+        (if-let [{schema_name :schema_name table_name :table_name table_alias :table_alias} m]
             (if (Strings/isNullOrEmpty table_alias)
-                (let [data_set_name (get_data_set_name ignite group_id)]
-                    (if (Strings/isNullOrEmpty data_set_name)
-                        table_name
-                        (str/join [data_set_name "_" table_name])))
-                (let [data_set_name (get_data_set_name ignite group_id)]
-                    (if (Strings/isNullOrEmpty data_set_name)
-                        (str/join [table_name " " table_alias])
-                        (str/join [(str/join [data_set_name "_" table_name]) " " table_alias])))
+                (if (Strings/isNullOrEmpty schema_name)
+                    table_name
+                    (format "%s.%s" schema_name table_name))
+                (if (Strings/isNullOrEmpty schema_name)
+                    (format "%s %s" table_name table_alias)
+                    (format "%s.%s %s" schema_name table_name table_alias))
+                ;(let [data_set_name (get_data_set_name ignite group_id)]
+                ;    (if (Strings/isNullOrEmpty data_set_name)
+                ;        table_name
+                ;        (str/join [data_set_name "_" table_name])))
+                ;(let [data_set_name (get_data_set_name ignite group_id)]
+                ;    (if (Strings/isNullOrEmpty data_set_name)
+                ;        (str/join [table_name " " table_alias])
+                ;        (str/join [(str/join [data_set_name "_" table_name]) " " table_alias])))
                 ))))
 
 ; on 转换成 line

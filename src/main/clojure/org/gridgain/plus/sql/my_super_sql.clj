@@ -116,15 +116,15 @@
                 (cond (my-lexical/is-eq? (first lst) "insert") (let [rs (my-insert/insert_run ignite group_id lst sql)]
                                                                    (if-not (nil? rs)
                                                                        (.append sb (format "select show_msg('%s') as tip;" (first (first rs))))
-                                                                       (.append sb "select show_msg('false') as tip;")))
+                                                                       (.append sb "select show_msg('true') as tip;")))
                       (my-lexical/is-eq? (first lst) "update") (let [rs (my-update/update_run ignite group_id lst sql)]
                                                                    (if-not (nil? rs)
                                                                        (.append sb (format "select show_msg('%s') as tip;" (first (first rs))))
-                                                                       (.append sb "select show_msg('false') as tip;")))
+                                                                       (.append sb "select show_msg('true') as tip;")))
                       (my-lexical/is-eq? (first lst) "delete") (let [rs (my-delete/delete_run ignite group_id lst sql)]
                                                                    (if-not (nil? rs)
                                                                        (.append sb (format "select show_msg('%s') as tip;" (first (first rs))))
-                                                                       (.append sb "select show_msg('false') as tip;")))
+                                                                       (.append sb "select show_msg('true') as tip;")))
                       (my-lexical/is-eq? (first lst) "select") (if (has-from? (rest lst))
                                                                    (.append sb (str (my-select/my_plus_sql ignite group_id lst) ";"))
                                                                    (.append sb (str sql ";")))

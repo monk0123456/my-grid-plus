@@ -69,7 +69,9 @@
     (if-let [{table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
         (if-let [{items_line :items_line where_line :where_line} (get_items rs_lst)]
             (if-let [items (get_item_lst items_line)]
-                {:table_name table_name :items (item_jsons items) :where_line where_line})
+                ;{:table_name table_name :items (item_jsons items) :where_line where_line}
+                (assoc (my-lexical/get-schema (str/lower-case table_name)) :items (item_jsons items) :where_line where_line)
+                )
             (throw (Exception. "更新数据的语句错误！")))
         (throw (Exception. "更新数据的语句错误！"))))
 
@@ -114,12 +116,12 @@
 
 ; 判断权限
 (defn get-authority [^Ignite ignite ^Long group_id lst-sql]
-    (when-let [{table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
+    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (if-let [{v_items :items v_where_line :where_line} (get_view_db ignite group_id table_name)]
             (if (nil? (has_authority_item items v_items))
-                {:table_name table_name :items items :where_line (merge_where where_line v_where_line)}
-                {:table_name table_name :items items :where_line where_line})
-            {:table_name table_name :items items :where_line where_line}
+                {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where_line v_where_line)}
+                {:schema_name schema_name :table_name table_name :items items :where_line where_line})
+            {:schema_name schema_name :table_name table_name :items items :where_line where_line}
             )))
 
 (defn get-authority-lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
@@ -138,18 +140,26 @@
 ; 3，修改 cache 的值并生成 MyLogCache
 ; 4、对 cache 和 MyLogCache 执行事务
 
+(defn get-rows [^Ignite ignite ^String schema_name ^String table_name]
+    (cond (my-lexical/is-eq? schema_name "public") (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m INNER JOIN my_meta_tables AS o ON m.table_id = o.id WHERE o.table_name = ?")
+                                                                                                         (.setArgs (to-array [table_name])))))
+          (my-lexical/is-eq? schema_name "my_meta") (throw (Exception. "没有修改权限！"))
+          :else
+          (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m, my_meta_tables AS o, my_dataset as ds WHERE m.table_id = o.id and ds.id = o.data_set_id and o.table_name = ? and ds.dataset_name = ?")
+                                                                (.setArgs (to-array [table_name schema_name])))))
+          ))
+
 ; 1、获取表的 PK 定义
-(defn get_pk_def [^Ignite ignite ^String table_name]
-    (when-let [rows (.getAll (.query (.cache ignite "my_meta_tables") (doto (SqlFieldsQuery. "SELECT m.column_name, m.pkid, m.column_type FROM table_item AS m INNER JOIN my_meta_tables AS o ON m.table_id = o.id WHERE o.table_name = ?")
-                                                                          (.setArgs (to-array [table_name])))))]
+(defn get_pk_def [^Ignite ignite ^String schema_name ^String table_name]
+    (when-let [rows (get-rows ignite schema_name table_name)]
         (loop [[f & r] rows lst [] lst_pk [] dic {}]
             (if (some? f)
                 (if (= (.get f 1) true) (recur r lst (conj lst_pk (.get f 0)) (assoc dic (.get f 0) (.get f 2)))
                                         (recur r (conj lst (.get f 0)) lst_pk (assoc dic (.get f 0) (.get f 2))))
                 {:lst lst :lst_pk lst_pk :dic dic}))))
 
-(defn get_pk_def_map [^Ignite ignite ^String table_name]
-    (when-let [{lst :lst lst_pk :lst_pk dic :dic} (get_pk_def ignite table_name)]
+(defn get_pk_def_map [^Ignite ignite ^String schema_name ^String table_name]
+    (when-let [{lst :lst lst_pk :lst_pk dic :dic} (get_pk_def ignite schema_name table_name)]
         (if (> (count lst_pk) 1)
             (loop [[f & r] lst_pk sb (StringBuilder.)]
                 (if (some? f)
@@ -163,7 +173,7 @@
 
 ; 2、生成 select sql 通过 PK 查询 cache
 (defn get_update_query_sql [^Ignite ignite obj]
-    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :table_name))]
+    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
         (letfn [(get_items_type [[f & r] dic lst]
                     (if (some? f)
                         (if (contains? dic (-> f :item_name))
@@ -180,7 +190,7 @@
         ))
 
 (defn get_update_query_sql_fun [^Ignite ignite group_id obj ^clojure.lang.PersistentArrayMap dic_paras]
-    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :table_name))]
+    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
         (letfn [(get_items_type [[f & r] dic lst]
                     (if (some? f)
                         (if (contains? dic (-> f :item_name))
@@ -221,24 +231,24 @@
         (throw (Exception. "更新语句字符串错误！"))))
 
 (defn update_run_log [^Ignite ignite ^Long group_id lst-sql]
-    (if-let [{table_name :table_name sql :sql items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id lst-sql)]
-        (if-let [it (.iterator (.query (.cache ignite (format "f_%s" table_name)) (doto (SqlFieldsQuery. sql)
+    (if-let [{schema_name :schema_name table_name :table_name sql :sql items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id lst-sql)]
+        (if-let [it (.iterator (.query (.cache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                          (.setLazy true))))]
             (letfn [(item_value_tokens [^Ignite ignite lst_tokens ^BinaryObject binaryObject dic]
                         (cond (contains? lst_tokens :item_name) (my-expression/item_type_binaryObj (-> lst_tokens :java_item_type) (-> lst_tokens :item_name) binaryObject dic)
                               (contains? lst_tokens :parenthesis) (my-expression/mid_to_forwrod_binaryObject ignite group_id binaryObject dic (reverse (-> lst_tokens :parenthesis)))
                               (contains? lst_tokens :operation) (my-expression/mid_to_forwrod_binaryObject ignite group_id binaryObject dic (reverse (-> lst_tokens :operation)))
                               ))
-                    (get_key_obj [^Ignite ignite ^String table_name row pk_lst]
-                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+                    (get_key_obj [^Ignite ignite ^String schema_name ^String table_name row pk_lst]
+                        (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                             (loop [[f & r] row [f_pk & r_pk] pk_lst kp keyBuilder lst_kv (ArrayList.)]
                                 (if (and (some? f) (some? f_pk))
                                     (let [key (format "%s_pk" (-> f_pk :item_name)) value (my-lexical/get_jave_vs (-> f_pk :item_type) f)]
                                         (recur r r_pk (doto kp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value))))
                                         )
                                     [(.build kp) lst_kv]))))
-                    (get_value_obj [^Ignite ignite ^String table_name pk items dic]
-                        (if-let [valueBinaryObject (.toBuilder (.get (.withKeepBinary (.cache ignite (format "f_%s" table_name))) pk))]
+                    (get_value_obj [^Ignite ignite ^String schema_name ^String table_name pk items dic]
+                        (if-let [valueBinaryObject (.toBuilder (.get (.withKeepBinary (.cache ignite (format "f_%s_%s" schema_name table_name))) pk))]
                             (loop [[f & r] items vp valueBinaryObject lst_kv (ArrayList.)]
                                 (if (some? f)
                                     (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic)]
@@ -248,35 +258,35 @@
                                             (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
                                                 (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))))
                                     [(.build vp) lst_kv]))))
-                    (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
+                    (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
                         (loop [itr it lst []]
                             (if (.hasNext itr)
                                 (if-let [row (.next itr)]
                                     (cond (= (count pk_lst) 1) (recur itr (conj lst (my-lexical/get_jave_vs (-> (first pk_lst) :item_type) (.get row 0))))
-                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite table_name row pk_lst)))
+                                          (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite schema_name table_name row pk_lst)))
                                           :else
                                           (throw (Exception. "表没有主键！"))
                                           ))
                                 lst)))
-                    (get_cache_data [^Ignite ignite ^String table_name it pk_lst items dic]
-                        (if-let [lst_pk (get_cache_pk ignite table_name it pk_lst)]
+                    (get_cache_data [^Ignite ignite ^String schema_name ^String table_name it pk_lst items dic]
+                        (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk ms items lst_rs []]
                                 (if (some? f_pk)
                                     (if (vector? f_pk)
                                         (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                            (let [[vs kv_vs] (get_value_obj ignite table_name pk ms dic)]
-                                                (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) pk vs (SqlType/UPDATE))
-                                                                               (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
+                                            (let [[vs kv_vs] (get_value_obj ignite schema_name table_name pk ms dic)]
+                                                (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk vs (SqlType/UPDATE))
+                                                                               (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
                                             )
-                                        (let [[vs kv_vs] (get_value_obj ignite table_name f_pk ms dic) log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                            (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) f_pk vs (SqlType/UPDATE))
-                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
+                                        (let [[vs kv_vs] (get_value_obj ignite schema_name table_name f_pk ms dic) log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
+                                            (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk vs (SqlType/UPDATE))
+                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
                                     lst_rs))))]
-                (get_cache_data ignite table_name it pk_lst items dic)
+                (get_cache_data ignite schema_name table_name it pk_lst items dic)
                       ))))
 
-(defn run_log_fun [ignite group_id table_name sql args items pk_lst dic dic_paras]
-    (if-let [it (.iterator (.query (.cache ignite (format "f_%s" table_name)) (doto (SqlFieldsQuery. sql)
+(defn run_log_fun [ignite group_id schema_name table_name sql args items pk_lst dic dic_paras]
+    (if-let [it (.iterator (.query (.cache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
                                                                                   (.setArgs args)
                                                                                   (.setLazy true))))]
         (letfn [(item_value_tokens [^Ignite ignite lst_tokens ^BinaryObject binaryObject dic dic_paras]
@@ -284,16 +294,16 @@
                           (contains? lst_tokens :parenthesis) (my-expression/mid_to_forwrod_binaryObject_fun ignite group_id binaryObject dic (reverse (-> lst_tokens :parenthesis)) dic_paras)
                           (contains? lst_tokens :operation) (my-expression/mid_to_forwrod_binaryObject_fun ignite group_id binaryObject dic (reverse (-> lst_tokens :operation)) dic_paras)
                           ))
-                (get_key_obj [^Ignite ignite ^String table_name row pk_lst]
-                    (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s" table_name)))]
+                (get_key_obj [^Ignite ignite ^String schema_name ^String table_name row pk_lst]
+                    (if-let [keyBuilder (.builder (.binary ignite) (KvSql/getKeyType ignite (format "f_%s_%s" schema_name table_name)))]
                         (loop [[f & r] row [f_pk & r_pk] pk_lst kp keyBuilder lst_kv (ArrayList.)]
                             (if (and (some? f) (some? f_pk))
                                 (let [key (format "%s_pk" (-> f_pk :item_name)) value (my-lexical/get_jave_vs (-> f_pk :item_type) f)]
                                     (recur r r_pk (doto kp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value))))
                                     )
                                 [(.build kp) lst_kv]))))
-                (get_value_obj [^Ignite ignite ^String table_name pk items dic dic_paras]
-                    (if-let [valueBinaryObject (.toBuilder (.get (.withKeepBinary (.cache ignite (format "f_%s" table_name))) pk))]
+                (get_value_obj [^Ignite ignite ^String schema_name ^String table_name pk items dic dic_paras]
+                    (if-let [valueBinaryObject (.toBuilder (.get (.withKeepBinary (.cache ignite (format "f_%s_%s" schema_name table_name))) pk))]
                         (loop [[f & r] items vp valueBinaryObject lst_kv (ArrayList.)]
                             (if (some? f)
                                 (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic dic_paras)]
@@ -303,40 +313,40 @@
                                         (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
                                             (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))))
                                 [(.build vp) lst_kv]))))
-                (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
+                (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
                     (loop [itr it lst []]
                         (if (.hasNext itr)
                             (if-let [row (.next itr)]
                                 (cond (= (count pk_lst) 1) (recur itr (conj lst (my-lexical/get_jave_vs (-> (first pk_lst) :item_type) (.get row 0))))
-                                      (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite table_name row pk_lst)))
+                                      (> (count pk_lst) 1) (recur itr (conj lst (get_key_obj ignite schema_name table_name row pk_lst)))
                                       :else
                                       (throw (Exception. "表没有主键！"))
                                       ))
                             lst)))
-                (get_cache_data [^Ignite ignite ^String table_name it pk_lst items dic dic_paras]
-                    (if-let [lst_pk (get_cache_pk ignite table_name it pk_lst)]
+                (get_cache_data [^Ignite ignite ^String schema_name ^String table_name it pk_lst items dic dic_paras]
+                    (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                         (loop [[f_pk & r_pk] lst_pk ms items lst_rs []]
                             (if (some? f_pk)
                                 (if (vector? f_pk)
                                     (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                        (let [[vs kv_vs] (get_value_obj ignite table_name pk ms dic dic_paras)]
-                                            (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) pk vs (SqlType/UPDATE))
-                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
+                                        (let [[vs kv_vs] (get_value_obj ignite schema_name table_name pk ms dic dic_paras)]
+                                            (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk vs (SqlType/UPDATE))
+                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
                                         )
-                                    (let [[vs kv_vs] (get_value_obj ignite table_name f_pk ms dic dic_paras) log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
-                                        (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s" table_name)) f_pk vs (SqlType/UPDATE))
-                                                                       (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s" table_name) f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
+                                    (let [[vs kv_vs] (get_value_obj ignite schema_name table_name f_pk ms dic dic_paras) log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
+                                        (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk vs (SqlType/UPDATE))
+                                                                       (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
                                 lst_rs))))]
-            (get_cache_data ignite table_name it pk_lst items dic dic_paras)
+            (get_cache_data ignite schema_name table_name it pk_lst items dic dic_paras)
             )))
 
 (defn update_run_log_fun [^Ignite ignite ^Long group_id ^clojure.lang.PersistentArrayMap ast ^clojure.lang.PersistentArrayMap dic_paras]
-    (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} ast]
-        (run_log_fun ignite group_id table_name sql args items pk_lst dic dic_paras)))
+    (if-let [{schema_name :schema_name table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} ast]
+        (run_log_fun ignite group_id schema_name table_name sql args items pk_lst dic dic_paras)))
 
 (defn update_run_log_fun_tran [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap dic_paras]
-    (if-let [{table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id lst-sql)]
-        (run_log_fun ignite group_id table_name sql args items pk_lst dic dic_paras)))
+    (if-let [{schema_name :schema_name table_name :table_name sql :sql args :args items :items pk_lst :pk_lst dic :dic} (get_update_obj ignite group_id lst-sql)]
+        (run_log_fun ignite group_id schema_name table_name sql args items pk_lst dic dic_paras)))
 ;
 ;(defn -my_update_run_log [^Ignite ignite ^Long group_id ^String sql]
 ;    (my-lexical/to_arryList (update_run_log ignite group_id sql)))

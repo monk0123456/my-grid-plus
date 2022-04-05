@@ -442,7 +442,7 @@
                         (run_ddl_dml ignite lst_ddl lst_dml_table))
                     (throw (Exception. "创建表的语句错误！")))
                 (throw (Exception. "创建表的语句错误！")))
-            (if (contains? #{"ALL" "DDL"} group_type)
+            (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
                 (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
                     (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item dataset_id))]
                         (if-not (my-lexical/is-eq? schema_name "my_meta")
@@ -471,7 +471,7 @@
                 (throw (Exception. "创建表的语句错误！")))
             (if-let [my_group (.get (.cache ignite "my_users_group") group_id)]
                 (let [group_type (.getGroup_type my_group) dataset (.get (.cache ignite "my_dataset") (.getData_set_id my_group))]
-                    (if (contains? #{"ALL" "DDL"} group_type)
+                    (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
                         (if (and (some? dataset) (false? (.getIs_real dataset)))
                             (if-let [{schema_name :schema_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line (.getDataset_name dataset))]
                                 (if-not (my-lexical/is-eq? schema_name "my_meta")
