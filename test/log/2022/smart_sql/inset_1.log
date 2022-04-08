@@ -1,6 +1,6 @@
 (declare get_binaryObject_pk get_binaryObject get_pk_rs get_data_rs)
 
-(def sql "INSERT INTO myy.Suppliers (SupplierID, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax, HomePage) VALUES (1,'Exotic Liquids','Charlotte Cooper','Purchasing Manager','49 Gilbert St.','London',NULL,'EC1 4SD','UK','(171) 555-2222',NULL,NULL)")
+(def sql "INSERT INTO wudagui.Orders (OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry) Values ('10248','VINET',5,'1996-07-04 00:00:00.000','1996-08-01 00:00:00.000','1996-07-16 00:00:00.000',3,32.38,'Vins et alcools Chevalier','59 rue de l-Abbaye','Reims',NULL,'51100','France')")
 (def lst-sql (my-lexical/to-back sql))
 (def insert_obj (my-insert/get_insert_obj lst-sql))
 (def schema_name (-> insert_obj :schema_name))
@@ -8,7 +8,7 @@
 (def pk_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)))
 (def pk_with_data (my-insert/get_pk_data_with_data pk_data insert_obj))
 
-(def group_id 2)
+(def group_id (first (my-super-sql/get_group_id ignite "wudafu")))
 
 (defn get_binaryObject_pk [^BinaryObjectBuilder builder [f & r] ^List lst]
     (if (some? f)
@@ -47,3 +47,13 @@
 ;(-> pk_with_data :pk_rs)
 ;(-> pk_with_data :data_rs)
 (get_data_rs data_rs pk_rs)
+
+
+(def sql "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m, my_meta_tables as t, my_dataset as ds where m.table_id = t.id and ds.id = t.data_set_id and t.table_name = ? and ds.dataset_name = ?")
+(.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. sql) (to-array [(str/lower-case "EmployeeTerritories") "wudafu"]))))
+
+
+(def sql "delete my_meta_tables where id in (7001, 7003, 5001, 6001)")
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))
+(def sql "delete table_item where table_id in (7001, 7003, 5001, 6001)")
+(.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))

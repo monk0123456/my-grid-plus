@@ -35,7 +35,7 @@
 
 ; 通过 data_set_id 和 table_name 判断是否是非实时数据集中实时的表
 (defn is_in_ds [^Ignite ignite ^Long data_set_id ^String table_name]
-    (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "SELECT m.id FROM my_dataset_table m WHERE m.table_name = ? AND m.dataset_id = ? and m.to_real = ?") (to-array [table_name data_set_id true])))))
+    (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "SELECT m.id FROM my_dataset_table m WHERE m.table_name = ? AND m.dataset_id = ? and m.to_real = ?") (to-array [(str/lower-case table_name) data_set_id true])))))
 
 
 

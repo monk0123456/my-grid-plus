@@ -1,7 +1,7 @@
 (ns org.gridgain.plus.dml.my-expression
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.dml.my-select-plus :as my-select]
+        [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
@@ -9,7 +9,6 @@
              (com.google.common.base Strings)
              (org.log MyCljLogger)
              (org.tools MyConvertUtil KvSql)
-             (java.sql Timestamp)
              (java.math BigDecimal)
              (org.gridgain.myservice MyScenesService)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
@@ -37,6 +36,8 @@
           (= String java_item_type) (str_item_value item_value)
           (= Boolean java_item_type) (MyConvertUtil/ConvertToBoolean item_value)
           (= Long java_item_type) (MyConvertUtil/ConvertToLong item_value)
+          (= Float java_item_type) (MyConvertUtil/ConvertToDouble item_value)
+          (= Double java_item_type) (MyConvertUtil/ConvertToDouble item_value)
           (= Timestamp java_item_type) (MyConvertUtil/ConvertToTimestamp item_value)
           (= BigDecimal java_item_type) (MyConvertUtil/ConvertToDecimal item_value)
           (= "byte[]" java_item_type) (MyConvertUtil/ConvertToByte item_value)
@@ -45,11 +46,13 @@
 
 (defn get_value_tokens [^Ignite ignite ^Long group_id vs_tokens]
     (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (-> vs_tokens :item_name))
-          (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (-> vs_tokens :item_name))
-          (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (-> vs_tokens :item_name))
-          (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (-> vs_tokens :item_name))
-          (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (-> vs_tokens :item_name))
-          (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (-> vs_tokens :item_name))
+          (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_str_value (-> vs_tokens :item_name)))
+          (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_str_value (-> vs_tokens :item_name)))
+          (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_str_value (-> vs_tokens :item_name)))
+          (and (= Float (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value (-> vs_tokens :item_name)))
+          (and (= Double (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value (-> vs_tokens :item_name)))
+          (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_str_value (-> vs_tokens :item_name)))
+          (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_str_value (-> vs_tokens :item_name)))
           (contains? vs_tokens :operation) (-> (first (mid_to_forwrod ignite group_id (reverse (-> vs_tokens :operation)))) :express)
           (contains? vs_tokens :parenthesis) (-> (first (mid_to_forwrod ignite group_id (reverse (-> vs_tokens :parenthesis)))) :express)
           (contains? vs_tokens :func-name) (-> (first (mid_to_forwrod ignite group_id [vs_tokens])) :express)
@@ -58,12 +61,14 @@
           ))
 
 (defn get_value_tokens_fun [^Ignite ignite ^Long group_id vs_tokens ^clojure.lang.PersistentArrayMap dic_paras]
-    (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-          (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-          (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-          (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-          (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-          (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
+    (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+          (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+          (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+          (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+          (and (= Float (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+          (and (= Double (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+          (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+          (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
           (contains? vs_tokens :operation) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras (reverse (-> vs_tokens :operation)))) :express)
           (contains? vs_tokens :parenthesis) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras (reverse (-> vs_tokens :parenthesis)))) :express)
           (contains? vs_tokens :func-name) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras [vs_tokens])) :express)
@@ -72,26 +77,30 @@
           ))
 
 (defn get_plus_value_tokens [^Ignite ignite ^Long group_id ^String vs_line]
-    (if-let [vs_tokens (my-select/sql-to-ast (my-lexical/to-back vs_line))]
+    (if-let [vs_tokens (my-select-plus/sql-to-ast (my-lexical/to-back vs_line))]
         (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (-> vs_tokens :item_name))
-              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (-> vs_tokens :item_name))
-              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (-> vs_tokens :item_name))
-              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (-> vs_tokens :item_name))
-              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (-> vs_tokens :item_name))
-              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (-> vs_tokens :item_name))
+              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Float (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Double (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_str_value (-> vs_tokens :item_name)))
               (contains? vs_tokens :operation) (-> (first (mid_to_forwrod ignite group_id (reverse (-> vs_tokens :operation)))) :express)
               (contains? vs_tokens :parenthesis) (-> (first (mid_to_forwrod ignite group_id (reverse (-> vs_tokens :parenthesis)))) :express)
               (contains? vs_tokens :func-name) (-> (first (mid_to_forwrod ignite group_id [vs_tokens])) :express)
               )))
 
 (defn plus_value_tokens [^Ignite ignite ^Long group_id vs]
-    (if-let [vs_tokens (my-select/sql-to-ast vs)]
+    (if-let [vs_tokens (my-select-plus/sql-to-ast vs)]
         (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (-> vs_tokens :item_name))
-              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (-> vs_tokens :item_name))
-              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (-> vs_tokens :item_name))
-              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (-> vs_tokens :item_name))
-              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (-> vs_tokens :item_name))
-              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (-> vs_tokens :item_name))
+              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Float (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Double (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_str_value (-> vs_tokens :item_name)))
+              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_str_value (-> vs_tokens :item_name)))
               (contains? vs_tokens :operation) (-> (first (mid_to_forwrod ignite group_id (reverse (-> vs_tokens :operation)))) :express)
               (contains? vs_tokens :parenthesis) (-> (first (mid_to_forwrod ignite group_id (reverse (-> vs_tokens :parenthesis)))) :express)
               (contains? vs_tokens :func-name) (-> (first (mid_to_forwrod ignite group_id [vs_tokens])) :express)
@@ -100,26 +109,30 @@
 ; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是  my-lexical/get_scenes_dic
 ; dic_paras = {user_name {:value "吴大富" :type String} pass_word {:value "123" :type String}}
 (defn get_plus_value_tokens_fun [^Ignite ignite ^Long group_id ^String vs_line ^clojure.lang.PersistentArrayMap dic_paras]
-    (if-let [vs_tokens (my-select/sql-to-ast (my-lexical/to-back vs_line))]
-        (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
+    (if-let [vs_tokens (my-select-plus/sql-to-ast (my-lexical/to-back vs_line))]
+        (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Float (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Double (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
               (contains? vs_tokens :operation) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras (reverse (-> vs_tokens :operation)))) :express)
               (contains? vs_tokens :parenthesis) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras (reverse (-> vs_tokens :parenthesis)))) :express)
               (contains? vs_tokens :func-name) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras [vs_tokens])) :express)
               )))
 
 (defn plus_value_tokens_fun [^Ignite ignite ^Long group_id vs ^clojure.lang.PersistentArrayMap dic_paras]
-    (if-let [vs_tokens (my-select/sql-to-ast vs)]
-        (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
-              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_dic_vs dic_paras (-> vs_tokens :item_name)))
+    (if-let [vs_tokens (my-select-plus/sql-to-ast vs)]
+        (cond (and (= String (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (my-lexical/get_str_value (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Integer (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToInt (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Boolean (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToBoolean (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Long (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToLong (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Float (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Double (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= Timestamp (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
+              (and (= BigDecimal (-> vs_tokens :java_item_type)) (true? (-> vs_tokens :const))) (MyConvertUtil/ConvertToDecimal (my-lexical/get_dic_vs dic_paras (my-lexical/get_str_value (-> vs_tokens :item_name))))
               (contains? vs_tokens :operation) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras (reverse (-> vs_tokens :operation)))) :express)
               (contains? vs_tokens :parenthesis) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras (reverse (-> vs_tokens :parenthesis)))) :express)
               (contains? vs_tokens :func-name) (-> (first (mid_to_forwrod_fun ignite group_id dic_paras [vs_tokens])) :express)
@@ -142,13 +155,19 @@
           (re-find #"^(?i)integer$|^(?i)int$|^(?i)SMALLINT$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
                                                                               (MyConvertUtil/ConvertToInt (my-lexical/get_str_value m))
                                                                               (MyConvertUtil/ConvertToInt (get_plus_value_tokens ignite group_id vs_line)))
-          (re-find #"^(?i)BIGINT$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
+          (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
                                                     (MyConvertUtil/ConvertToLong (my-lexical/get_str_value m))
                                                     (MyConvertUtil/ConvertToLong (get_plus_value_tokens ignite group_id vs_line)))
+          (re-find #"^(?i)FLOAT$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
+                                                    (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value m))
+                                                    (MyConvertUtil/ConvertToDouble (get_plus_value_tokens ignite group_id vs_line)))
+          (re-find #"^(?i)double$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
+                                                    (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value m))
+                                                    (MyConvertUtil/ConvertToDouble (get_plus_value_tokens ignite group_id vs_line)))
           (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$|^(?i)REAL$" column_type) (if-let [m (re-find #"^(?i)\d+\.\d+$|^(?i)\'\d+\.\d+\'$|^(?i)\"\d+\.\d+\"$" vs_line)]
                                                     (MyConvertUtil/ConvertToDecimal (my-lexical/get_str_value m))
                                                     (MyConvertUtil/ConvertToDecimal (get_plus_value_tokens ignite group_id vs_line)))
-          (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (get_plus_value_tokens ignite group_id vs_line))
+          (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (get_plus_value_tokens ignite group_id vs_line))
           )
     )
 
@@ -158,9 +177,11 @@
         (cond (re-find #"^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (plus_value_tokens ignite group_id vs))
               (re-find #"^(?i)BOOLEAN$" column_type) (MyConvertUtil/ConvertToBoolean (plus_value_tokens ignite group_id vs))
               (re-find #"^(?i)integer$|^(?i)int$|^(?i)SMALLINT$" column_type) (MyConvertUtil/ConvertToInt (plus_value_tokens ignite group_id vs))
-              (re-find #"^(?i)BIGINT$" column_type) (MyConvertUtil/ConvertToLong (plus_value_tokens ignite group_id vs))
+              (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (MyConvertUtil/ConvertToLong (plus_value_tokens ignite group_id vs))
+              (re-find #"^(?i)FLOAT$" column_type) (MyConvertUtil/ConvertToDouble (plus_value_tokens ignite group_id vs))
+              (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble (plus_value_tokens ignite group_id vs))
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$|^(?i)REAL$" column_type) (MyConvertUtil/ConvertToDecimal (plus_value_tokens ignite group_id vs))
-              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (plus_value_tokens ignite group_id vs))
+              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (plus_value_tokens ignite group_id vs))
               )))
 
 ; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是  my-lexical/get_scenes_dic
@@ -196,13 +217,19 @@
           (re-find #"^(?i)integer$|^(?i)int$|^(?i)SMALLINT$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
                                                                               (MyConvertUtil/ConvertToInt (my-lexical/get_str_value m))
                                                                               (MyConvertUtil/ConvertToInt (get_plus_value_tokens_fun ignite group_id vs_line dic_paras)))
-          (re-find #"^(?i)BIGINT$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
+          (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
                                                     (MyConvertUtil/ConvertToLong (my-lexical/get_str_value m))
                                                     (MyConvertUtil/ConvertToLong (get_plus_value_tokens_fun ignite group_id vs_line dic_paras)))
+          (re-find #"^(?i)FLOAT$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
+                                                    (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value m))
+                                                    (MyConvertUtil/ConvertToDouble (get_plus_value_tokens_fun ignite group_id vs_line dic_paras)))
+          (re-find #"^(?i)double$" column_type) (if-let [m (re-find #"^(?i)\d+$|^(?i)\'\d+\'$|^(?i)\"\d+\"$" vs_line)]
+                                                    (MyConvertUtil/ConvertToDouble (my-lexical/get_str_value m))
+                                                    (MyConvertUtil/ConvertToDouble (get_plus_value_tokens_fun ignite group_id vs_line dic_paras)))
           (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$|^(?i)REAL$" column_type) (if-let [m (re-find #"^(?i)\d+\.\d+$|^(?i)\'\d+\.\d+\'$|^(?i)\"\d+\.\d+\"$" vs_line)]
                                                                                                                                 (MyConvertUtil/ConvertToDecimal (my-lexical/get_str_value m))
                                                                                                                                 (MyConvertUtil/ConvertToDecimal (get_plus_value_tokens_fun ignite group_id vs_line dic_paras)))
-          (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (get_plus_value_tokens_fun ignite group_id vs_line dic_paras))
+          (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (get_plus_value_tokens_fun ignite group_id vs_line dic_paras))
           )
     )
 
@@ -212,9 +239,11 @@
         (cond (re-find #"^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (plus_value_tokens_fun ignite group_id vs dic_paras))
               (re-find #"^(?i)BOOLEAN$" column_type) (MyConvertUtil/ConvertToBoolean (plus_value_tokens_fun ignite group_id vs dic_paras))
               (re-find #"^(?i)integer$|^(?i)int$|^(?i)SMALLINT$" column_type) (MyConvertUtil/ConvertToInt (plus_value_tokens_fun ignite group_id vs dic_paras))
-              (re-find #"^(?i)BIGINT$" column_type) (MyConvertUtil/ConvertToLong (plus_value_tokens_fun ignite group_id vs dic_paras))
+              (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (MyConvertUtil/ConvertToLong (plus_value_tokens_fun ignite group_id vs dic_paras))
+              (re-find #"^(?i)FLOAT$" column_type) (MyConvertUtil/ConvertToDouble (plus_value_tokens_fun ignite group_id vs dic_paras))
+              (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble (plus_value_tokens_fun ignite group_id vs dic_paras))
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)DECIMAL\(\s*\d+\s*\)$|^(?i)DECIMAL$|^(?i)REAL$" column_type) (MyConvertUtil/ConvertToDecimal (plus_value_tokens_fun ignite group_id vs dic_paras))
-              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (plus_value_tokens_fun ignite group_id vs dic_paras))
+              (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp (plus_value_tokens_fun ignite group_id vs dic_paras))
               ))
     )
 
@@ -231,6 +260,8 @@
               (= String java_item_type) (str_item_value item_value)
               (= Boolean java_item_type) (MyConvertUtil/ConvertToBoolean item_value)
               (= Long java_item_type) (MyConvertUtil/ConvertToLong item_value)
+              (= Float java_item_type) (MyConvertUtil/ConvertToDouble item_value)
+              (= Double java_item_type) (MyConvertUtil/ConvertToDouble item_value)
               (= Timestamp java_item_type) (MyConvertUtil/ConvertToTimestamp item_value)
               (= BigDecimal java_item_type) (MyConvertUtil/ConvertToDecimal item_value)
               (= "byte[]" java_item_type) (MyConvertUtil/ConvertToByte item_value)
@@ -243,6 +274,8 @@
               (= String java_item_type) (str_item_value (.field binaryObject item_value))
               (= Boolean java_item_type) (MyConvertUtil/ConvertToBoolean (.field binaryObject item_value))
               (= Long java_item_type) (MyConvertUtil/ConvertToLong (.field binaryObject item_value))
+              (= Float java_item_type) (MyConvertUtil/ConvertToDouble (.field binaryObject item_value))
+              (= Double java_item_type) (MyConvertUtil/ConvertToDouble (.field binaryObject item_value))
               (= Timestamp java_item_type) (MyConvertUtil/ConvertToTimestamp (.field binaryObject item_value))
               (= BigDecimal java_item_type) (MyConvertUtil/ConvertToDecimal (.field binaryObject item_value))
               (= "byte[]" java_item_type) (MyConvertUtil/ConvertToByte (.field binaryObject item_value))
@@ -252,6 +285,8 @@
               (= String java_item_type) (str_item_value item_value)
               (= Boolean java_item_type) (MyConvertUtil/ConvertToBoolean item_value)
               (= Long java_item_type) (MyConvertUtil/ConvertToLong item_value)
+              (= Float java_item_type) (MyConvertUtil/ConvertToDouble item_value)
+              (= Double java_item_type) (MyConvertUtil/ConvertToDouble item_value)
               (= Timestamp java_item_type) (MyConvertUtil/ConvertToTimestamp item_value)
               (= BigDecimal java_item_type) (MyConvertUtil/ConvertToDecimal item_value)
               (= "byte[]" java_item_type) (MyConvertUtil/ConvertToByte item_value)
@@ -264,6 +299,8 @@
                                                                                                           (= String java_item_type) (str_item_value (.field binaryObject item_value))
                                                                                                           (= Boolean java_item_type) (MyConvertUtil/ConvertToBoolean (.field binaryObject item_value))
                                                                                                           (= Long java_item_type) (MyConvertUtil/ConvertToLong (.field binaryObject item_value))
+                                                                                                          (= Float java_item_type) (MyConvertUtil/ConvertToDouble (.field binaryObject item_value))
+                                                                                                          (= Double java_item_type) (MyConvertUtil/ConvertToDouble (.field binaryObject item_value))
                                                                                                           (= Timestamp java_item_type) (MyConvertUtil/ConvertToTimestamp (.field binaryObject item_value))
                                                                                                           (= BigDecimal java_item_type) (MyConvertUtil/ConvertToDecimal (.field binaryObject item_value))
                                                                                                           (= "byte[]" java_item_type) (MyConvertUtil/ConvertToByte (.field binaryObject item_value))
@@ -274,6 +311,8 @@
                 (= String java_item_type) (str_item_value (my-lexical/get_dic_vs dic_paras item_value))
                 (= Boolean java_item_type) (MyConvertUtil/ConvertToBoolean (my-lexical/get_dic_vs dic_paras item_value))
                 (= Long java_item_type) (MyConvertUtil/ConvertToLong (my-lexical/get_dic_vs dic_paras item_value))
+                (= Float java_item_type) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras item_value))
+                (= Double java_item_type) (MyConvertUtil/ConvertToDouble (my-lexical/get_dic_vs dic_paras item_value))
                 (= Timestamp java_item_type) (MyConvertUtil/ConvertToTimestamp (my-lexical/get_dic_vs dic_paras item_value))
                 (= BigDecimal java_item_type) (MyConvertUtil/ConvertToDecimal (my-lexical/get_dic_vs dic_paras item_value))
                 (= "byte[]" java_item_type) (MyConvertUtil/ConvertToByte (my-lexical/get_dic_vs dic_paras item_value))
@@ -464,7 +503,7 @@
                                       (run-express stack_number stack_symbol))))))
 
 ; 输入的内容是四则运算的逆序
-; 输入 (my-expression/mid_to_forwrod ignite (reverse (-> (my-select/sql-to-ast (my-lexical/to-back "5/2+1 - (3-1)*2")) :operation)))
+; 输入 (my-expression/mid_to_forwrod ignite (reverse (-> (my-select-plus/sql-to-ast (my-lexical/to-back "5/2+1 - (3-1)*2")) :operation)))
 ; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是  my-lexical/get_scenes_dic
 ; dic_paras = {user_name {:value "吴大富" :type String} pass_word {:value "123" :type String}}
 (defn mid_to_forwrod_fun

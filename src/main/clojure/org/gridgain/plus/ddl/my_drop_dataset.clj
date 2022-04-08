@@ -30,7 +30,7 @@
     (if (= group-id 0)
         (if-let [data_set_name (get-dataset-name sql)]
             (if-let [ds-cache (.cache ignite (str (str/lower-case data_set_name) "_meta"))]
-                (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select mt.id from my_dataset as m, my_meta_tables as mt where m.id = mt.data_set_id and m.dataset_name = ? limit 0, 1") (to-array [(str/upper-case data_set_name)])))))
+                (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select mt.id from my_dataset as m, my_meta_tables as mt where m.id = mt.data_set_id and m.dataset_name = ? limit 0, 1") (to-array [(str/lower-case data_set_name)])))))
                     (.destroy ds-cache)
                     )))
         (throw (Exception. "没有执行语句的权限！"))))

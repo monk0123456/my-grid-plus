@@ -19,6 +19,7 @@
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
              (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
              (java.util ArrayList Date Iterator)
+             (org.log MyCljLogger)
              (java.sql Timestamp)
              (java.math BigDecimal)
              )
@@ -46,8 +47,8 @@
 (defn drop-table-obj [^Ignite ignite ^String data_set_name ^String sql_line]
     (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
                 (if (my-lexical/is-eq? "public" data_set_name)
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [table_name]))))))
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [data_set_name table_name])))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
                 )
             (get-table-items-id [^Ignite ignite ^Long table_id]
                 (loop [[f & r] (.getAll (.query (.cache ignite "table_item") (.setArgs (SqlFieldsQuery. "select m.id from table_item as m where m.table_id = ?") (to-array [table_id])))) lst-rs []]
@@ -107,7 +108,9 @@
         (if (= group_id 0)
             (run_ddl_real_time ignite sql_code dataset_name)
             (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
-                (run_ddl_real_time ignite sql_code dataset_name)
+                (do
+                    (MyCljLogger/showParams [sql_code dataset_name])
+                    (run_ddl_real_time ignite sql_code dataset_name))
                 (throw (Exception. "该用户组没有执行 DDL 语句的权限！"))))))
 
 ;(defn drop_table [^Ignite ignite ^Long group_id ^String sql_line]

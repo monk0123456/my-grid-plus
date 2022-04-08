@@ -13,7 +13,8 @@
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType MyLog)
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query SqlFieldsQuery)
-             (java.util List ArrayList))
+             (java.util List ArrayList)
+             (org.log MyCljLogger))
     (:gen-class
         ; 生成 class 的类名
         :name org.gridgain.plus.dml.MyInsert

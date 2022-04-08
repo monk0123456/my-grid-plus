@@ -109,7 +109,7 @@
                (and (> (count type_stack) 0) (= f ")")) (if (= (count type_stack) 1) (recur r pk_stack [] [] (conj (pop lst) (assoc (peek lst) :vs lst_type))))
                (and (my-lexical/is-eq? f "NOT") (my-lexical/is-eq? (first r) "NULL") (= (count pk_stack) 0)) (recur (rest r) pk_stack type_stack lst_type (conj lst {:not_null true}))
                (my-lexical/is-eq? f "auto") (recur r pk_stack type_stack lst_type (conj lst {:auto true}))
-               (some? (re-find #"^(?i)float$|^(?i)double$|^(?i)long$|^(?i)integer$|^(?i)int$|^(?i)SMALLINT$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)TIME$|^(?i)DECIMAL$|^(?i)REAL$" f)) (if (= (first r) "(")
+               (some? (re-find #"^(?i)float$|^(?i)double$|^(?i)long$|^(?i)integer$|^(?i)int$|^(?i)SMALLINT$|^(?i)TINYINT$|^(?i)varchar$|^(?i)varchar\(\d+\)$|^(?i)char$|^(?i)char\(\d+\)$|^(?i)BOOLEAN$|^(?i)BIGINT$|^(?i)BINARY$|^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$|^(?i)DECIMAL$|^(?i)REAL$" f)) (if (= (first r) "(")
                                                                                                                                                                                                                                                                                                              (recur (rest r) pk_stack (conj type_stack (first r)) lst_type (conj lst {:type (my-lexical/convert_to_type f)}))
                                                                                                                                                                                                                                                                                                              (recur r pk_stack [] lst_type (conj lst {:type (my-lexical/convert_to_type f)})))
                (and (my-lexical/is-eq? f "DEFAULT") (some? (first r))) (recur (rest r) pk_stack type_stack lst_type (conj lst {:default (first r)}))
@@ -138,9 +138,10 @@
                                                                                                               (recur r m code_line (conj pk_set (.getColumn_name m))))
                                                                                                           (throw (Exception. "组合主键设置错误！")))
                (and (map? f) (contains? f :pk) (= (Strings/isNullOrEmpty (.getColumn_name m)) true)) (recur r m code_line (concat pk_set (-> f :pk)))
-               (and (map? f) (contains? f :type)) (do (.setColumn_type m (-> f :type))
+               (and (map? f) (contains? f :type)) (let [f-type (my-lexical/to-smart-sql-type (-> f :type))]
+                                                      (.setColumn_type m f-type)
                                                       (.append code_line " ")
-                                                      (.append code_line (-> f :type))
+                                                      (.append code_line f-type)
                                                       (if (contains? f :vs)
                                                           (cond (= (count (-> f :vs)) 1) (let [len (nth (-> f :vs) 0)]
                                                                                              (.setColumn_len m (MyConvertUtil/ConvertToInt len))
@@ -168,7 +169,9 @@
                (and (map? f) (contains? f :auto)) (do (.setAuto_increment m (-> f :auto))
                                                       (recur r m code_line pk_set))
                )
-         {:table_item m :code code_line :pk pk_set})))
+         (if (and (true? (.getAuto_increment m)) (not (some? (re-find #"^(?i)integer$|^(?i)int$|^(?i)SMALLINT$|^(?i)BIGINT$|^(?i)long$" (.getColumn_type m)))))
+             (throw (Exception. "自增长必须是 int 或者是 long 类型的！"))
+             {:table_item m :code code_line :pk pk_set}))))
 
 (defn set_pk
     ([lst_table_item column_name] (set_pk lst_table_item column_name []))
@@ -306,7 +309,7 @@
 ;         {:lst_table_item (table_items lst) :code_sb sb :pk_sets pk_sets})))
 
 (defn get_obj [items ^String schema_name ^String table_name ^String data_set_name]
-    (get_obj_ds items schema_name table_name data_set_name))
+    (get_obj_ds items (str/lower-case schema_name) (str/lower-case table_name) (str/lower-case data_set_name)))
 
 ; items: "( CategoryID INTEGER NOT NULL auto comment ( '产品类型ID' ) , CategoryName VARCHAR ( 15 ) NOT NULL comment ( '产品类型名' ) , Description VARCHAR comment ( '类型说明' ) , Picture VARCHAR comment ( '产品样本' ) , PRIMARY KEY ( CategoryID )"
 ; items: "( id int PRIMARY KEY , city_id int , name varchar , age int , company varchar"
@@ -362,7 +365,10 @@
     (letfn [(is-no-exists [lst]
                 (let [items (take 4 lst)]
                     (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))
-                        (assoc (my-lexical/get-schema (nth items 2)) :create_table "CREATE TABLE" :items_line (drop-last 2 (drop 3 lst)) :template (last lst)))))
+                        (if (nil? (last lst))
+                            (throw (Exception. "创建表必须有 template 的设置！"))
+                            (assoc (my-lexical/get-schema (nth items 2)) :create_table "CREATE TABLE" :items_line (drop-last 2 (drop 3 lst)) :template (last lst)))
+                        )))
             (is-exists [lst]
                 (let [items (take 7 lst)]
                     (if (and (my-lexical/is-eq? (first items) "CREATE") (my-lexical/is-eq? (second items) "TABLE") (my-lexical/is-eq? (nth items 2) "IF") (my-lexical/is-eq? (nth items 3) "NOT") (my-lexical/is-eq? (nth items 4) "EXISTS") (= (last items) "(") (my-lexical/is-eq? (first (take-last 2 lst)) "with"))

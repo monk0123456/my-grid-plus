@@ -61,9 +61,9 @@ public 公有：Customers:客户表
 (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(7,'Produce','Dried fruit and bean curd', '')")))
 (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. "INSERT INTO Categories (CategoryID, CategoryName, Description, Picture) VALUES(8,'Seafood','Seaweed and fish', '')")))
 
+(.getAll (.query (.cache ignite "my_dataset") (SqlFieldsQuery. "update my_meta.my_dataset set dataset_name = LOWER(dataset_name) where id > 0")))
 
-
-
+(my-super-sql/super-sql ignite "wudafu" "drop table wudafu.Employees")
 
 
 

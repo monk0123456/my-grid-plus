@@ -51,7 +51,7 @@
         <property name="super_password" value="my_root"/>
 
         <!-- 超级管理员的 root token -->
-        <property name="root_token" value="wudafu"/>
+        <property name="root_token" value="dafu"/>
 
         <!-- 是否启用 Data Set -->
         <property name="dataSetEnabled" value="true"/>

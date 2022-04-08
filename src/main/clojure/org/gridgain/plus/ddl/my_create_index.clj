@@ -109,8 +109,8 @@
 (defn create-index-obj [^Ignite ignite ^String data_set_name ^String sql_line]
     (letfn [(get-table-id [^Ignite ignite ^String data_set_name ^String table_name]
                 (if (my-lexical/is-eq? "public" data_set_name)
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [table_name]))))))
-                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [data_set_name table_name])))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m where m.data_set_id = 0 and m.table_name = ?") (to-array [(str/lower-case table_name)]))))))
+                    (first (first (.getAll (.query (.cache ignite "my_meta_tables") (.setArgs (SqlFieldsQuery. "select m.id from my_meta_tables as m, my_dataset as d where m.data_set_id = d.id and d.dataset_name = ? and m.table_name = ?") (to-array [(str/lower-case data_set_name) (str/lower-case table_name)])))))))
                 )
             (get-cachex [^Ignite ignite ^clojure.lang.PersistentArrayMap m ^ArrayList lst]
                 (let [{index_name :index_name schema_name :schema_name table_name :table_name index_items_obj :index_items_obj {spatial :spatial} :create_index} m]

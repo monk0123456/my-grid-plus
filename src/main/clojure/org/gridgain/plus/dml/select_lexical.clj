@@ -168,6 +168,16 @@
              lst
              (conj lst (str/join stack))))))
 
+(defn to-smart-sql-type [f-type]
+    (cond (re-find #"^(?i)FLOAT$" f-type) "double"
+          (re-find #"^(?i)DATETIME$" f-type) "TIMESTAMP"
+          (re-find #"^(?i)REAL$" f-type) "TIMESTAMP"
+          (re-find #"^(?i)REAL\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)REAL\(\s*\d+\s*\)$|^(?i)REAL$" f-type) (str/replace f-type #"REAL" "DECIMAL")
+          (re-find #"^(?i)BIT$" f-type) "BOOLEAN"
+          :else
+          f-type
+          ))
+
 ; 生成 MyLogCache
 (defn get_mylogcache [^Ignite ignite ^String table_name ^MyLogCache myLogCache]
     (.build (doto (.builder (.binary ignite) "cn.plus.model.MyLog")
@@ -181,14 +191,15 @@
 
 (defn convert_to_java_type [column_type]
     (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) {:java_type Integer}
-          (re-find #"^(?i)SMALLINT$" column_type) {:java_type Integer}
-          (re-find #"^(?i)TINYINT$" column_type) {:java_type Byte}
+          (re-find #"^(?i)SMALLINT$|^(?i)SMALLINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)SMALLINT\(\s*\d+\s*\)$" column_type) {:java_type Integer}
+          (re-find #"^(?i)float$|^(?i)long$" column_type) {:java_type Double}
+          (re-find #"^(?i)TINYINT$|^(?i)TINYINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)TINYINT\(\s*\d+\s*\)$" column_type) {:java_type Byte}
           (re-find #"^(?i)varchar$" column_type) {:java_type String :len 0}
           (re-find #"^(?i)varchar\(\d+\)$" column_type) {:java_type String :len (Integer/parseInt (re-find #"(?<=^(?i)varchar\()\d+(?=\))" column_type))}
           (re-find #"^(?i)char$" column_type) {:java_type String :len 0}
           (re-find #"^(?i)char\(\d+\)$" column_type) {:java_type String :len (Integer/parseInt (re-find #"(?<=^(?i)varchar\()\d+(?=\))" column_type))}
           (re-find #"^(?i)BOOLEAN$" column_type) {:java_type Boolean}
-          (re-find #"^(?i)BIGINT$" column_type) {:java_type Long}
+          (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) {:java_type Long}
           (re-find #"^(?i)BINARY$" column_type) {:java_type "byte[]"}
           (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) {:java_type Timestamp}
           (re-find #"^(?i)REAL$" column_type) {:java_type BigDecimal}
@@ -217,14 +228,16 @@
                     (str/join (reverse (rest (reverse (rest line)))))
                     line))]
         (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) (MyConvertUtil/ConvertToInt column_value)
-              (re-find #"^(?i)SMALLINT$" column_type) (MyConvertUtil/ConvertToInt column_value)
+              (re-find #"^(?i)float$" column_type) (MyConvertUtil/ConvertToDouble column_value)
+              (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble column_value)
+              (re-find #"^(?i)SMALLINT\(\s*\d+\s*,\s*\d+\s*\)$|^(?i)SMALLINT\(\s*\d+\s*\)$|^(?i)SMALLINT$" column_type) (MyConvertUtil/ConvertToInt column_value)
               (re-find #"^(?i)TINYINT$" column_type) (MyConvertUtil/ConvertToInt column_value)
               (re-find #"^(?i)varchar$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
               (re-find #"^(?i)varchar\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
               (re-find #"^(?i)char$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
               (re-find #"^(?i)char\(\d+\)$" column_type) (MyConvertUtil/ConvertToString (get_str_value column_value))
               (re-find #"^(?i)BOOLEAN$" column_type) (MyConvertUtil/ConvertToBoolean column_value)
-              (re-find #"^(?i)BIGINT$" column_type) (MyConvertUtil/ConvertToLong column_value)
+              (re-find #"^(?i)BIGINT$|^(?i)long$" column_type) (MyConvertUtil/ConvertToLong column_value)
               (re-find #"^(?i)TIMESTAMP$|^(?i)Date$|^(?i)DATETIME$|^(?i)TIME$" column_type) (MyConvertUtil/ConvertToTimestamp column_value)
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*,\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal column_value)
               (re-find #"^(?i)DECIMAL\(\s*\d+\s*\)$" column_type) (MyConvertUtil/ConvertToDecimal column_value)

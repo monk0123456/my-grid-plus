@@ -30,7 +30,7 @@
     (if (= group_id 0)
         (if-let [data_set_name (get-dataset-name sql)]
             (let [ds-cache (.cache ignite "my_dataset")]
-                (let [data_set_name_u (str/upper-case data_set_name)]
+                (let [data_set_name_u (str/lower-case data_set_name)]
                     (if (empty? (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "select m.id from my_meta.my_dataset as m where m.dataset_name = ?") (to-array [data_set_name_u])))))
                         (if (some? (.getOrCreateCache ignite (doto (CacheConfiguration. (str (str/lower-case data_set_name) "_meta"))
                                                                  (.setSqlSchema data_set_name_u))))
