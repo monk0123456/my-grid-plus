@@ -1,0 +1,127 @@
+// 1、 例子：简单的四则运算
+function my_test(a, b)
+{
+   let c = 10;
+   log("简单的四则运算");
+   a + b +c;
+}
+
+// 2、 例子：for 循环
+function my_for(sql, args)
+{
+   let lst = query_sql(sql, args);
+   for (r in lst)
+   {
+       println(r.get(0));
+   }
+}
+
+// 3、 例子：match 循环
+function my_match(table_name)
+{
+   match {
+     table_name == "Customers": query_sql("select * from public.Customers limit 0, 5");
+     table_name == "Employees": query_sql("select * from wudafu.Employees limit 0, 5");
+     else query_sql("select * from wudagui.OrderDetails limit 0, 5");
+   }
+}
+
+// 4、例子：事务
+// 同时添加订单，订单详情表，修改产品表的库存
+function my_trans(OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry, lst_OrderDetails)
+{
+   let lst = [];
+   -- 1、保存订单信息
+   lst.add(["INSERT INTO wudagui.Orders (OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry) Values ((?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?));", [OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry]);
+   -- 2、保存订单详情
+   for(rs in lst_OrderDetails)
+   {
+      lst.add(["INSERT INTO wudagui.OrderDetails (OrderID, ProductID, UnitPrice, Quantity, Discount) Values (?, ?, ?, ?, ?);", [OrderID, rs.get("ProductID"), rs.get("UnitPrice"), rs.get("Quantity"), rs.get("Discount")]);
+      -- 3、修改库存
+      lst.add(["update public.Products set UnitsInStock = UnitsInStock - ? where ProductID = ?", [rs.get("UnitPrice"), rs.get("ProductID")]);
+   }
+
+   -- 4、执行事务
+   trans(lst);
+}
+
+// 5、子方法
+function my_inner_func (a, b)
+{
+    -- 1、定义个子方法，类似于 java 类中的方法，只是这个子方法是 private 的
+    innerFunction {
+        function my_add(a, b)
+        {
+           lpg("测试 a + b");
+           a + b;
+        }
+
+        function my_sub(a, b)
+        {
+           lpg("测试 a - b");
+           a - b;
+        }
+    }
+
+    let c = my_add(a, b) * my_sub(a, b);
+    c + 10;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

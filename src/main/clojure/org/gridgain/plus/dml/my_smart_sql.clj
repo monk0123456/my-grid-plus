@@ -5,6 +5,8 @@
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
+        [org.gridgain.plus.dml.my-delete :as my-delete]
+        [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -200,6 +202,9 @@
             (get-my-let my-context)
             m)))
 
+(declare token-lst-to-clj token-lst-clj token-to-clj map-token-to-clj func-to-clj item-to-clj for-seq body-to-clj for-seq-func pair-to-clj pair-lst-to-clj match-to-clj
+         my-args pk-rs-clj data-rs-clj insert-to-cache lst-to-cache)
+
 ; 判断符号优先级
 ; f symbol 的优先级大于等于 s 返回 true 否则返回 false
 (defn is-symbol-priority [f s]
@@ -225,39 +230,36 @@
         ))
 
 (defn calculate
-    ([lst my-context] (calculate lst [] [] my-context))
-    ([[f & r] stack_number stack_symbol my-context]
+    ([^Ignite ignite ^Long group_id lst my-context] (calculate ignite group_id lst [] [] my-context))
+    ([^Ignite ignite ^Long group_id [f & r] stack_number stack_symbol my-context]
      (if (some? f)
          (cond (contains? f :operation_symbol) (cond
                                                    ; 若符号栈为空，则符号直接压入符号栈
-                                                   (= (count stack_symbol) 0) (recur r stack_number (conj stack_symbol f) my-context)
+                                                   (= (count stack_symbol) 0) (recur ignite group_id r stack_number (conj stack_symbol f) my-context)
                                                    ; f 符号的优先级高于或等于符号栈栈顶的优先级，则直接入栈
-                                                   (is-symbol-priority f (peek stack_symbol)) (recur r stack_number (conj stack_symbol f) my-context)
+                                                   (is-symbol-priority f (peek stack_symbol)) (recur ignite group_id r stack_number (conj stack_symbol f) my-context)
                                                    ; f 符号的优先级低于栈顶的优先级，则将符号栈顶，弹出参与计算后，在压入，数据栈
                                                    :else
                                                    (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbol)]
-                                                       ;(recur r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                       ;(recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                        (cond (and (contains? (-> my-context :let-params) (-> first_item :item_name)) (contains? (-> my-context :let-params) (-> second_item :item_name)))
-                                                             (recur r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              (contains? (-> my-context :let-params) (-> first_item :item_name))
-                                                             (recur r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              (contains? (-> my-context :let-params) (-> second_item :item_name))
-                                                             (recur r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              :else
-                                                             (recur r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              ))
                                                    )
-               (contains? f :parenthesis) (let [m (calculate (reverse (-> f :parenthesis)) my-context)]
-                                              (recur r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol my-context))
-               (contains? f :item_name) (recur r (conj stack_number f) stack_symbol my-context)
-               ;(contains? f :func-name)
+               (contains? f :parenthesis) (let [m (calculate ignite group_id (reverse (-> f :parenthesis)) my-context)]
+                                              (recur ignite group_id r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol my-context))
+               (contains? f :item_name) (recur ignite group_id r (conj stack_number f) stack_symbol my-context)
+               (contains? f :func-name) (recur ignite group_id r (conj stack_number (func-to-clj ignite group_id f false my-context)) stack_symbol my-context)
                :else
-               (recur r (conj stack_number f) stack_symbol my-context)
+               (recur ignite group_id r (conj stack_number f) stack_symbol my-context)
                )
          (run-express stack_number stack_symbol my-context))))
-
-(declare token-lst-to-clj token-lst-clj token-to-clj map-token-to-clj func-to-clj item-to-clj for-seq body-to-clj for-seq-func pair-to-clj pair-lst-to-clj match-to-clj
-         my-args pk-rs-clj data-rs-clj insert-to-cache lst-to-cache)
 
 ; 判断 func
 (defn is-func? [^Ignite ignite ^String func-name]
@@ -288,13 +290,18 @@
                                                                 lst-rs
                                                                 lst-rs
                                                                 ))
-              (is-func? ignite func-name) (format "(my_func %s %s)" func-name (token-to-clj ignite group_id lst_ps is-set my-context))
-              (is-scenes? ignite group_id func-name) (format "(my_scenes %s %s)" func-name (token-to-clj ignite group_id lst_ps is-set my-context))
+              (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps is-set my-context))
+              (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps is-set my-context))
+              (my-lexical/is-eq? "log" func-name) (format "(log %s)" (token-to-clj ignite group_id lst_ps is-set my-context))
+              (my-lexical/is-eq? "println" func-name) (format "(println %s)" (token-to-clj ignite group_id lst_ps is-set my-context))
+              :else
+              (println "Inner func")
               )))
 
 (defn item-to-clj [m my-context]
     (if (contains? (-> my-context :let-params) (-> m :item_name))
-        (format "(.getVar %s)" (-> m :item_name))))
+        (format "(.getVar %s)" (-> m :item_name))
+        (-> m :item_name)))
 
 (defn token-lst-to-clj [ignite group_id m is-set my-context]
     (if (and (>= (count m) 3) (contains? (nth m 1) :comparison_symbol) (= (-> (nth m 1) :comparison_symbol) "=")
@@ -327,8 +334,8 @@
 
 (defn for-seq [ignite group_id f r my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (-> f :args :seq :item_name) my-it (get-my-it my-context)]
-        (let [for-inner-clj (body-to-clj ignite group_id r (conj (-> my-context :let-params) tmp-val-name my-it))]
-            (format "(cond (instance? Iterator %s) (loop [%s %s]\n
+        (let [{inner-func :inner-func for-inner-clj :r-line} (body-to-clj ignite group_id r (conj (-> my-context :let-params) tmp-val-name my-it))]
+            (let [for-line (format "(cond (instance? Iterator %s) (loop [%s %s]\n
                                                        (if (.hasNext %s)\n
                                                            (let [%s (.next %s)]\n
                                                                %s\n
@@ -342,21 +349,24 @@
                         :else\n
                         (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                         )"
-                    seq-name my-it seq-name
-                    my-it
-                    tmp-val-name my-it
-                    for-inner-clj
-                    my-it
-                    seq-name tmp-val-name seq-name
-                    tmp-val-name
-                    for-inner-clj)
+                                   seq-name my-it seq-name
+                                   my-it
+                                   tmp-val-name my-it
+                                   for-inner-clj
+                                   my-it
+                                   seq-name tmp-val-name seq-name
+                                   tmp-val-name
+                                   for-inner-clj)]
+                (if (nil? inner-func)
+                    for-line
+                    (format "(letfn [%s]\n        %s)" inner-func for-line)))
             )
         ))
 
 (defn for-seq-func [ignite group_id f r my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (get-my-let my-context) my-it (get-my-it my-context) func-clj (token-to-clj ignite group_id (-> f :args :seq) false my-context)]
-        (let [for-inner-clj (body-to-clj ignite group_id r (conj (-> my-context :let-params) tmp-val-name my-it))]
-            (format "(let [%s %s]\n
+        (let [{inner-func :inner-func for-inner-clj :r-line} (body-to-clj ignite group_id r (conj (-> my-context :let-params) tmp-val-name my-it))]
+            (let [for-seq-line (format "(let [%s %s]\n
                           (cond (instance? Iterator %s) (loop [%s %s]\n
                                                               (if (.hasNext %s)\n
                                                                   (let [%s (.next %s)]\n
@@ -371,26 +381,35 @@
                                 :else\n
                                 (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                                 ))"
-                    seq-name func-clj
-                    seq-name my-it seq-name
-                    my-it
-                    tmp-val-name my-it
-                    for-inner-clj
-                    my-it
-                    seq-name tmp-val-name seq-name
-                    tmp-val-name
-                    for-inner-clj))
+                                       seq-name func-clj
+                                       seq-name my-it seq-name
+                                       my-it
+                                       tmp-val-name my-it
+                                       for-inner-clj
+                                       my-it
+                                       seq-name tmp-val-name seq-name
+                                       tmp-val-name
+                                       for-inner-clj)]
+                (if (nil? inner-func)
+                    for-seq-line
+                    (format "(letfn [%s]\n        %s)" inner-func for-seq-line))))
         ))
 
 ; 处理 match
 ; 第一个参数：(-> f :pairs)
 (defn pair-to-clj [ignite group_id pair my-context]
-    (cond (contains? pair :pair) (if (= (count (-> pair :pair-vs)) 1)
-                                     (format "(%s) (%s)" (body-to-clj ignite group_id [(-> pair :pair)] my-context) (body-to-clj ignite group_id (-> pair :pair-vs) my-context))
-                                     (format "(%s) (do %s)" (body-to-clj ignite group_id [(-> pair :pair)] my-context) (body-to-clj ignite group_id (-> pair :pair-vs) my-context)))
+    (cond (contains? pair :pair) (let [{inner-func :inner-func r-line :r-line} (body-to-clj ignite group_id [(-> pair :pair)] my-context) {inner-func-1 :inner-func r-line-1 :r-line} (body-to-clj ignite group_id (-> pair :pair-vs) my-context)]
+                                     (cond (and (nil? inner-func) (nil? inner-func-1)) (format "(%s) (%s)" r-line r-line-1)
+                                           (and (nil? inner-func) (not (nil? inner-func-1))) (format "(%s) (letfn [%s]\n        %s)" r-line inner-func-1 r-line-1)
+                                           (and (not (nil? inner-func)) (nil? inner-func-1)) (format "(letfn [%s]\n        %s) (%s)" inner-func r-line r-line-1)
+                                           (and (not (nil? inner-func)) (not (nil? inner-func-1))) (format "(letfn [%s]\n        %s) (letfn [%s]\n        %s)" inner-func r-line inner-func-1 r-line-1)
+                                           ))
           (contains? pair :else-vs) (if (= (count (-> pair :else-vs)) 1)
-                                        (format ":else (%s)" (body-to-clj ignite group_id (-> pair :else-vs) my-context))
-                                        (format ":else (do %s)" (body-to-clj ignite group_id (-> pair :else-vs) my-context)))
+                                        (let [{inner-func :inner-func r-line :r-line} (body-to-clj ignite group_id [(-> pair :pair)] my-context)]
+                                            (cond (nil? inner-func) (format ":else (%s)" r-line)
+                                                  :else
+                                                  (format ":else (letfn [%s]\n        %s)" inner-func r-line)
+                                                  )))
           )
     )
 
@@ -435,7 +454,7 @@
 (defn insert-to-cache [ignite group_id my-context-line sql-lst]
     (let [insert_obj (my-insert/get_insert_obj sql-lst) my-context (eval (read-string my-context-line))]
         (let [pk_with_data (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
-            (let [{pk-rs :pk_rs data-rs :data_rs} (my-insert/insert_obj_to_db ignite 0 (-> insert_obj :table_name) pk_with_data)]
+            (let [{pk-rs :pk_rs data-rs :data_rs} (my-insert/insert_obj_to_db ignite 0 (-> insert_obj :table_name) (-> insert_obj :table_name) pk_with_data)]
                 (let [line (format "(MyLogCache. %s %s %s (SqlType/INSERT))" (-> insert_obj :table_name) (pk-rs-clj ignite group_id my-context pk-rs) (data-rs-clj ignite group_id my-context data-rs))]
                     (eval (read-string line)))))))
 
@@ -451,20 +470,30 @@
             lst-rs)))
 
 ; my-context 初始化的时候，记录了输入参数 和 定义的变量
-; my-context: {:input-params #{} :let-params #{}}
+; my-context: {:input-params #{} :let-params #{} :last-item nil}
 (defn body-to-clj
     [ignite group_id [f & r] my-context]
     (if (some? f)
-        (cond (contains? f :let-name) (format "(let [%s (MyVar. %s)]\n    %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) false my-context) (body-to-clj ignite group_id r (add-let-name my-context (-> f :let-name))))
+        (cond (contains? f :let-name) (let [{inner-func :inner-func r-line :r-line} (body-to-clj ignite group_id r (add-let-name my-context (-> f :let-name)))]
+                                          (if (nil? inner-func)
+                                              {:inner-func nil :r-line (format "(let [%s (MyVar. %s)]\n    %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) false my-context) r-line)}
+                                              {:inner-func nil :r-line (format "(let [%s (MyVar. %s)]\n    (letfn [%s]\n        %s))" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) false my-context) inner-func r-line)}))
               (and (contains? f :expression) (= (-> f :expression) "for")) (cond (and (contains? (-> f :args :tmp_val) :item_name) (contains? (-> f :args :seq) :item_name)) (for-seq ignite group_id f r my-context)
                                                                                  (and (contains? (-> f :args :tmp_val) :item_name) (contains? (-> f :args :seq) :func-name)) (for-seq-func ignite group_id f r my-context)
                                                                                  :else
                                                                                  (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
                                                                                  )
               (and (contains? f :expression) (= (-> f :expression) "match")) (match-to-clj ignite group_id (-> f :pairs) r my-context)
-              (contains? f :express) (cond (contains? (-> f :express) :item_name) (-> f :express :item_name)
-                                           (contains? (-> f :express) :operation) (calculate (reverse (-> f :express :operation)) my-context)
-                                           (contains? (-> f :express) :parenthesis) (calculate (reverse (-> f :express :parenthesis)) my-context)
+              (contains? f :express) (cond (contains? (first r) :express) (if (or (nil? (-> my-context :last-item)) (contains? (-> my-context :last-item) :let-name))
+                                                                              (cond (contains? (-> f :express) :item_name) (format "(do %s\n %s)" (-> f :express :item_name) (body-to-clj ignite group_id r (assoc my-context :last-item f)))
+                                                                                    (contains? (-> f :express) :operation) (format "(do %s\n %s)" (calculate ignite group_id (reverse (-> f :express :operation)) my-context) (body-to-clj ignite group_id r (assoc my-context :last-item f)))
+                                                                                    (contains? (-> f :express) :parenthesis) (format "(do %s\n %s)" (calculate ignite group_id (reverse (-> f :express :parenthesis)) my-context) (body-to-clj ignite group_id r (assoc my-context :last-item f)))
+                                                                                    (contains? (-> f :express) :func-name) ()
+                                                                                    )
+                                                                              (cond (contains? (-> f :express) :item_name) (format "%s\n %s" (-> f :express :item_name) (body-to-clj ignite group_id r (assoc my-context :last-item f)))
+                                                                                    (contains? (-> f :express) :operation) (format "%s\n %s" (calculate ignite group_id (reverse (-> f :express :operation)) my-context) (body-to-clj ignite group_id r (assoc my-context :last-item f)))
+                                                                                    (contains? (-> f :express) :parenthesis) (format "%s\n %s" (calculate ignite group_id (reverse (-> f :express :parenthesis)) my-context) (body-to-clj ignite group_id r (assoc my-context :last-item f)))
+                                                                                    ))
                                            )
 
               )))
@@ -484,14 +513,22 @@
 ;
 ;              )))
 
+; my-context 记录上下文
+; :input-params 输入参数
+; :let-params 定义变量
+; :last-item 上一个 token
+; :inner-func inner-func 名字
+; :up-my-context 上一层的 my-context
+; my-context: {:input-params #{} :let-params #{} :last-item nil :up-my-context nil}
 (defn ast-to-clj [ignite group_id ast]
-    (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params #{}}]
-        (let [func-context (assoc my-context :input-params (conj (-> my-context :input-params) args-lst))]
-            (format "(defn %s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
+    (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params #{} :last-item nil :inner-func #{} :up-my-context nil}]
+        (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) args-lst))]
+            (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
         ))
 
 (defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
-    (ast-to-clj ignite group_id (first (get-ast smart-sql))))
+    (let [code (ast-to-clj ignite group_id (first (get-ast smart-sql)))]
+        (str/replace code #"^\(\s*" "(defn ")))
 
 
 

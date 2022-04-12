@@ -16,6 +16,12 @@ public class MyFuncPs implements Serializable {
         this.ps_type = ps_type;
     }
 
+    public MyFuncPs(final Integer ps_index, final String ps_type)
+    {
+        this.ps_index = ps_index;
+        this.ps_type = ps_type;
+    }
+
     public MyFuncPs()
     {}
 

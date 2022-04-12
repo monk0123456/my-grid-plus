@@ -1,6 +1,8 @@
 package cn.plus.model.ddl;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MyFunc implements Serializable {
     private static final long serialVersionUID = 84399306871982769L;
@@ -10,6 +12,7 @@ public class MyFunc implements Serializable {
     private String cls_name;
     private String return_type;
     private String descrip;
+    private List<MyFuncPs> lst;
 
     public MyFunc(final String method_name, final String java_method_name, final String cls_name, final String return_type, final String descrip)
     {
@@ -18,10 +21,19 @@ public class MyFunc implements Serializable {
         this.cls_name = cls_name;
         this.return_type = return_type;
         this.descrip = descrip;
+        lst = new ArrayList<>();
     }
 
     public MyFunc()
     {}
+
+    public List<MyFuncPs> getLst() {
+        return lst;
+    }
+
+    public void setLst(List<MyFuncPs> lst) {
+        this.lst = lst;
+    }
 
     public String getMethod_name() {
         return method_name;

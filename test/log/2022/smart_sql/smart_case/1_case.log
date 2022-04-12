@@ -1,0 +1,12 @@
+(def line "function my_test(a, b)\n{\n   let c = 10;\n   log(\"简单的四则运算\");\n   a + b +c;\n}")
+(def ast (first (my-smart-sql/get-ast line)))
+(def my-context {:input-params #{} :let-params #{}})
+(assoc my-context :input-params (conj (-> my-context :input-params) (-> ast :args-lst)))
+(def func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) (-> ast :args-lst))))
+(def body-lst (-> ast :body-lst))
+(-> ast :body-lst)
+
+(my-smart-sql/body-to-clj ignite 0 body-lst func-context)
+
+(def f (first (-> ast :body-lst)))
+(def r (rest (-> ast :body-lst)))
