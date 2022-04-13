@@ -35,7 +35,8 @@ function getFirst (sql, args)
                        rs;
          my-case(rs):
                        log("这个是例子");
-                        a+b;
+                       let sb = c + d;
+                        a+b + f(sb);
          else
                        println("吴大富是帅哥！");
       }

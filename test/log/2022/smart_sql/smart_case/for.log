@@ -1,0 +1,4 @@
+(def line "function my_for(sql, args)\n{\n   let lst = query_sql(sql, args);\n   for (r in lst)\n   {\n       println(r.get(0));\n   }\n}")
+(def body-lst (-> (first (my-smart-sql/get-ast line)) :body-lst))
+(second body-lst)
+

@@ -31,7 +31,29 @@
         ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
         ))
 
-(declare ast-to-clj body-to-clj token-to-clj token-lst-clj)
+(declare ast-to-clj body-to-clj token-to-clj token-lst-clj get-let-context add-let-to-context for-seq for-seq-func
+         express-to-clj)
+
+(defn contains-context? [my-context token-name]
+    (cond (contains? (-> my-context :input-params) token-name) true
+          (some? (get-let-context token-name my-context)) true
+          :else
+          (if-not (nil? (-> my-context :up-my-context))
+              (contains-context? (-> my-context :up-my-context) token-name)
+              false)
+          ))
+
+(defn get-my-it [my-context]
+    (if-let [m (format "M-F-%s-I-%s-c-Y" (gensym "v") (gensym "Q"))]
+        (if (contains-context? my-context m)
+            (get-my-it my-context)
+            m)))
+
+(defn get-my-let [my-context]
+    (if-let [m (format "c-F-%s-w-%s-c-Y" (gensym "W") (gensym "G"))]
+        (if (contains-context? my-context m)
+            (get-my-let my-context)
+            m)))
 
 ; 添加 let 定义到 my-context
 (defn add-let-to-context [let-name let-vs my-context]
@@ -42,7 +64,11 @@
 ; 获取 let 的定义
 (defn get-let-context [let-name my-context]
     (let [let-params (-> my-context :let-params)]
-        (get let-params let-name)))
+        (let [m (get let-params let-name)]
+            (if (some? m)
+                m
+                (if-not (nil? (-> my-context :up-my-context))
+                    (get-let-context let-name (-> my-context :up-my-context)))))))
 
 ; 判断 token 中是否 table item name 是否存在
 (defn is-exist-in-token? [item_name token]
@@ -74,7 +100,7 @@
                     ))]
         (is-exist-token? item_name token)))
 
-(defn token-to-clj [ignite group_id m is-set my-context]
+(defn token-to-clj [ignite group_id m my-context]
     ())
 
 ; 处于同一层就返回 true 否则 false
@@ -96,19 +122,96 @@
      (if (some? f)
          (let [same-layer? (is-same-layer? f r)]
              (if (true? same-layer?)
-                 (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) false (add-let-to-context (-> f :let-name) (-> f :let-vs) my-context)))))
-                 (recur ignite group_id r my-context (MyLetLayer. (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) false (add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))) letLayer))
+                 (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (add-let-to-context (-> f :let-name) (-> f :let-vs) my-context)))))
+                 (recur ignite group_id r my-context (MyLetLayer. (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))) letLayer))
                  ))
-         (letLayer-to-clj letLayer))))
+         (conj (letLayer-to-clj letLayer) my-context))))
+
+(defn for-seq [ignite group_id f my-context]
+    (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (-> f :args :seq :item_name) my-it (get-my-it my-context)]
+        (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) (conj (-> my-context :let-params) tmp-val-name my-it))]
+            (format "(cond (instance? Iterator %s) (loop [%s %s]\n
+                                                       (if (.hasNext %s)\n
+                                                           (let [%s (.next %s)]\n
+                                                               %s\n
+                                                               (recur %s)\n
+                                                               )))\n
+                        (vector? %s) (loop [[%s & r] %s]\n
+                                         (if (some? %s)\n
+                                             (do\n
+                                                  %s\n
+                                             (recur r))))\n
+                        :else\n
+                        (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
+                        )"
+                    seq-name my-it seq-name
+                    my-it
+                    tmp-val-name my-it
+                    for-inner-clj
+                    my-it
+                    seq-name tmp-val-name seq-name
+                    tmp-val-name
+                    for-inner-clj)
+            )
+        ))
+
+(defn for-seq-func [ignite group_id f my-context]
+    (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (get-my-let my-context) my-it (get-my-it my-context) func-clj (token-to-clj ignite group_id (-> f :args :seq) my-context)]
+        (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) (conj (-> my-context :let-params) tmp-val-name my-it))]
+            (format "(let [%s %s]\n
+                          (cond (instance? Iterator %s) (loop [%s %s]\n
+                                                              (if (.hasNext %s)\n
+                                                                  (let [%s (.next %s)]\n
+                                                                       %s\n
+                                                                       (recur %s)\n
+                                                                       )))\n
+                                (vector? %s) (loop [[%s & r] %s]\n
+                                                  (if (some? %s)\n
+                                                      (do\n
+                                                           %s\n
+                                                      (recur r))))\n
+                                :else\n
+                                (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
+                                ))"
+                    seq-name func-clj
+                    seq-name my-it seq-name
+                    my-it
+                    tmp-val-name my-it
+                    for-inner-clj
+                    my-it
+                    seq-name tmp-val-name seq-name
+                    tmp-val-name
+                    for-inner-clj))
+        ))
+
+(defn match-to-clj
+    ([ignite group_id lst-pair my-context] (match-to-clj ignite group_id lst-pair my-context []))
+    ([ignite group_id [f-pair & r-pair] my-context lst]
+     (if (some? f-pair)
+         (cond (contains? f-pair :pair) (let [pair-line (format "(%s) (%s)" (express-to-clj ignite group_id (-> f-pair :pair) my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+                                            (recur ignite group_id r-pair my-context (conj lst pair-line)))
+               (contains? f-pair :else-vs) (if (= (count (-> f-pair :else-vs)) 1)
+                                               (recur ignite group_id r-pair my-context (conj lst (format ":else (%s)" (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context)))))
+               )
+         (str/join "\\n          " lst))))
 
 ; 表达式 to clj
-(defn express-to-clj [ignite group_id [f-express r-express] my-context]
-    (if (some? f-express)
-        (cond (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "for")) ()
-              (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "match")) ()
-              (contains? f-express :functions) ()
-              (contains? f-express :express) ()
-              )))
+(defn express-to-clj
+    ([ignite group_id lst-express my-context] (express-to-clj ignite group_id lst-express my-context []))
+    ([ignite group_id [f-express r-express] my-context lst]
+     (if (some? f-express)
+         (cond (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "for")) (cond (and (contains? (-> f-express :args :tmp_val) :item_name) (contains? (-> f-express :args :seq) :item_name)) (recur ignite group_id r-express my-context (conj lst (for-seq ignite group_id f-express my-context)))
+                                                                                                                  (and (contains? (-> f-express :args :tmp_val) :item_name) (contains? (-> f-express :args :seq) :func-name)) (recur ignite group_id r-express my-context (conj lst (for-seq-func ignite group_id f-express my-context)))
+                                                                                                                  :else
+                                                                                                                  (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
+                                                                                                                  )
+               (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "match")) (recur ignite group_id r-express my-context (conj lst (match-to-clj ignite group_id (-> f-express :pairs) my-context)))
+               ; 内置方法
+               (contains? f-express :functions) ()
+               (contains? f-express :express) (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id (-> f-express :express) my-context)))
+               :else
+               (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id f-express my-context)))
+               ))))
 
 (defn body-to-clj
     ([ignite group_id lst my-context] (body-to-clj ignite group_id lst my-context []))
@@ -117,10 +220,13 @@
          (cond (contains? f :let-name) (recur ignite group_id r my-context (conj lst-rs f))
                (and (not (empty? lst-rs)) (not (contains? f :let-name))) (if-not (nil? r)
                                                                              (if (= (count r) 1)
-                                                                                 (let [[let-first let-tail] (let-to-clj ignite group_id lst-rs my-context) express-line (express-to-clj ignite group_id r my-context)]
-                                                                                     (format "%s %s %s" let-first express-line let-tail))
-                                                                                 (let [[let-first let-tail] (let-to-clj ignite group_id lst-rs my-context) express-line (express-to-clj ignite group_id r my-context)]
-                                                                                     (format "%s (do\n    %s) %s" let-first express-line let-tail)))
+                                                                                 (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
+                                                                                     (let [express-line (express-to-clj ignite group_id r let-my-context)]
+                                                                                         (format "%s %s %s" let-first express-line let-tail)))
+                                                                                 (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
+                                                                                     (let [express-line (express-to-clj ignite group_id r let-my-context)]
+                                                                                         (format "%s (do\n    %s) %s" let-first express-line let-tail))
+                                                                                     ))
                                                                              )
              ))))
 

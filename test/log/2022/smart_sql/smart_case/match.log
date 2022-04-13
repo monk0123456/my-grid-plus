@@ -1,0 +1,3 @@
+(def line "function my_match(table_name)\n{\n   match {\n     table_name == \"Customers\": query_sql(\"select * from public.Customers limit 0, 5\");\n     table_name == \"Employees\": query_sql(\"select * from wudafu.Employees limit 0, 5\");\n     else query_sql(\"select * from wudagui.OrderDetails limit 0, 5\");\n   }\n}")
+(def body-lst (-> (first (my-smart-sql/get-ast line)) :body-lst))
+(first body-lst)

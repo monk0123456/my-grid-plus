@@ -317,7 +317,7 @@
 
 (defn token-to-clj [ignite group_id m is-set my-context]
     (if (some? m)
-        (cond (instance? clojure.lang.LazySeq m) (token-lst-to-clj ignite group_id m is-set my-context)
+        (cond (or (vector? m) (seq? m) (list? m)) (token-lst-to-clj ignite group_id m is-set my-context)
               (map? m) (map-token-to-clj ignite group_id m is-set my-context))))
 
 (defn map-token-to-clj [ignite group_id m is-set my-context]

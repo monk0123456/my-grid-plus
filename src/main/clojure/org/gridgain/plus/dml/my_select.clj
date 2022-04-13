@@ -384,7 +384,7 @@
     (if (= (count table-items) 1)
         (let [m (nth table-items 0)]
             (cond (instance? String m) (concat [(assoc (my-lexical/get-schema m) :table_alias nil)])
-                  (and (instance? clojure.lang.LazySeq m) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
+                  (and (or (vector? m) (seq? m) (list? m)) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
                   :else
                   (if (my-lexical/is-contains? (nth table-items 0) "join")
                       (table-join (get-table (nth table-items 0)))
@@ -447,7 +447,7 @@
 
 (defn re-func [ignite m]
     (if (some? m)
-        (cond (instance? clojure.lang.LazySeq m) (find-table-func ignite m)
+        (cond (or (vector? m) (seq? m) (list? m)) (find-table-func ignite m)
               (map? m) (if (contains? m :func-name)
                            (let [func (my-context/get-func-scenes ignite (get m :func-name))]
                                (if (some? func) (cond (= func "func") (throw (Exception. "自定义方法不能当作结果来查询！"))
@@ -458,7 +458,7 @@
 
 (defn plus-func [ignite m]
     (if (some? m)
-        (cond (instance? clojure.lang.LazySeq m) (find-table-func ignite m)
+        (cond (or (vector? m) (seq? m) (list? m)) (find-table-func ignite m)
               (map? m) (if (contains? m :func-name)
                            (let [func (my-context/get-func-scenes ignite (get m :func-name))]
                                (if (some? func) (cond (= func "func") (concat [(func_scenes_invoke m)])
@@ -827,7 +827,7 @@
 
 (defn token-to-sql [ignite group_id m]
     (if (some? m)
-        (cond (instance? clojure.lang.LazySeq m) (map (partial token-to-sql ignite group_id) m)
+        (cond (or (vector? m) (seq? m) (list? m)) (map (partial token-to-sql ignite group_id) m)
               (map? m) (map-token-to-sql ignite group_id m))))
 
 ; map token to sql

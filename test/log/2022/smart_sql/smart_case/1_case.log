@@ -10,3 +10,22 @@
 
 (def f (first (-> ast :body-lst)))
 (def r (rest (-> ast :body-lst)))
+
+
+function getFirst (sql, args)
+{
+   match {
+            a + b > c:
+                          log("wudafu");
+                          rs;
+            my_case(rs):
+                          c + d;
+                          dafu = dagui + myy;
+                          log("这个是例子");
+                          let sb = c + d;
+                           a+b + f(sb);
+            else
+                          println("吴大富是帅哥！");
+         }
+         break;
+}
