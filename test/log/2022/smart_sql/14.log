@@ -44,3 +44,9 @@
                 ))))
 
 (get-ast-lst (my-lexical/to-back line))
+
+(def line "((a-b)*c)")
+(my-select-plus/sql-to-ast (my-lexical/to-back line))
+(def tokens (my-select-plus/sql-to-ast (my-lexical/to-back line)))
+
+(my-smart-token-clj/calculate ignite 0 (reverse (-> tokens :parenthesis)) nil)

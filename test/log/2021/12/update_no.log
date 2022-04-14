@@ -18,6 +18,7 @@
     '[org.gridgain.plus.dml.my-expression :as my-expression]
     '[org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
     '[org.gridgain.plus.dml.my-smart-clj :as my-smart-clj]
+    '[org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
     '[org.gridgain.plus.sql.my-super-sql :as my-super-sql]
     '[org.gridgain.plus.context.my-context :as my-context]
     '[org.gridgain.plus.init.plus-init-sql :as plus-init-sql]

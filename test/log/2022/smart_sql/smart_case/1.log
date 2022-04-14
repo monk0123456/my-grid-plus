@@ -2,6 +2,7 @@
 function my_test(a, b)
 {
    let c = 10;
+   let d;
    log("简单的四则运算");
    a + b +c;
 }
