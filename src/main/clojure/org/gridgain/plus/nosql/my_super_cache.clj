@@ -342,7 +342,7 @@
 ; no-sql 为输入的 no-sql 的值，因为 no-sql 输入的时候都是字符串，所以需要按照 no-sql 的定义转换为真实的值
 (defn get-doc-with-type [no-sql-type no-sql]
     (cond (map? no-sql-type) (get-doc-with-type-dic no-sql-type no-sql)
-          (or (vector? no-sql-type) (list? no-sql-type) (seq? no-sql-type)) (get-doc-with-type-lst no-sql-type no-sql)
+          (my-lexical/is-seq? no-sql-type) (get-doc-with-type-lst no-sql-type no-sql)
           (my-lexical/is-eq? no-sql-type "string") (.toString no-sql)
           (my-lexical/is-eq? no-sql-type "long") (MyConvertUtil/ConvertToLong no-sql)
           (my-lexical/is-eq? no-sql-type "int") (MyConvertUtil/ConvertToInt no-sql)
@@ -626,7 +626,7 @@
                                             (dissoc vs-obj f)))
                                     )
                                 )
-              (and (or (list? vs-obj) (seq? vs-obj) (vector? vs-obj)) (map? f)) (if (or (nil? r) (empty? r))
+              (and (my-lexical/is-seq? vs-obj) (map? f)) (if (or (nil? r) (empty? r))
                                                                                     (loop [[f-vs & r-vs] vs-obj index 0 my-index (get f :index) vs-lst []]
                                                                                         (if (some? f-vs)
                                                                                             (if-not (= index (MyConvertUtil/ConvertToLong my-index))
@@ -720,10 +720,10 @@
                                                                                                   (let [vs-obj (.get (.cache ignite table_name) my-key) items-line (str/join (rest f))]
                                                                                                       (if-not (and (nil? f) (empty? f))
                                                                                                           (let [my-stack (get-vs-dic vs-obj items-line)]
-                                                                                                              (if (vector? my-stack)
+                                                                                                              (if (my-lexical/is-seq? my-stack)
                                                                                                                   (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items items-line)) my-stack (conj my-stack (lst-no-sql (my-lexical/to-back vs)))) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                                       (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))))
-                                                                                                          (if (vector? vs-obj)
+                                                                                                          (if (my-lexical/is-seq? vs-obj)
                                                                                                               (let [no-sql (conj vs-obj (lst-no-sql (my-lexical/to-back vs))) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                                   (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))))
                                                                                                           ))))
@@ -740,10 +740,10 @@
                                                                                               (let [vs-obj (.get (.cache ignite table_name) my-key) items-line (str/join (rest f))]
                                                                                                   (if-not (and (nil? f) (empty? f))
                                                                                                       (let [my-stack (get-vs-dic vs-obj items-line)]
-                                                                                                          (if (vector? my-stack)
+                                                                                                          (if (my-lexical/is-seq? my-stack)
                                                                                                               (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items items-line)) my-stack (conj my-stack (lst-no-sql vs-lst))) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                                   (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql)))))
-                                                                                                      (if (vector? vs-obj)
+                                                                                                      (if (my-lexical/is-seq? vs-obj)
                                                                                                           (let [no-sql (conj vs-obj (lst-no-sql vs-lst)) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                               (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))))
                                                                                                       ))))
@@ -764,12 +764,12 @@
                                                                                                   (let [vs-obj (.get (.cache ignite table_name) my-key) items-line (str/join (rest f))]
                                                                                                       (if-not (Strings/isNullOrEmpty items-line)
                                                                                                           (let [my-stack (get-vs-dic vs-obj items-line)]
-                                                                                                              (if (vector? my-stack)
+                                                                                                              (if (my-lexical/is-seq? my-stack)
                                                                                                                   (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items items-line)) my-stack (pop my-stack)) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                                       (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))
                                                                                                                       (peek my-stack)
                                                                                                                       )))
-                                                                                                          (if (vector? vs-obj)
+                                                                                                          (if (my-lexical/is-seq? vs-obj)
                                                                                                               (let [no-sql (pop vs-obj) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                                   (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))
                                                                                                                   (peek vs-obj)))
@@ -786,12 +786,12 @@
                                                                                           (let [vs-obj (.get (.cache ignite table_name) my-key) items-line (str/join (rest f))]
                                                                                               (if-not (Strings/isNullOrEmpty items-line)
                                                                                                   (let [my-stack (get-vs-dic vs-obj items-line)]
-                                                                                                      (if (vector? my-stack)
+                                                                                                      (if (my-lexical/is-seq? my-stack)
                                                                                                           (let [no-sql (set-cache-vs-lst (filter #(not (= % ".")) (get-dic-lst-items items-line)) my-stack (pop my-stack)) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                               (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))
                                                                                                               (peek my-stack)
                                                                                                               )))
-                                                                                                  (if (vector? vs-obj)
+                                                                                                  (if (my-lexical/is-seq? vs-obj)
                                                                                                       (let [no-sql (pop vs-obj) {{no-sql-type "doc"} "keyValue"} (lst-no-sql (rest (rest (my-lexical/to-back (.getSql_line (.get (.cache ignite "my_cache") (MyCacheGroup. table_name group_id)))))))]
                                                                                                           (.replace (.cache ignite table_name) my-key (get-doc-with-type no-sql-type no-sql))
                                                                                                           (peek vs-obj)))

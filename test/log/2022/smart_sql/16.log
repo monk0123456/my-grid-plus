@@ -1,0 +1,362 @@
+(declare is-operate-fn? get-where-line get-where-item-line arithmetic-fn my-comma-fn func-lst-ps
+        func-fn get-token-line operation parenthesis is-true? ds-fun-lst ds-func get-token pre-query-lst
+        get-item-lst get-table-items get-order-by get-limit get-query-items sql-to-ast-single to-ast sql-to-ast)
+
+(defn is-operate-fn?
+                ([lst] (if (and (= (first lst) "(") (= (last lst) ")")) (let [m (is-operate-fn? lst [] [] [])]
+                                                                            (if (and (some? m) (= (count m) 1)) (take (- (count (nth m 0)) 2) (rest (nth m 0)))))))
+                ([[f & rs] stack lst result-lst]
+                 (if (some? f)
+                     (cond
+                         (= f "(") (recur rs (conj stack f) (conj lst f) result-lst)
+                         (= f ")") (if (= (count stack) 1) (recur rs (pop stack) [] (concat result-lst [(conj lst f)])) (if (> (count stack) 0) (recur rs (pop stack) (conj lst f) result-lst) (recur rs [] (conj lst f) result-lst)))
+                         :else
+                         (recur rs stack (conj lst f) result-lst)
+                         ) (if (> (count lst) 0) (concat result-lst [lst]) result-lst))))
+            ; 按照 and or 切分字符串
+            (defn get-where-line
+                ([lst] (get-where-line lst [] [] []))
+                ([[f & rs] stack lst result-lst]
+                 (if (some? f)
+                     (cond (and (contains? #{"and" "or" "between"} (str/lower-case f)) (= (count stack) 0)) (if (> (count lst) 0) (recur rs stack [] (concat result-lst [lst f])) (recur rs stack [] result-lst))
+                           (= f "(") (recur rs (conj stack f) (conj lst f) result-lst)
+                           (= f ")") (recur rs (pop stack) (conj lst f) result-lst)
+                           :else
+                           (recur rs stack (conj lst f) result-lst)
+                           )
+                     (if (> (count lst) 0) (concat result-lst [lst]) result-lst))))
+            ; 处理多个
+            (defn get-where-item-line
+                ([lst] (get-where-item-line lst [] [] []))
+                ([[f & rs] stack lst result-lst]
+                 (if (some? f)
+                     (cond (and (contains? #{">=" "<=" "<>" ">" "<" "=" "!=" "in" "exists"} (str/lower-case f)) (= (count stack) 0)) (if (> (count lst) 0) (recur rs stack [] (concat result-lst [lst f])) (recur rs stack [] result-lst))
+                           (and (my-lexical/is-eq? "not" f) (my-lexical/is-eq? "in" (first rs)) (= (count stack) 0)) (if (> (count lst) 0) (recur (rest rs) stack [] (concat result-lst [lst "not in"])) (recur rs stack [] result-lst))
+                           (and (my-lexical/is-eq? "not" f) (my-lexical/is-eq? "exists" (first rs)) (= (count stack) 0)) (if (> (count lst) 0) (recur (rest rs) stack [] (concat result-lst [lst "not exists"])) (recur rs stack [] result-lst))
+                           (and (my-lexical/is-eq? "is" f) (my-lexical/is-eq? "not" (first rs)) (= (count stack) 0)) (if (> (count lst) 0) (recur (rest rs) stack [] (concat result-lst [lst "is not"])) (recur rs stack [] result-lst))
+                           (and (my-lexical/is-eq? "is" f) (not (my-lexical/is-eq? "not" (first rs))) (= (count stack) 0)) (if (> (count lst) 0) (recur (rest rs) stack [] (concat result-lst [lst "is"])) (recur rs stack [] result-lst))
+                           (= f "(") (recur rs (conj stack f) (conj lst f) result-lst)
+                           (= f ")") (recur rs (pop stack) (conj lst f) result-lst)
+                           :else
+                           (recur rs stack (conj lst f) result-lst)
+                           )
+                     (if (> (count lst) 0) (concat result-lst [lst]) result-lst))))
+            ; 处理算法运算符 #{"+" "-" "*" "/"}
+            (defn arithmetic-fn
+                ([lst] (arithmetic-fn lst [] [] []))
+                ([[f & rs] stack lst result-lst]
+                 (if (some? f)
+                     (cond (and (contains? #{"+" "-" "*" "/"} f) (= (count stack) 0)) (if (> (count lst) 0) (recur rs stack [] (concat result-lst [lst f])) (recur rs stack [] result-lst))
+                           (= f "(") (recur rs (conj stack f) (conj lst f) result-lst)
+                           (= f ")") (recur rs (pop stack) (conj lst f) result-lst)
+                           :else
+                           (recur rs stack (conj lst f) result-lst)
+                           )
+                     (if (> (count lst) 0) (concat result-lst [lst]) result-lst))))
+            ; 在函数内部处理 ,
+            (defn my-comma-fn
+                ([lst] (my-comma-fn lst [] [] []))
+                ([[f & rs] stack lst result-lst]
+                 (if (some? f)
+                     (cond (and (= f ",") (= (count stack) 0)) (if (> (count lst) 0) (recur rs stack [] (concat result-lst [lst f])) (recur rs stack [] result-lst))
+                           (= f "(") (recur rs (conj stack f) (conj lst f) result-lst)
+                           (= f ")") (recur rs (pop stack) (conj lst f) result-lst)
+                           :else
+                           (recur rs stack (conj lst f) result-lst)
+                           )
+                     (if (> (count lst) 0) (concat result-lst [lst]) result-lst))))
+            ; 处理 func lst_ps
+            (defn func-lst-ps [lst]
+                (when-let [m (my-comma-fn lst)]
+                    (map get-token m)))
+            ; 2、处理函数
+            (defn func-fn [[f & rs]]
+                (if (some? f) (let [m (is-operate-fn? rs)]
+                                  (if (some? m) {:func-name f :lst_ps (func-lst-ps m)}))))
+            ; 输入 line 获取 token
+            (defn get-token-line [line]
+                (letfn [
+                        ; 1、常数的处理
+                        (element-item [line]
+                            (if (some? line)
+                                (cond
+                                    (contains? #{"+" "-" "*" "/"} line) {:operation_symbol line}
+                                    (contains? #{"(" ")" "[" "]"} line) {:parenthesis_symbol line}
+                                    (contains? #{">=" "<=" "<>" ">" "<" "=" "!="} line) {:comparison_symbol line}
+                                    (contains? #{"and" "or" "between"} (str/lower-case line)) {:and_or_symbol (str/lower-case line)}
+                                    (contains? #{"in" "not in"} (str/lower-case line)) {:in_symbol (str/lower-case line)}
+                                    (contains? #{"exists" "not exists"} (str/lower-case line)) {:exists_symbol (str/lower-case line)}
+                                    (contains? #{","} line) {:comma_symbol line}
+                                    (some? (re-find #"^(?i)\d+$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Integer :const true}
+                                    (some? (re-find #"^(?i)\d+\.\d$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type BigDecimal :const true}
+                                    ;(some? (re-find #"^(?i)\"\w*\"$|^(?i)'\w*'$|^(?i)\"\W*\"$|^(?i)'\W*'$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type String :const true}
+                                    (some? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$|^\'\'$|^\"\"$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type String :const true}
+                                    (some? (re-find #"^(?i)\d+D$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Double :const true}
+                                    (some? (re-find #"^(?i)\d+L$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Long :const true}
+                                    (some? (re-find #"^(?i)\d+F$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Float :const true}
+                                    (some? (re-find #"^(?i)true$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Boolean :const true}
+                                    (some? (re-find #"^(?i)false$" line)) {:table_alias "" :item_name line :item_type "" :java_item_type Boolean :const true}
+                                    :else
+                                    {:table_alias "" :item_name line :item_type "" :java_item_type nil :const false}
+                                    )))
+                        ; m.name 生成 {:table_alias "" :item_name line :item_type "" :java_item_type Integer :const false}
+                        ; line = "m.name"
+                        (get-item-alias [line]
+                            (if-let [m (str/split line #"\.")]
+                                (if (and (some? m) (= (count m) 2))
+                                    {:item_name (nth m 1) :table_alias (nth m 0) :const false})))]
+                    (if (and (some? line) (= (empty? line) false))
+                        (cond
+                            ; 如果是 m.name 这种形式
+                            (some? (re-find #"^(?i)\w+\.\w+$" line)) (if (some? (re-find #"^(?i)\d+\.\d+$|^(?i)\d+\.\d+[DFL]$" line))
+                                                                         (element-item line)
+                                                                         (get-item-alias line))
+                            :else
+                            (element-item line)
+                            ))))
+            ; 处理四则运算
+            ; 例如：a + b * (c - d)
+            (defn operation [lst]
+                (when-let [m (arithmetic-fn lst)]
+                    (if (> (count m) 1) {:operation (map get-token m)})))
+            ; 对括号的处理
+            ; 例如：(a + b * c)
+            (defn parenthesis
+                [lst]
+                (letfn [(is-sql-obj? [sql-obj]
+                            (if (and (some? sql-obj) (instance? clojure.lang.LazySeq sql-obj) (map? (first sql-obj)) (contains? (first sql-obj) :sql_obj))
+                                (let [{sqlObj :sql_obj} (first sql-obj)]
+                                    (if (and (> (count (-> sqlObj :query-items)) 0) (> (count (-> sqlObj :table-items)) 0)) true false)) false)
+                            )
+                        (get-lazy [lst]
+                            (if (instance? clojure.lang.LazySeq lst)
+                                lst
+                                (my-lexical/to-lazy lst)))
+                        (eliminate-parentheses [lst]
+                            (if (and (= (first lst) "(") (= (last lst) ")"))
+                                (let [m (get-token (my-lexical/get-contain-lst lst))]
+                                    (if-not (nil? m)
+                                        m
+                                        (eliminate-parentheses (my-lexical/get-contain-lst lst))))))]
+                    (when-let [m (is-operate-fn? (get-lazy lst))]
+                        (let [ast-m (sql-to-ast m)]
+                            (if (is-sql-obj? ast-m)
+                                {:parenthesis ast-m}
+                                (let [where-line-m (get-where-line m)]
+                                    (if (is-true? where-line-m)
+                                        {:parenthesis (map get-token where-line-m)}
+                                        (let [where-item-line-m (get-where-item-line m)]
+                                            (if (is-true? where-item-line-m)
+                                                {:parenthesis (map get-token where-item-line-m)}
+                                                (let [comma-fn-m (my-comma-fn m)]
+                                                    (if (is-true? comma-fn-m)
+                                                        {:parenthesis (map get-token comma-fn-m)}
+                                                        (let [fn-m (arithmetic-fn m)]
+                                                            (if (is-true? fn-m)
+                                                                {:parenthesis (map get-token fn-m)}
+                                                                (let [tk-m (get-token m)]
+                                                                    (if (is-true? tk-m)
+                                                                        tk-m
+                                                                        (eliminate-parentheses m)))))))))))))
+
+                        ;(cond
+                        ;    (is-sql-obj? sql-to-ast-m m)  {:parenthesis (sql-to-ast-m m)}
+                        ;    (is-true? get-where-line-m m) {:parenthesis (map get-token (get-where-line-m m))}
+                        ;    (is-true? get-where-item-line-m m) {:parenthesis (map get-token (get-where-item-line-m m))}
+                        ;    (is-true? my-comma-fn-m m) {:parenthesis (map get-token (my-comma-fn-m m))}
+                        ;    (is-true? arithmetic-fn-m m) {:parenthesis (map get-token (arithmetic-fn-m m))}
+                        ;    )
+                        )))
+            ; 判断执行 f 函数 p 参数
+            (defn is-true? [obj]
+                (and (some? obj) (> (count obj) 1)))
+            ; Smart Data Struct 类型 序列和字典
+            (defn ds-fun-lst
+                ([lst] (ds-fun-lst lst [] [] nil []))
+                ([[f & r] stack stack-lst func-name lst]
+                 (if (some? f)
+                     (cond (= f "(") (if-not (nil? func-name)
+                                         (recur r (conj stack f) (conj stack-lst f) func-name lst))
+                           (= f ")") (if-not (nil? func-name)
+                                         (if (= (count stack) 1)
+                                             (recur r [] [] nil (conj lst (cons func-name (conj stack-lst f))))
+                                             (recur r stack (conj stack-lst f) func-name lst)))
+                           :else
+                           (if (nil? func-name)
+                               (recur r [] [] f lst)
+                               (recur r stack (conj stack-lst f) func-name lst))
+                           )
+                     (if (and (not (nil? func-name)) (not (empty? stack-lst)))
+                         (conj lst [func-name stack-lst])
+                         lst))))
+            (defn ds-func
+                ([lst] (ds-func lst nil))
+                ([[f & r] my-obj]
+                 (if (some? f)
+                     (let [func-obj (sql-to-ast f)]
+                         (let [[schema_name func-name] (str/split (-> func-obj :func-name) #"\.")]
+                             (if (nil? my-obj)
+                                 (recur r (assoc func-obj :ds-name schema_name :func-name func-name))
+                                 (recur r (assoc my-obj :ds-lst (assoc func-obj :ds-name schema_name :func-name func-name))))))
+                     my-obj)))
+            ; 获取 token ast
+            (defn get-token
+                [lst]
+                (if (some? lst)
+                    (if (instance? String lst)
+                        (get-token-line lst)
+                        (if (and (= (count lst) 1) (instance? String (first lst)))
+                            (get-token-line (first lst))
+                            (let [where-line-m (get-where-line lst)]
+                                (if (is-true? where-line-m)
+                                    (map get-token where-line-m)
+                                    (let [where-item-line-m (get-where-item-line lst)]
+                                        (if (is-true? where-item-line-m)
+                                            (map get-token where-item-line-m)
+                                            (if-let [fn-m (func-fn lst)]
+                                                fn-m
+                                                (if-let [oprate-m (operation lst)]
+                                                    oprate-m
+                                                    (if-let [p-m (parenthesis lst)]
+                                                        p-m
+                                                        (let [not-exists-m (parenthesis (rest (rest lst)))]
+                                                            (if (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? not-exists-m))
+                                                                {:exists "not exists" :select_sql not-exists-m}
+                                                                (let [exists-m (parenthesis (rest lst))]
+                                                                    (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
+                                                                        {:exists "exists" :select_sql exists-m}
+                                                                        (if-let [ds-m (ds-func (ds-fun-lst lst))]
+                                                                            ds-m))))))))
+                                            ))))
+                            )
+                        ;(cond (and (= (count lst) 1) (instance? String (first lst))) (get-token-line (first lst))
+                        ;      (is-true? get-where-line-m lst) (map get-token (get-where-line-m lst))
+                        ;      (is-true? get-where-item-line-m lst) (map get-token (get-where-item-line-m lst))
+                        ;      (some? (func-fn-m lst)) (when-let [m (func-fn-m lst)] m)
+                        ;      (some? (operation-m lst)) (when-let [m (operation-m lst)] m)
+                        ;      (some? (parenthesis-m lst)) (when-let [m (parenthesis-m lst)] m)
+                        ;      (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? (parenthesis-m (rest (rest lst))))) (when-let [m (parenthesis-m (rest (rest lst)))] {:exists "not exists" :select_sql m})
+                        ;      (and (my-lexical/is-eq? (first lst) "exists") (some? (parenthesis-m (rest lst)))) (when-let [m (parenthesis-m (rest lst))] {:exists "exists" :select_sql m})
+                        ;      )
+                        )))
+            ; 预处理 get-query-items 输入
+            (defn pre-query-lst [[f & rs]]
+                (if (some? f)
+                    (cond (instance? String (first f)) (if (my-lexical/is-eq? (first f) "distinct") (concat [{:keyword "distinct"}] (pre-query-lst (concat [(rest f)] rs))) (concat [f] (pre-query-lst rs)))
+                          :else
+                          (concat [f] (pre-query-lst rs)))))
+            ; 处理别名
+            (defn get-item-lst [lst]
+                (letfn [(get-item-rv [[f & rs]]
+                            (cond
+                                (= (count (concat [f] rs)) 1) {:item-lst (concat [f]) :alias nil}
+                                (my-lexical/is-eq? (first rs) "as") {:item-lst (reverse (rest rs)) :alias f}
+                                (and (= (count rs) 1) (= (first rs) (last rs))) {:item-lst (first rs) :alias f}
+                                (and (my-lexical/is-word? f) (= (first rs) ")")) {:item-lst (reverse rs) :alias f}
+                                (and (my-lexical/is-word? f) (my-lexical/is-word? (first rs)) (not (my-lexical/is-word? (second rs))) (> (count rs) 2)) {:item-lst (reverse rs) :alias f}
+                                :else
+                                {:item-lst (reverse (concat [f] rs)) :alias nil}
+                                ))]
+                    (if (> (count lst) 1) (get-item-rv (reverse lst)) {:item-lst lst :alias nil})))
+            ; 获取 table
+            (defn get-table-items [table-items]
+                (letfn [(is-select?
+                            ([lst] (if (some? lst)
+                                       (if (and (= (first lst) "(") (= (last lst) ")"))
+                                           (let [m (is-select? (rest lst) [])]
+                                               (if (and (some? m) (> (count m) 0))
+                                                   (when-let [sql_objs (sql-to-ast m)]
+                                                       (if (> (count sql_objs) 0) true)))))))
+                            ([[f & r] my-lst]
+                             (if (empty? r) my-lst (recur r (concat my-lst [f])))))
+                        (get-select-line
+                            ([lst] (if (some? lst) (get-select-line (rest lst) [])))
+                            ([[f & r] my-lst]
+                             (if (empty? r) my-lst (recur r (concat my-lst [f])))))
+                        ; 处理 join 类型的
+                        (table-join [[f & rs]]
+                            (if (some? f)
+                                (cond (contains? f :tables)
+                                      (let [{tables :tables join :join} f]
+                                          (cond (and (= (count tables) 1) (empty? join)) (concat [{:table_name (first tables) :table_alias ""}] (table-join rs))
+                                                (and (= (count tables) 1) (not (empty? join))) (concat [{:join join} {:table_name (first tables) :table_alias ""}] (table-join rs))
+                                                (and (= (count tables) 2) (empty? join)) (concat [{:table_name (nth tables 0) :table_alias (nth tables 1)}] (table-join rs))
+                                                (and (= (count tables) 2) (contains? f :join)) (concat [{:join join} {:table_name (nth tables 0) :table_alias (nth tables 1)}] (table-join rs))
+                                                (and (= (count tables) 3) (empty? join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [{:table_name (nth tables 0) :table_alias (nth tables 2)}] (table-join rs))
+                                                (and (= (count tables) 3) (contains? f :join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [{:table_name (nth tables 0) :table_alias (nth tables 2)} {:join join}] (table-join rs))
+                                                :else
+                                                (when-let [m (get-query-items tables)]
+                                                    (if (empty? join)
+                                                        (concat [m] (table-join rs))
+                                                        (concat [m {:join join}] (table-join rs))))
+                                                ))
+                                      (contains? f :on) (cons {:on (map get-token (get f :on))} (table-join rs))
+                                      )))
+                        ; 处理 table-items
+                        (get-table
+                            ([lst] (when-let [m (get-table (reverse lst) [] [])]
+                                       (if (> (count m) 1) (reverse m) m)))
+                            ([[f & rs] stack lst]
+                             (if (some? f)
+                                 (cond (and (my-lexical/is-eq? f "on") (= (count stack) 0)) (if (> (count lst) 0) (concat [{:on (reverse lst)}] (get-table rs stack [])) (get-table rs stack []))
+                                       (and (my-lexical/is-eq? f "join") (contains? #{"left" "inner" "right"} (str/lower-case (first rs))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst) :join (str/join [(first rs) " " f])}] (get-table (rest rs) stack [])) (get-table (rest rs) stack []))
+                                       (and (my-lexical/is-eq? f "join") (not (contains? #{"left" "inner" "right"} (str/lower-case (first rs)))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst) :join f}] (get-table rs stack [])) (get-table rs stack []))
+                                       (= f ")") (get-table rs (conj stack f) (conj lst f))
+                                       (= f "(") (get-table rs (pop stack) (conj lst f))
+                                       :else
+                                       (get-table rs stack (conj lst f))
+                                       )
+                                 (if (> (count lst) 0) [{:tables (reverse lst)}]))))
+                        ; 处理逗号类型的
+                        (table-comma
+                            [lst]
+                            (if (and (instance? String lst) (my-lexical/is-eq? lst ","))
+                                (get-token-line lst)
+                                (cond (= (count lst) 1) {:table_name (first lst) :table_alias ""}
+                                      (= (count lst) 2) {:table_name (nth lst 0) :table_alias (nth lst 1)}
+                                      (and (= (count lst) 3) (my-lexical/is-eq? (nth lst 1) "as")) {:table_name (nth lst 0) :table_alias (nth lst 2)}
+                                      :else
+                                      (when-let [m (get-query-items (concat [lst]))]
+                                          (first m))
+                                      )))
+                        ]
+                    (if (= (count table-items) 1)
+                        (let [m (nth table-items 0)]
+                            (cond (instance? String m) (concat [{:table_name m, :table_alias nil}])
+                                  (and (or (vector? m) (seq? m) (list? m)) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
+                                  :else
+                                  (if (my-lexical/is-contains? (nth table-items 0) "join")
+                                      (table-join (get-table (nth table-items 0)))
+                                      (map table-comma table-items))))
+                        (map table-comma table-items)))
+                )
+            ; 获取 order by
+            (defn get-order-by
+                ([lst] (let [m (reverse lst)] (get-order-by (reverse (rest m)) (first m))))
+                ([f l]
+                 (if (and (some? f) (some? l))
+                     {:order-item (map get-token f) :order l})))
+            ; 获取 limit
+            (defn get-limit [lst]
+                (let [m (my-comma-fn lst)]
+                    (if (= (count m) 3) (map get-token m))))
+            ; query items 处理
+            (defn get-query-items [lst]
+                (when-let [[f & rs] (pre-query-lst lst)]
+                    (try
+                        (if (map? f) (concat [f] (get-query-items rs))
+                                     (when-let [{item-lst :item-lst alias :alias} (get-item-lst f)]
+                                         (concat [(assoc (get-token item-lst) :alias alias)] (get-query-items rs))))
+                        (catch Exception e (.getMessage e)))))
+            (defn sql-to-ast-single [sql-lst]
+                (when-let [{query-items :query-items table-items :table-items where-items :where-items group-by :group-by having :having order-by :order-by limit :limit} (my-lexical/get-segments-list sql-lst)]
+                    {:query-items (get-query-items (my-lexical/to-lazy query-items)) :table-items (get-table-items (my-lexical/to-lazy table-items)) :where-items (get-token where-items) :group-by (get-token group-by) :having (get-token having) :order-by (get-order-by order-by) :limit (get-limit limit)}))
+            (defn to-ast [lst]
+                (if (instance? String lst) {:keyword lst}
+                                           {:sql_obj (sql-to-ast-single lst)}))
+
+            (defn sql-to-ast [sql-lst]
+                (if-not (my-lexical/is-eq? (first sql-lst) "select")
+                    (get-token sql-lst)
+                    (when-let [m (my-lexical/sql-union sql-lst)]
+                        (map to-ast m))))

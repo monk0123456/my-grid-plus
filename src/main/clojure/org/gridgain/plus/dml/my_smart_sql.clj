@@ -5,13 +5,11 @@
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
-        [org.gridgain.plus.dml.my-delete :as my-delete]
-        [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
     (:import (org.apache.ignite Ignite)
-             (org.gridgain.smart MyVar)
+             (org.gridgain.smart MyVar MyLetLayer)
              (com.google.common.base Strings)
              (cn.plus.model MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
@@ -174,8 +172,14 @@
             (kv-to-token [lst-dic]
                 (loop [[f-dic & r-dic] lst-dic lst-kv []]
                     (if (some? f-dic)
-                        (recur r-dic (conj lst-kv {:key (my-select-plus/sql-to-ast (first f-dic)) :value (my-select-plus/sql-to-ast (last f-dic))}))
+                        (recur r-dic (conj lst-kv {:key (to-token (first f-dic)) :value (to-token (last f-dic))}))
                         lst-kv)))
+            (to-token [vs]
+                (cond (and (= (first vs) "[") (= (last vs) "]")) {:seq-obj (get-item-tokens vs)}
+                      (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens vs)}
+                      :else
+                      (my-select-plus/sql-to-ast vs)
+                      ))
             (get-item-tokens [lst]
                 (loop [[f & r] (get-items (my-lexical/get-contain-lst lst)) lst-rs []]
                     (if (some? f)
@@ -185,7 +189,10 @@
                               :else
                               (recur r (conj lst-rs (my-select-plus/sql-to-ast f))))
                         lst-rs)))]
-        (get-item-tokens lst)))
+        (cond (and (= (first lst) "[") (= (last lst) "]")) {:seq-obj (get-item-tokens lst)}
+              (and (= (first lst) "{") (= (last lst) "}")) {:map-obj (get-item-tokens lst)}
+              :else
+              (my-select-plus/sql-to-ast lst))))
 
 (defn my-re-match
     ([lst] (my-re-match lst []))
@@ -198,14 +205,14 @@
                              (throw (Exception. "match 语句块语法错误！"))
                              (cond (contains? my-last-item :pair) (cond (map? (-> my-last-item :pair-vs)) (let [new-peek (assoc my-last-item :pair-vs [(-> my-last-item :pair-vs) f])]
                                                                                                               (recur r (conj (pop lst) new-peek)))
-                                                                        (or (vector? (-> my-last-item :pair-vs)) (seq? (-> my-last-item :pair-vs))) (let [new-peek (assoc my-last-item :pair-vs (conj (-> my-last-item :pair-vs) f))]
+                                                                        (my-lexical/is-seq? (-> my-last-item :pair-vs)) (let [new-peek (assoc my-last-item :pair-vs (conj (-> my-last-item :pair-vs) f))]
                                                                                                                                                         (recur r (conj (pop lst) new-peek)))
                                                                         :else
                                                                         (throw (Exception. "match 语句块语法错误！"))
                                                                         )
                                    (contains? my-last-item :else-vs) (cond (map? (-> my-last-item :else-vs)) (let [new-peek (assoc my-last-item :else-vs [(-> my-last-item :else-vs) f])]
                                                                                                                  (recur r (conj (pop lst) new-peek)))
-                                                                           (or (vector? (-> my-last-item :else-vs)) (seq? (-> my-last-item :else-vs))) (let [new-peek (assoc my-last-item :else-vs (conj (-> my-last-item :else-vs) f))]
+                                                                           (my-lexical/is-seq? (-> my-last-item :else-vs)) (let [new-peek (assoc my-last-item :else-vs (conj (-> my-last-item :else-vs) f))]
                                                                                                                                                            (recur r (conj (pop lst) new-peek)))
                                                                            :else
                                                                            (throw (Exception. "match 语句块语法错误！"))
@@ -228,7 +235,7 @@
         {:tmp_val (my-select-plus/sql-to-ast [(first lst)]) :seq (my-select-plus/sql-to-ast (rest (rest lst)))}))
 
 (defn lst-to-token [lst]
-    (cond (and (my-lexical/is-eq? (first lst) "let") (= (second (rest lst)) "=")) (let [my-let-vs (my-select-plus/sql-to-ast (rest (rest (rest lst))))]
+    (cond (and (my-lexical/is-eq? (first lst) "let") (= (second (rest lst)) "=")) (let [my-let-vs (my-item-tokens (rest (rest (rest lst))))]
                                                                                       {:let-name (second lst) :let-vs my-let-vs})
           (and (my-lexical/is-eq? (first lst) "let") (= (count lst) 2)) {:let-name (second lst) :let-vs nil}
           (my-lexical/is-eq? (first lst) "else") {:else-vs (my-select-plus/sql-to-ast (rest lst))}
@@ -411,7 +418,7 @@
 
 (defn token-to-clj [ignite group_id m is-set my-context]
     (if (some? m)
-        (cond (or (vector? m) (seq? m) (list? m)) (token-lst-to-clj ignite group_id m is-set my-context)
+        (cond (my-lexical/is-seq? m) (token-lst-to-clj ignite group_id m is-set my-context)
               (map? m) (map-token-to-clj ignite group_id m is-set my-context))))
 
 (defn map-token-to-clj [ignite group_id m is-set my-context]
@@ -435,7 +442,7 @@
                                                                %s\n
                                                                (recur %s)\n
                                                                )))\n
-                        (vector? %s) (loop [[%s & r] %s]\n
+                        (my-lexical/is-seq? %s) (loop [[%s & r] %s]\n
                                          (if (some? %s)\n
                                              (do\n
                                                   %s\n
@@ -467,7 +474,7 @@
                                                                        %s\n
                                                                        (recur %s)\n
                                                                        )))\n
-                                (vector? %s) (loop [[%s & r] %s]\n
+                                (my-lexical/is-seq? %s) (loop [[%s & r] %s]\n
                                                   (if (some? %s)\n
                                                       (do\n
                                                            %s\n

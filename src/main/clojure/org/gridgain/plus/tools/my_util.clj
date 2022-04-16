@@ -3,11 +3,11 @@
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
-             (org.apache.ignite.internal IgnitionEx)
+             (java.util List ArrayList Date Iterator)
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache CacheMode)
-             (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
-             com.google.gson.GsonBuilder)
+             (com.google.gson Gson GsonBuilder)
+             (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery))
     (:gen-class
         ; 生成 class 的类名
         :name org.gridgain.plus.tools.MyUtil
@@ -18,8 +18,8 @@
         ))
 
 ; 获取 gson 与 :methods 中定义的 gson 对应
-;(defn -gson []
-;    (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss")))
+(defn -gson []
+    (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss")))
 
 ;; 执行 sql
 ;(defn run-sql [sql args cache]
@@ -29,14 +29,15 @@
 ;(defn my_invoke [^Ignite ignite ^String scenes_name]
 ;    ())
 
-; 通过 group_id 获取 data_set_id 和 is_real
-(defn get_ds_by_group_id [^Ignite ignite ^Long group_id]
-    (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "SELECT m.data_set_id, ds.is_real from my_users_group m join my_dataset ds on m.data_set_id = ds.id where m.id = ? and m.group_type in ('ALL', 'DML')") (to-array [group_id])))))
+(defn to_arryList
+    ([lst] (to_arryList lst (ArrayList.)))
+    ([[f & r] ^ArrayList lst]
+     (if (some? f)
+         (recur r (doto lst (.add f)))
+         lst)))
 
-; 通过 data_set_id 和 table_name 判断是否是非实时数据集中实时的表
-(defn is_in_ds [^Ignite ignite ^Long data_set_id ^String table_name]
-    (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "SELECT m.id FROM my_dataset_table m WHERE m.table_name = ? AND m.dataset_id = ? and m.to_real = ?") (to-array [(str/lower-case table_name) data_set_id true])))))
-
+(defn -toList [lst]
+    (to_arryList lst))
 
 
 

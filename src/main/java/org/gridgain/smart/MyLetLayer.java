@@ -19,7 +19,9 @@ public class MyLetLayer implements Serializable {
     }
 
     public MyLetLayer()
-    {}
+    {
+        this.lst = new ArrayList<String>();
+    }
     
     public MyLetLayer addLet(final String let)
     {

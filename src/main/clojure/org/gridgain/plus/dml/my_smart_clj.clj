@@ -2,11 +2,8 @@
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
-        [org.gridgain.plus.dml.my-insert :as my-insert]
-        [org.gridgain.plus.dml.my-update :as my-update]
-        [org.gridgain.plus.dml.my-delete :as my-delete]
-        [org.gridgain.plus.dml.my-delete :as my-delete]
-        [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
+        [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
+        [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -31,12 +28,12 @@
         ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
         ))
 
-(declare ast-to-clj body-to-clj token-to-clj token-lst-clj get-let-context add-let-to-context for-seq for-seq-func
+(declare ast-to-clj body-to-clj token-to-clj token-lst-clj for-seq for-seq-func
          express-to-clj)
 
 (defn contains-context? [my-context token-name]
     (cond (contains? (-> my-context :input-params) token-name) true
-          (some? (get-let-context token-name my-context)) true
+          (some? (my-smart-token-clj/get-let-context token-name my-context)) true
           :else
           (if-not (nil? (-> my-context :up-my-context))
               (contains-context? (-> my-context :up-my-context) token-name)
@@ -55,26 +52,11 @@
             (get-my-let my-context)
             m)))
 
-; 添加 let 定义到 my-context
-(defn add-let-to-context [let-name let-vs my-context]
-    (if (some? my-context)
-        (let [let-params (-> my-context :let-params)]
-            (assoc my-context :let-params (assoc let-params let-name let-vs)))))
-
-; 获取 let 的定义
-(defn get-let-context [let-name my-context]
-    (let [let-params (-> my-context :let-params)]
-        (let [m (get let-params let-name)]
-            (if (some? m)
-                m
-                (if-not (nil? (-> my-context :up-my-context))
-                    (get-let-context let-name (-> my-context :up-my-context)))))))
-
 ; 判断 token 中是否 table item name 是否存在
 (defn is-exist-in-token? [item_name token]
     (letfn [(is-exist-lst-token? [item_name [f-token & r-token]]
                 (if (some? f-token)
-                    (if (true? (is-exist-token? f-token))
+                    (if (true? (is-exist-token? item_name f-token))
                         true
                         (recur item_name r-token))
                     false))
@@ -85,14 +67,14 @@
                                                  (map? (-> token f)) (if (true? (is-exist-token? item_name (-> token f)))
                                                                          true
                                                                          (recur r))
-                                                 (or (vector? (-> token f)) (seq? (-> token f)) (list? (-> token f))) (if (true? (is-exist-lst-token? item_name (-> token f)))
+                                                 (my-lexical/is-seq? (-> token f)) (if (true? (is-exist-lst-token? item_name (-> token f)))
                                                                                                                           true
                                                                                                                           (recur r))
                                                  :else
                                                  (recur r)
                                                  )
                                            false))
-                      (or (vector? token) (seq? token) (list? token)) (if (true? (is-exist-lst-token? item_name token))
+                      (my-lexical/is-seq? token) (if (true? (is-exist-lst-token? item_name token))
                                                                           true
                                                                           false)
                       :else
@@ -101,7 +83,7 @@
         (is-exist-token? item_name token)))
 
 (defn token-to-clj [ignite group_id m my-context]
-    ())
+    (my-smart-token-clj/token-to-clj ignite group_id m my-context))
 
 ; 处于同一层就返回 true 否则 false
 (defn is-same-layer? [f r]
@@ -122,8 +104,8 @@
      (if (some? f)
          (let [same-layer? (is-same-layer? f r)]
              (if (true? same-layer?)
-                 (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (add-let-to-context (-> f :let-name) (-> f :let-vs) my-context)))))
-                 (recur ignite group_id r my-context (MyLetLayer. (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))) letLayer))
+                 (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context)))))
+                 (recur ignite group_id r my-context (MyLetLayer. (doto (ArrayList.) (.add (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))))) letLayer))
                  ))
          (conj (letLayer-to-clj letLayer) my-context))))
 
@@ -136,7 +118,7 @@
                                                                %s\n
                                                                (recur %s)\n
                                                                )))\n
-                        (vector? %s) (loop [[%s & r] %s]\n
+                        (my-lexical/is-seq? %s) (loop [[%s & r] %s]\n
                                          (if (some? %s)\n
                                              (do\n
                                                   %s\n
@@ -165,7 +147,7 @@
                                                                        %s\n
                                                                        (recur %s)\n
                                                                        )))\n
-                                (vector? %s) (loop [[%s & r] %s]\n
+                                (my-lexical/is-seq? %s) (loop [[%s & r] %s]\n
                                                   (if (some? %s)\n
                                                       (do\n
                                                            %s\n
@@ -243,6 +225,9 @@
             (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
         ))
 
+(defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
+    (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast smart-sql)) nil)]
+        (str/replace code #"^\(\s*" "(defn ")))
 
 
 

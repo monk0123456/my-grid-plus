@@ -252,7 +252,7 @@
                             (loop [[f & r] items vp valueBinaryObject lst_kv (ArrayList.)]
                                 (if (some? f)
                                     (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic)]
-                                        (if (and (vector? my_vs) (map? (first my_vs)))
+                                        (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
                                             (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express))]
                                                 (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))
                                             (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
@@ -272,7 +272,7 @@
                         (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk ms items lst_rs []]
                                 (if (some? f_pk)
-                                    (if (vector? f_pk)
+                                    (if (my-lexical/is-seq? f_pk)
                                         (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                             (let [[vs kv_vs] (get_value_obj ignite schema_name table_name pk ms dic)]
                                                 (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk vs (SqlType/UPDATE))
@@ -307,7 +307,7 @@
                         (loop [[f & r] items vp valueBinaryObject lst_kv (ArrayList.)]
                             (if (some? f)
                                 (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic dic_paras)]
-                                    (if (and (vector? my_vs) (map? (first my_vs)))
+                                    (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
                                         (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express))]
                                             (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))
                                         (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
@@ -327,7 +327,7 @@
                     (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                         (loop [[f_pk & r_pk] lst_pk ms items lst_rs []]
                             (if (some? f_pk)
-                                (if (vector? f_pk)
+                                (if (my-lexical/is-seq? f_pk)
                                     (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                         (let [[vs kv_vs] (get_value_obj ignite schema_name table_name pk ms dic dic_paras)]
                                             (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk vs (SqlType/UPDATE))
@@ -371,7 +371,7 @@
                         (loop [[f & r] items vp valueBinaryObject]
                             (if (some? f)
                                 (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic dic_paras)]
-                                    (if (and (vector? my_vs) (map? (first my_vs)))
+                                    (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
                                         (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express)))))
                                         (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (my-lexical/get_jave_vs (-> f :type) my_vs)))))))
                                 (.build vp)))))
@@ -414,7 +414,7 @@
                             (loop [[f & r] items vp valueBinaryObject]
                                 (if (some? f)
                                     (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic)]
-                                        (if (and (vector? my_vs) (map? (first my_vs)))
+                                        (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
                                             (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express)))))
                                             (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (my-lexical/get_jave_vs (-> f :type) my_vs)))))))
                                     (.build vp)))))

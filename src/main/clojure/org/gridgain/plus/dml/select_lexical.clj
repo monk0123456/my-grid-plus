@@ -116,6 +116,10 @@
          (if (= (is-eq? f item) true) true
                                       (recur rs item flag)) flag)))
 
+; 是否是序列
+(defn is-seq? [m]
+    (or (vector? m) (seq? m) (list? m)))
+
 ; 执行事务
 ; lst_cache: [MyCacheEx]
 (defn trans [^Ignite ignite lst_cache]

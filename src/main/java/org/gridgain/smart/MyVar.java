@@ -1,5 +1,7 @@
 package org.gridgain.smart;
 
+import clojure.lang.PersistentVector;
+
 import java.io.Serializable;
 import java.util.List;
 

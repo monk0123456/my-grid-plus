@@ -133,7 +133,7 @@
                         (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk lst_rs []]
                                 (if (some? f_pk)
-                                    (if (vector? f_pk)
+                                    (if (my-lexical/is-seq? f_pk)
                                         (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                             (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk nil (SqlType/DELETE))
                                                                         (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk nil (SqlType/DELETE)))) (SqlType/INSERT))])))
@@ -209,7 +209,7 @@
                         (if-let [lst_pk (get_cache_pk ignite schema_name table_name it pk_lst)]
                             (loop [[f_pk & r_pk] lst_pk lst_rs []]
                                 (if (some? f_pk)
-                                    (if (vector? f_pk)
+                                    (if (my-lexical/is-seq? f_pk)
                                         (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                             (recur r_pk (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk nil (SqlType/DELETE))
                                                                         (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk nil (SqlType/DELETE)))) (SqlType/INSERT))])))

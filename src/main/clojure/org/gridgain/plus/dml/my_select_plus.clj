@@ -210,6 +210,35 @@
             ; 判断执行 f 函数 p 参数
             (is-true? [obj]
                 (and (some? obj) (> (count obj) 1)))
+            ; Smart Data Struct 类型 序列和字典
+            (ds-fun-lst
+                ([lst] (ds-fun-lst lst [] [] nil []))
+                ([[f & r] stack stack-lst func-name lst]
+                 (if (some? f)
+                     (cond (= f "(") (if-not (nil? func-name)
+                                         (recur r (conj stack f) (conj stack-lst f) func-name lst))
+                           (= f ")") (if-not (nil? func-name)
+                                         (if (= (count stack) 1)
+                                             (recur r [] [] nil (conj lst (cons func-name (conj stack-lst f))))
+                                             (recur r stack (conj stack-lst f) func-name lst)))
+                           :else
+                           (if (nil? func-name)
+                               (recur r [] [] f lst)
+                               (recur r stack (conj stack-lst f) func-name lst))
+                           )
+                     (if (and (not (nil? func-name)) (not (empty? stack-lst)))
+                         (conj lst [func-name stack-lst])
+                         lst))))
+            (ds-func
+                ([lst] (ds-func lst nil))
+                ([[f & r] my-obj]
+                 (if (some? f)
+                     (let [func-obj (sql-to-ast f)]
+                         (let [[schema_name func-name] (str/split (-> func-obj :func-name) #"\.")]
+                             (if (nil? my-obj)
+                                 (recur r (assoc func-obj :ds-name schema_name :func-name func-name))
+                                 (recur r (assoc my-obj :ds-lst (assoc func-obj :ds-name schema_name :func-name func-name))))))
+                     my-obj)))
             ; 获取 token ast
             (get-token
                 [lst]
@@ -235,7 +264,9 @@
                                                                 {:exists "not exists" :select_sql not-exists-m}
                                                                 (let [exists-m (parenthesis (rest lst))]
                                                                     (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
-                                                                        {:exists "exists" :select_sql exists-m})))))))
+                                                                        {:exists "exists" :select_sql exists-m}
+                                                                        (if-let [ds-m (ds-func (ds-fun-lst lst))]
+                                                                            ds-m))))))))
                                             ))))
                             )
                         ;(cond (and (= (count lst) 1) (instance? String (first lst))) (get-token-line (first lst))
@@ -332,7 +363,7 @@
                     (if (= (count table-items) 1)
                         (let [m (nth table-items 0)]
                             (cond (instance? String m) (concat [{:table_name m, :table_alias nil}])
-                                  (and (or (vector? m) (seq? m) (list? m)) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
+                                  (and (my-lexical/is-seq? m) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
                                   :else
                                   (if (my-lexical/is-contains? (nth table-items 0) "join")
                                       (table-join (get-table (nth table-items 0)))
@@ -387,7 +418,7 @@
                                (recur ignite rs m))) m)))
             (re-func [ignite m]
                 (if (some? m)
-                    (cond (or (vector? m) (seq? m) (list? m)) (find-table-func ignite m)
+                    (cond (my-lexical/is-seq? m) (find-table-func ignite m)
                           (map? m) (if (contains? m :func-name)
                                        (let [func (my-context/get-func-scenes ignite (get m :func-name))]
                                            (if (some? func) (cond (= func "func") (throw (Exception. "自定义方法不能当作结果来查询！"))
@@ -397,7 +428,7 @@
                           (find-table-func ignite m))))
             (plus-func [ignite m]
                 (if (some? m)
-                    (cond (or (vector? m) (seq? m) (list? m)) (find-table-func ignite m)
+                    (cond (my-lexical/is-seq? m) (find-table-func ignite m)
                           (map? m) (if (contains? m :func-name)
                                        (let [func (my-context/get-func-scenes ignite (get m :func-name))]
                                            (if (some? func) (cond (= func "func") (concat [(func_scenes_invoke m)])
@@ -641,7 +672,7 @@
                      (recur ignite group_id rs (conj lst (my-array-to-sql (token-to-sql ignite group_id f)))) lst)))
             (token-to-sql [ignite group_id m]
                 (if (some? m)
-                    (cond (or (vector? m) (seq? m) (list? m)) (map (partial token-to-sql ignite group_id) m)
+                    (cond (my-lexical/is-seq? m) (map (partial token-to-sql ignite group_id) m)
                           (map? m) (map-token-to-sql ignite group_id m))))
             (map-token-to-sql
                 [ignite group_id m]

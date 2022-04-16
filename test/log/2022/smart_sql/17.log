@@ -1,0 +1,112 @@
+(def smart-sql "function my_test(a, b)\n{\n   let c = 10;\n   let d = [];\n   log(\"简单的四则运算\");\n   a + b +c;\n}")
+(import (org.gridgain.smart MyVar MyLetLayer))
+
+(def ast (first (my-smart-sql/get-ast smart-sql)))
+(def func-name (-> ast :func-name))
+(def args-lst (-> ast :args-lst))
+(def body-lst (-> ast :body-lst))
+(-> ast :body-lst)
+
+(def my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context nil})
+(def func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) (-> ast :args-lst))))
+
+(defn let-to-clj
+    ([ignite group_id lst-let my-context] (let-to-clj ignite group_id lst-let my-context (MyLetLayer.)))
+    ([ignite group_id [f & r] my-context letLayer]
+     (if (some? f)
+         (let [same-layer? (my-smart-clj/is-same-layer? f r)]
+             (if (true? same-layer?)
+                 (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (my-smart-clj/token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context)))))
+                 (recur ignite group_id r my-context (MyLetLayer. (doto (ArrayList.) (.add (format "%s (MyVar. %s)" (-> f :let-name) (my-smart-clj/token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))))) letLayer))
+                 ))
+         (conj (my-smart-clj/letLayer-to-clj letLayer) my-context))))
+
+(defn body-to-clj
+    ([ignite group_id lst my-context] (body-to-clj ignite group_id lst my-context []))
+    ([ignite group_id [f & r] my-context lst-rs]
+     (if (some? f)
+         (cond (contains? f :let-name) (recur ignite group_id r my-context (conj lst-rs f))
+               (and (not (empty? lst-rs)) (not (contains? f :let-name))) (if-not (nil? r)
+                                                                             (if (= (count r) 1)
+                                                                                 (do
+                                                                                     (println r)
+                                                                                     (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
+                                                                                         (let [express-line (my-smart-clj/express-to-clj ignite group_id r let-my-context)]
+                                                                                             (format "%s %s %s" let-first express-line let-tail))))
+                                                                                 (do
+                                                                                     ;(println r)
+                                                                                     (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
+                                                                                         (let [express-line (my-smart-clj/express-to-clj ignite group_id r let-my-context)]
+                                                                                             (format "%s (do\n    %s) %s" let-first express-line let-tail))
+                                                                                         )))
+                                                                             )
+               ))))
+
+
+(body-to-clj ignite 0 body-lst func-context)
+
+-----------------------------------------------
+
+(def smart-sql "function my_test(a, b)\n{\n   let c = 10;\n   let d = [];\n   log(\"简单的四则运算\");\n   a + b +c;\n}")
+(import (org.gridgain.smart MyVar MyLetLayer))
+
+(def ast (first (my-smart-sql/get-ast smart-sql)))
+(def func-name (-> ast :func-name))
+(def args-lst (-> ast :args-lst))
+(def body-lst (-> ast :body-lst))
+(-> ast :body-lst)
+
+(def my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context nil})
+(def func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) (-> ast :args-lst))))
+
+(def lst-rs [{:let-name "c",
+              :let-vs {:table_alias "", :item_name "10", :item_type "", :java_item_type java.lang.Integer, :const true}}
+             {:let-name "d", :let-vs {:seq-obj []}}])
+
+(defn let-to-clj
+    ([ignite group_id lst-let my-context] (let-to-clj ignite group_id lst-let my-context (MyLetLayer.)))
+    ([ignite group_id [f & r] my-context letLayer]
+     (if (some? f)
+         (let [same-layer? (my-smart-clj/is-same-layer? f r)]
+             (if (true? same-layer?)
+                 (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (my-smart-clj/token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context)))))
+                 (recur ignite group_id r my-context (MyLetLayer. (doto (ArrayList.) (.add (format "%s (MyVar. %s)" (-> f :let-name) (my-smart-clj/token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))))) letLayer))
+                 ))
+         (conj (my-smart-clj/letLayer-to-clj letLayer) my-context))))
+
+(let-to-clj ignite 0 lst-rs my-context)
+
+---------------------------------------------------
+
+(def smart-sql "function my_test(a, b)\n{\n   let c = 10;\n   let d = [];\n   log(\"简单的四则运算\");\n   a + b +c;\n}")
+(import (org.gridgain.smart MyVar MyLetLayer))
+
+(def ast (first (my-smart-sql/get-ast smart-sql)))
+(def func-name (-> ast :func-name))
+(def args-lst (-> ast :args-lst))
+(def body-lst (-> ast :body-lst))
+;(-> ast :body-lst)
+[(first body-lst) (second body-lst)]
+
+(def my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context nil})
+(def func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) (-> ast :args-lst))))
+
+(def lst-rs [{:let-name "c",
+              :let-vs {:table_alias "", :item_name "10", :item_type "", :java_item_type java.lang.Integer, :const true}}
+             {:let-name "d", :let-vs {:seq-obj []}}])
+
+(defn let-to-clj
+    ([ignite group_id lst-let my-context] (let-to-clj ignite group_id lst-let my-context (MyLetLayer.)))
+    ([ignite group_id [f & r] my-context letLayer]
+     (if (some? f)
+         (let [same-layer? (my-smart-clj/is-same-layer? f r)]
+             (if (true? same-layer?)
+                 (do
+                     (.addLet letLayer "吴大富")
+                     (println (format "%s (MyVar. %s)" (-> f :let-name) (my-smart-clj/token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))))
+                     (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (my-smart-clj/token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))))))
+                 (recur ignite group_id r my-context (MyLetLayer. (doto (ArrayList.) (.add (format "%s (MyVar. %s)" (-> f :let-name) (my-smart-clj/token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))))) letLayer))
+                 ))
+         (conj (my-smart-clj/letLayer-to-clj letLayer) my-context))))
+
+(let-to-clj ignite 0 lst-rs my-context)

@@ -1,5 +1,6 @@
 (ns org.gridgain.plus.tools.my-no-sql-collection-util
     (:require
+        [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
@@ -84,7 +85,7 @@
         (cond (map? vs-obj) (if (nil? r)
                                 (assoc vs-obj f query-vs)
                                 (recur r (get vs-obj f) query-vs))
-              (and (or (list? vs-obj) (seq? vs-obj) (vector? vs-obj)) (map? f)) (if (nil? r)
+              (and (my-lexical/is-seq? vs-obj) (map? f)) (if (nil? r)
                                                                                     (loop [[f-vs & r-vs] vs-obj index 0 my-index (get f :index) vs-lst []]
                                                                                         (if (some? f-vs)
                                                                                             (if-not (= index (MyConvertUtil/ConvertToLong my-index))
