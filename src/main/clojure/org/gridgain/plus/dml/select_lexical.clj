@@ -152,6 +152,44 @@
          (recur r (doto lst (.add f)))
          lst)))
 
+; smart 操作集合的函数
+(defn list-add [^ArrayList lst ^Object obj]
+    (.add lst obj))
+
+(defn list-set [^ArrayList lst ^Integer index ^Object obj]
+    (.set lst index obj))
+
+(defn list-take [^ArrayList lst ^Integer index]
+    (if (> (count lst) index)
+        (.subList lst 0 index)))
+
+(defn list-drop [^ArrayList lst ^Integer index]
+    (let [my-count (count lst)]
+        (.subList lst index my-count)))
+
+(defn list-take-last [^ArrayList lst ^Integer index]
+    ;(take-last index lst)
+    (let [my-count (count lst)]
+        (.subList lst (- my-count index) my-count)))
+
+(defn list-drop-last [^ArrayList lst ^Integer index]
+    ;(drop-last index lst)
+    (.subList lst 0 (- (count lst) index)))
+
+(defn list-peek [^ArrayList lst]
+    (.get lst (- (.size lst) 1)))
+
+(defn list-pop [^ArrayList lst]
+    (.subList lst 0 (- (count lst) 1)))
+
+(defn map-list-add [dic-lst my-key]
+    (cond (map? dic-lst) (get dic-lst my-key)
+          (and (is-seq? dic-lst) (number? my-key)) (nth dic-lst my-key)
+          (and (instance? java.util.List dic-lst) (number? my-key)) (nth dic-lst my-key)
+          :else
+          (throw (Exception. "数据集没有该方法"))
+          ))
+
 (defn get-schema
     ([lst] (if-let [m (get-schema lst [] [])]
                (cond (= (count m) 1) {:schema_name "" :table_name (first m)}

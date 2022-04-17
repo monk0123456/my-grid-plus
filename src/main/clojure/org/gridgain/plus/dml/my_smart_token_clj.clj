@@ -131,16 +131,20 @@
           ))
 
 (defn smart-func [func-name]
-    (cond (my-lexical/is-eq? func-name "add") "conj"
-          (my-lexical/is-eq? func-name "drop") "drop"
+    (cond (my-lexical/is-eq? func-name "add") "my-lexical/list-add"
+          (my-lexical/is-eq? func-name "set") "my-lexical/list-set"
+          (my-lexical/is-eq? func-name "take") "my-lexical/list-take"
+          (my-lexical/is-eq? func-name "drop") "my-lexical/list-drop"
           (my-lexical/is-eq? func-name "nth") "nth"
+          (my-lexical/is-eq? func-name "count") "count"
           (my-lexical/is-eq? func-name "concat") "concat"
           (my-lexical/is-eq? func-name "put") "assoc"
-          (my-lexical/is-eq? func-name "get") "get"
+          (my-lexical/is-eq? func-name "get") "my-lexical/map-list-add"
           (my-lexical/is-eq? func-name "remove") "dissoc"
-          (my-lexical/is-eq? func-name "pop") "pop"
-          (my-lexical/is-eq? func-name "takeLast") "take-last"
-          (my-lexical/is-eq? func-name "dropLast") "drop-last"
+          (my-lexical/is-eq? func-name "pop") "my-lexical/list-peek"
+          (my-lexical/is-eq? func-name "peek") "my-lexical/list-peek"
+          (my-lexical/is-eq? func-name "takeLast") "my-lexical/list-take-last"
+          (my-lexical/is-eq? func-name "dropLast") "my-lexical/list-drop-last"
           :else
           (str/lower-case func-name)
           ))
@@ -242,6 +246,11 @@
           (and (= (count m) 3) (contains? (second m) :in_symbol)) (if (my-lexical/is-eq? (-> (second m) :comparison_symbol) "in")
                                                                       (format "(contains? #{%s} %s)" (token-to-clj ignite group_id (last m) my-context) (token-to-clj ignite group_id (first m) my-context))
                                                                       (format "(not (contains? #{%s} %s))" (token-to-clj ignite group_id (last m) my-context) (token-to-clj ignite group_id (first m) my-context)))
+          :else
+          (loop [[f & r] m lst []]
+              (if (some? f)
+                  (recur r (conj lst (token-to-clj ignite group_id f my-context)))
+                  (str/join " " lst)))
           )
     )
 

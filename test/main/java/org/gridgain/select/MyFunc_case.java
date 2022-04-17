@@ -14,6 +14,8 @@ import org.gridgain.dml.util.MyCacheExUtil;
 import org.gridgain.plus.dml.MySelect;
 import org.junit.Test;
 
+import java.util.ArrayList;
+
 public class MyFunc_case {
 
     @Test
@@ -22,6 +24,9 @@ public class MyFunc_case {
         //LazySeq lazySeq = MySelect.getSqlToAst("select m.name from my_table_a as m where m.id = :id");
         //Object object = lazySeq.first();
         //System.out.println(object);
+
+        ArrayList<String> lst = new ArrayList<>();
+
     }
 
     /**

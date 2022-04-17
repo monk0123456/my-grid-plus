@@ -109,4 +109,4 @@
                  ))
          (conj (my-smart-clj/letLayer-to-clj letLayer) my-context))))
 
-(let-to-clj ignite 0 lst-rs my-context)
+(let-to-clj ignite 0 lst-rs func-context)

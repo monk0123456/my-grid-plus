@@ -74,7 +74,7 @@
                                                  (recur r)
                                                  )
                                            false))
-                      (my-lexical/is-seq? token) (if (true? (is-exist-lst-token? item_name token))
+                      (and (my-lexical/is-seq? token) (not (empty? token))) (if (true? (is-exist-lst-token? item_name token))
                                                                           true
                                                                           false)
                       :else
@@ -91,22 +91,28 @@
         true
         false))
 
+(defn in-same-layer? [[f & r] new-let-token]
+    (if (some? f)
+        (if (false? (is-same-layer? f new-let-token))
+            false
+            (recur r new-let-token))
+        true))
+
 (defn letLayer-to-clj
     ([^MyLetLayer letLayer] (letLayer-to-clj letLayer [] []))
     ([^MyLetLayer letLayer lst-head lst-tail]
      (if-not (nil? letLayer)
          (recur (.getUpLayer letLayer) (conj lst-head (format "(let [%s]" (str/join " " (.getLst letLayer)))) (conj lst-tail ")"))
-         [(str/join " " lst-head) (str/join lst-tail)])))
+         [(str/join " " (reverse lst-head)) (str/join lst-tail)])))
 
 (defn let-to-clj
-    ([ignite group_id lst-let my-context] (let-to-clj ignite group_id lst-let my-context (MyLetLayer.)))
-    ([ignite group_id [f & r] my-context letLayer]
+    ([ignite group_id lst-let my-context] (let-to-clj ignite group_id lst-let my-context (MyLetLayer.) []))
+    ([ignite group_id [f & r] my-context letLayer up-lst]
      (if (some? f)
-         (let [same-layer? (is-same-layer? f r)]
-             (if (true? same-layer?)
-                 (recur ignite group_id r my-context (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context)))))
-                 (recur ignite group_id r my-context (MyLetLayer. (doto (ArrayList.) (.add (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context))))) letLayer))
-                 ))
+         (if (in-same-layer? up-lst f)
+             (recur ignite group_id r (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context) (.addLet letLayer (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) my-context))) (conj up-lst f))
+             (recur ignite group_id r (my-smart-token-clj/add-let-to-context (-> f :let-name) (-> f :let-vs) my-context) (MyLetLayer. (doto (ArrayList.) (.add (format "%s (MyVar. %s)" (-> f :let-name) (token-to-clj ignite group_id (-> f :let-vs) my-context)))) letLayer) [f])
+             )
          (conj (letLayer-to-clj letLayer) my-context))))
 
 (defn for-seq [ignite group_id f my-context]
@@ -228,57 +234,5 @@
 (defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast smart-sql)) nil)]
         (str/replace code #"^\(\s*" "(defn ")))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
