@@ -1,20 +1,4 @@
 (def smart-sql "function my_test(a, b)\n{\n   let c = 10;\n   let d = [1, 2+3*4];\n   let tmp = c + d.get(1);\n   log(\"简单的四则运算\");\n   a + b + tmp;\n}")
-
-(def ast (first (my-smart-sql/get-ast smart-sql)))
-(def func-name (-> ast :func-name))
-(def args-lst (-> ast :args-lst))
-(def body-lst (-> ast :body-lst))
-;(-> ast :body-lst)
-;[(first body-lst) (second body-lst)]
-
-(def my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context nil})
-(def func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) (-> ast :args-lst))))
-
-(my-smart-clj/smart-to-clj ignite 0 smart-sql)
-
------------------------------------------------
-
-(def smart-sql "function my_test(a, b)\n{\n   let c = 10;\n   let d = [1, 2+3*4];\n   let tmp = c + d.get(1);\n   log(\"简单的四则运算\");\n   a + b + tmp;\n}")
 (import (org.gridgain.smart MyVar MyLetLayer))
 
 (def ast (first (my-smart-sql/get-ast smart-sql)))
@@ -38,4 +22,6 @@
              )
          (conj (my-smart-clj/letLayer-to-clj letLayer) my-context))))
 
-(let-to-clj ignite 0 lst-rs func-context)
+(last (-> (second (rest body-lst)) :let-vs :operation))
+(my-smart-token-clj/smart-func-to-clj ignite 0 (last (-> (second (rest body-lst)) :let-vs :operation)) func-context)
+;(let-to-clj ignite 0 lst-rs func-context)

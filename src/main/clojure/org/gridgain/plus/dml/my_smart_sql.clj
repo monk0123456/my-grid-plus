@@ -29,16 +29,6 @@
         ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
         ))
 
-(defn query_sql [ignite sql & args]
-    (if (nil? args)
-        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true))))
-        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true) (.setArgs (to-array args)))))))
-
-; iterator 转 loop
-(defn my-iterator [it]
-    (if (.hasNext it)
-        [(.next it) it]))
-
 (defn add-let-name [my-context let-name]
     (assoc my-context :let-params (conj (-> my-context :let-params) let-name)))
 
@@ -55,6 +45,31 @@
          (if-not (empty? stack-lst)
              (conj lst stack-lst)
              lst))))
+
+(defn get-args-dic
+    ([lst] (get-args-dic lst {}))
+    ([[f & r] dic]
+     (if (some? f)
+         (recur r (assoc dic f (str "cf_ps_" f)))
+         dic)))
+
+(defn my-convert-token [dic-ps token]
+    (cond (map? token) (loop [[f & r] (keys token) my-token token]
+                           (if (some? f)
+                               (cond (and (= f :item_name) (contains? dic-ps (-> token :item_name))) (recur r (assoc my-token :item_name (get dic-ps (-> token :item_name))))
+                                     (map? (-> token f)) (recur r (assoc my-token f (my-convert-token dic-ps (-> token f))))
+                                     (and (my-lexical/is-seq? (-> token f)) (not (empty? (-> token f)))) (recur r (assoc my-token f (my-convert-token dic-ps (-> token f))))
+                                     :else
+                                     (recur r my-token)
+                                     )
+                               my-token))
+          (and (my-lexical/is-seq? token) (not (empty? token))) (loop [[f & r] token lst []]
+                                                                    (if (some? f)
+                                                                        (recur r (conj lst (my-convert-token dic-ps f)))
+                                                                        lst))
+          :else
+          token
+          ))
 
 ; 获取成对小括号
 (defn get-small [lst]
@@ -281,7 +296,11 @@
 
 (defn get-ast [^String sql]
     (if-let [lst (my-lexical/to-back sql)]
-        (get-ast-lst lst)
+        (loop [[f & r] (get-ast-lst lst) lst-rs []]
+            (if (some? f)
+                (let [arg-dic (get-args-dic (-> f :args-lst))]
+                    (recur r (conj lst-rs (assoc f :args-lst (vals arg-dic) :body-lst (my-convert-token arg-dic (-> f :body-lst))))))
+                lst-rs))
         ))
 
 (defn contains-context? [my-context token-name]

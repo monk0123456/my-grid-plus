@@ -2,9 +2,10 @@
 function my_test(a, b)
 {
    let c = 10;
-   let d = [];
+   let d = [1, 2+3*4];
+   let tmp = c + d.get(1);
    log("简单的四则运算");
-   a + b +c;
+   a + b + tmp;
 }
 
 // 2、 例子：for 循环

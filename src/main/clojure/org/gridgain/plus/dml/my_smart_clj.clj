@@ -181,12 +181,18 @@
                (contains? f-pair :else-vs) (if (= (count (-> f-pair :else-vs)) 1)
                                                (recur ignite group_id r-pair my-context (conj lst (format ":else (%s)" (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context)))))
                )
-         (str/join "\\n          " lst))))
+         (str/join "\n          " lst))))
+
+(defn inner-functions [ignite group_id funcs-express my-context]
+    (loop [[f & r] funcs-express lst []]
+        (if (some? f)
+            (recur r (conj lst (ast-to-clj ignite group_id f my-context)))
+            (str/join " " lst))))
 
 ; 表达式 to clj
 (defn express-to-clj
     ([ignite group_id lst-express my-context] (express-to-clj ignite group_id lst-express my-context []))
-    ([ignite group_id [f-express r-express] my-context lst]
+    ([ignite group_id [f-express & r-express] my-context lst]
      (if (some? f-express)
          (cond (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "for")) (cond (and (contains? (-> f-express :args :tmp_val) :item_name) (contains? (-> f-express :args :seq) :item_name)) (recur ignite group_id r-express my-context (conj lst (for-seq ignite group_id f-express my-context)))
                                                                                                                   (and (contains? (-> f-express :args :tmp_val) :item_name) (contains? (-> f-express :args :seq) :func-name)) (recur ignite group_id r-express my-context (conj lst (for-seq-func ignite group_id f-express my-context)))
@@ -195,27 +201,26 @@
                                                                                                                   )
                (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "match")) (recur ignite group_id r-express my-context (conj lst (match-to-clj ignite group_id (-> f-express :pairs) my-context)))
                ; 内置方法
-               (contains? f-express :functions) ()
+               (contains? f-express :functions) (inner-functions ignite group_id (-> f-express :functions) my-context)
                (contains? f-express :express) (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id (-> f-express :express) my-context)))
                :else
                (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id f-express my-context)))
-               ))))
+               )
+         (str/join "\n   " lst))))
 
 (defn body-to-clj
     ([ignite group_id lst my-context] (body-to-clj ignite group_id lst my-context []))
     ([ignite group_id [f & r] my-context lst-rs]
      (if (some? f)
          (cond (contains? f :let-name) (recur ignite group_id r my-context (conj lst-rs f))
-               (and (not (empty? lst-rs)) (not (contains? f :let-name))) (if-not (nil? r)
-                                                                             (if (= (count r) 1)
-                                                                                 (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
-                                                                                     (let [express-line (express-to-clj ignite group_id r let-my-context)]
-                                                                                         (format "%s %s %s" let-first express-line let-tail)))
-                                                                                 (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
-                                                                                     (let [express-line (express-to-clj ignite group_id r let-my-context)]
-                                                                                         (format "%s (do\n    %s) %s" let-first express-line let-tail))
-                                                                                     ))
-                                                                             )
+               (and (not (empty? lst-rs)) (not (contains? f :let-name))) (if (nil? r)
+                                                                             (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
+                                                                                 (let [express-line (express-to-clj ignite group_id [f] let-my-context)]
+                                                                                     (format "%s %s %s" let-first express-line let-tail)))
+                                                                             (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id lst-rs my-context)]
+                                                                                 (let [express-line (express-to-clj ignite group_id (concat [f] r) let-my-context)]
+                                                                                     (format "%s (do\n    %s) %s" let-first express-line let-tail))
+                                                                                 ))
              ))))
 
 ; my-context 记录上下文
@@ -228,7 +233,10 @@
 (defn ast-to-clj [ignite group_id ast up-my-context]
     (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context up-my-context}]
         (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) args-lst))]
-            (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
+            (if (nil? up-my-context)
+                (format "(defn %s [^Ignite ignite ^Long group_id %s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context))
+                (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
+            )
         ))
 
 (defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
