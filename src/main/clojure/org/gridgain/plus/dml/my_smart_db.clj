@@ -9,11 +9,11 @@
         [org.gridgain.plus.ddl.my-alter-dataset :as my-alter-dataset]
         [org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.dml.my-select-plus :as my-select]
+        [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
-        [org.gridgain.plus.ddl.my-update-dataset :as my-update-dataset]
+        [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
         [org.gridgain.plus.dml.my-scenes :as my-scenes]
         [org.gridgain.plus.dml.my-trans :as my-trans]
         [org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
@@ -45,10 +45,50 @@
         ;          ^:static [getGroupId [org.apache.ignite.Ignite String] Boolean]]
         ))
 
-(defn query_sql [ignite sql & args]
-    (if (nil? args)
-        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true))))
-        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true) (.setArgs (to-array args)))))))
+(defn args-to-dic
+    ([args] (args-to-dic args {}))
+    ([[f & r] dic]
+     (if (some? f)
+         (recur r (assoc dic (str "?$p_s_5_c_f_" (gensym "n$@#c")) f))
+         dic)))
+
+(defn insert-to-cache [ignite group_id sql & args]
+    (letfn [(get-insert-pk [ignite group_id pk-rs args-dic]
+                (if (= (count pk-rs) 1)
+                    (let [tokens (my-select-plus/sql-to-ast (-> (first pk-rs) :item_value))]
+                        (my-smart-func-args-token-clj/func-token-to-clj ignite group_id tokens args-dic))
+                    (loop [[f & r] pk-rs lst-rs []]
+                        (if (some? f)
+                            (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic))))
+                            lst-rs))))
+            (get-insert-data [ignite group_id data-rs args-dic]
+                (loop [[f & r] data-rs lst-rs []]
+                    (if (some? f)
+                        (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic))))
+                        lst-rs)))]
+        (let [args-dic (args-to-dic args)]
+            (let [insert_obj (my-insert/get_insert_obj (my-lexical/to-back (apply format (str/replace sql #"\?" "%s") (keys args-dic))))]
+                (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
+                    (MyLogCache. (format "f_%s_%s" (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT))))))
+    )
+
+(defn update-to-cache [ignite group_id sql & args]
+    ())
+
+(defn query_sql [ignite group_id sql & args]
+    (cond (re-find #"^(?i)select\s+" sql) (if (nil? args)
+                                              (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (my-select-plus/my_plus_sql ignite group_id (my-lexical/to-back sql))) (.setLazy true))))
+                                              (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (my-select-plus/my_plus_sql ignite group_id (my-lexical/to-back sql))) (.setLazy true) (.setArgs (to-array args))))))
+          (re-find #"^(?i)insert\s+" sql) (let [logCache (insert-to-cache ignite group_id sql args)]
+                                              (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
+          (re-find #"^(?i)update\s+" sql) ()
+          (re-find #"^(?i)delete\s+" sql) ()
+          ))
+
+;(defn query_sql [ignite group_id sql & args]
+;    (if (nil? args)
+;        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (get-sql ignite group_id sql)) (.setLazy true))))
+;        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (get-sql ignite group_id sql)) (.setLazy true) (.setArgs (to-array args)))))))
 
 ; iterator 转 loop
 (defn my-iterator [it]

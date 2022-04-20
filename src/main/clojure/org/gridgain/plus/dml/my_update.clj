@@ -176,8 +176,8 @@
     (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
         (letfn [(get_items_type [[f & r] dic lst]
                     (if (some? f)
-                        (if (contains? dic (-> f :item_name))
-                            (recur r dic (conj lst (assoc f :type (get dic (-> f :item_name)))))
+                        (if (contains? dic (str/lower-case (-> f :item_name)))
+                            (recur r dic (conj lst (assoc f :type (get dic (str/lower-case (-> f :item_name))))))
                             (recur r dic lst))
                         lst))
                 (get_pk_lst [[f & r] dic lst]
@@ -193,8 +193,8 @@
     (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
         (letfn [(get_items_type [[f & r] dic lst]
                     (if (some? f)
-                        (if (contains? dic (-> f :item_name))
-                            (recur r dic (conj lst (assoc f :type (get dic (-> f :item_name)))))
+                        (if (contains? dic (str/lower-case (-> f :item_name)))
+                            (recur r dic (conj lst (assoc f :type (get dic (str/lower-case (-> f :item_name))))))
                             (recur r dic lst))
                         lst))
                 (get_pk_lst [[f & r] dic lst]
@@ -253,9 +253,9 @@
                                 (if (some? f)
                                     (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic)]
                                         (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
-                                            (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express))]
+                                            (let [key (str/lower-case (-> f :item_name)) value (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express))]
                                                 (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))
-                                            (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
+                                            (let [key (str/lower-case (-> f :item_name)) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
                                                 (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))))
                                     [(.build vp) lst_kv]))))
                     (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
@@ -276,11 +276,11 @@
                                         (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                             (let [[vs kv_vs] (get_value_obj ignite schema_name table_name pk ms dic)]
                                                 (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk vs (SqlType/UPDATE))
-                                                                               (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
+                                                                               (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
                                             )
                                         (let [[vs kv_vs] (get_value_obj ignite schema_name table_name f_pk ms dic) log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                             (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk vs (SqlType/UPDATE))
-                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
+                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
                                     lst_rs))))]
                 (get_cache_data ignite schema_name table_name it pk_lst items dic)
                       ))))
@@ -308,9 +308,9 @@
                             (if (some? f)
                                 (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic dic_paras)]
                                     (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
-                                        (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express))]
+                                        (let [key (str/lower-case (-> f :item_name)) value (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express))]
                                             (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))
-                                        (let [key (-> f :item_name) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
+                                        (let [key (str/lower-case (-> f :item_name)) value (my-lexical/get_jave_vs (-> f :type) my_vs)]
                                             (recur r (doto vp (.setField key value)) (doto lst_kv (.add (MyKeyValue. key value)))))))
                                 [(.build vp) lst_kv]))))
                 (get_cache_pk [^Ignite ignite ^String schema_name ^String table_name it pk_lst]
@@ -331,11 +331,11 @@
                                     (let [[pk kv_pk] f_pk log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                         (let [[vs kv_vs] (get_value_obj ignite schema_name table_name pk ms dic dic_paras)]
                                             (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk vs (SqlType/UPDATE))
-                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
+                                                                           (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name kv_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))])))
                                         )
                                     (let [[vs kv_vs] (get_value_obj ignite schema_name table_name f_pk ms dic dic_paras) log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                         (recur r_pk ms (concat lst_rs [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) f_pk vs (SqlType/UPDATE))
-                                                                       (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
+                                                                       (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id table_name (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name f_pk kv_vs (SqlType/UPDATE)))) (SqlType/INSERT))]))))
                                 lst_rs))))]
             (get_cache_data ignite schema_name table_name it pk_lst items dic dic_paras)
             )))
@@ -372,8 +372,8 @@
                             (if (some? f)
                                 (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic dic_paras)]
                                     (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
-                                        (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express)))))
-                                        (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (my-lexical/get_jave_vs (-> f :type) my_vs)))))))
+                                        (recur r (doto vp (.setField (str/lower-case (-> f :item_name)) (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express)))))
+                                        (recur r (doto vp (.setField (str/lower-case (-> f :item_name)) (my-lexical/get_jave_vs (-> f :type) (my-lexical/get_jave_vs (-> f :type) my_vs)))))))
                                 (.build vp)))))
                 (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
                     (loop [itr it lst []]
@@ -415,8 +415,8 @@
                                 (if (some? f)
                                     (let [my_vs (item_value_tokens ignite (-> f :item_obj) (.build vp) dic)]
                                         (if (and (my-lexical/is-seq? my_vs) (map? (first my_vs)))
-                                            (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express)))))
-                                            (recur r (doto vp (.setField (-> f :item_name) (my-lexical/get_jave_vs (-> f :type) (my-lexical/get_jave_vs (-> f :type) my_vs)))))))
+                                            (recur r (doto vp (.setField (str/lower-case (-> f :item_name)) (my-lexical/get_jave_vs (-> f :type) (-> (first my_vs) :express)))))
+                                            (recur r (doto vp (.setField (str/lower-case (-> f :item_name)) (my-lexical/get_jave_vs (-> f :type) (my-lexical/get_jave_vs (-> f :type) my_vs)))))))
                                     (.build vp)))))
                     (get_cache_pk [^Ignite ignite ^String table_name it pk_lst]
                         (loop [itr it lst []]

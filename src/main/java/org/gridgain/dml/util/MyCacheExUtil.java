@@ -1,9 +1,7 @@
 package org.gridgain.dml.util;
 
 import clojure.lang.*;
-import cn.plus.model.MyCacheEx;
-import cn.plus.model.MyKeyValue;
-import cn.plus.model.MyLogCache;
+import cn.plus.model.*;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -16,11 +14,21 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.tools.MyLineToBinary;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MyCacheExUtil implements Serializable {
     private static final long serialVersionUID = 7714300623488330841L;
+
+    public static void transLogCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
+    {
+        List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
+        long log_id = ignite.atomicSequence("my_log", 0, true).incrementAndGet();
+        List<MyCacheEx> lst = lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
+        lstCache.addAll(lst);
+        transMyCache(ignite, lstCache);
+    }
 
     public static void transCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
     {

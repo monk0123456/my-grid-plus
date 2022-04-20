@@ -25,3 +25,14 @@
 (last (-> (second (rest body-lst)) :let-vs :operation))
 (my-smart-token-clj/smart-func-to-clj ignite 0 (last (-> (second (rest body-lst)) :let-vs :operation)) func-context)
 ;(let-to-clj ignite 0 lst-rs func-context)
+
+
+(def line "INSERT INTO categories (categoryid, categoryname, description) VALUES (?*(?+1+?), '白酒', ?)")
+=> #'user/line
+(str/replace line #"\?" "%s")
+=> "INSERT INTO categories (categoryid, categoryname, description) VALUES (%s*(%s+1+%s), '白酒', '喝的')"
+
+(def args [1 2 3.5 "吴大富"])
+
+
+((eval (read-string "(fn [a & b]\n     (apply + a b))")) 1 2 3 4 5 6)

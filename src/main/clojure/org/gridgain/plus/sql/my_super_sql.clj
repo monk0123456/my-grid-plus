@@ -111,7 +111,7 @@
 (defn super-sql-lst [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id [sql & r] ^StringBuilder sb]
     (if (some? sql)
         (do
-            (let [lst (my-lexical/to-back (str/lower-case sql))]
+            (let [lst (my-lexical/to-back sql)]
                 ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
                 (if-not (nil? (first lst))
                     (cond (my-lexical/is-eq? (first lst) "insert") (let [rs (my-insert/insert_run ignite group_id lst sql)]

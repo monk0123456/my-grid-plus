@@ -370,9 +370,9 @@
             (let [log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true)) pk (get_pk_rs pk_rs) data (get_data_rs data_rs pk_rs)]
                 (if (vector? pk)
                     [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) (.build (nth pk 0)) (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. (str log_id) (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. (str log_id) (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
                     [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. (str log_id) (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. (str log_id) (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))
                      ])
                 )
             ))
@@ -413,9 +413,9 @@
             (let [log_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true)) pk (get_pk_rs pk_rs) data (get_data_rs data_rs pk_rs)]
                 (if (my-lexical/is-seq? pk)
                     [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) (.build (nth pk 0)) (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (nth pk 1) (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))]
                     [(MyCacheEx. (.cache ignite (format "f_%s_%s" schema_name table_name)) pk (.build (nth data 0)) (SqlType/INSERT))
-                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))])
+                     (MyCacheEx. (.cache ignite "my_log") log_id (MyLog. log_id (format "%s.%s" schema_name table_name) (MyCacheExUtil/objToBytes (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name pk (nth data 1) (SqlType/INSERT)))) (SqlType/INSERT))])
                 )
             ))
     )
