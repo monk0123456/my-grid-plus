@@ -73,7 +73,10 @@
     )
 
 (defn update-to-cache [ignite group_id sql & args]
-    ())
+    (letfn []
+        (let [args-dic (args-to-dic args)]
+            (let [{schema_name :schema_name table_name :table_name sql :sql items :items}  (my-update/get_update_obj ignite group_id (my-lexical/to-back (apply format (str/replace sql #"\?" "%s") (keys args-dic))))]
+                ()))))
 
 (defn query_sql [ignite group_id sql & args]
     (cond (re-find #"^(?i)select\s+" sql) (if (nil? args)

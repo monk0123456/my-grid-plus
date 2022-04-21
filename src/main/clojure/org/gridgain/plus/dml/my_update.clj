@@ -186,7 +186,7 @@
                             (recur r dic (conj lst {:item_name f :item_type (get dic f)}))
                             (recur r dic lst))
                         lst))]
-            {:table_name (-> obj :table_name) :sql (format "select %s from %s where %s" pk_line (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :items (get_items_type (-> obj :items) dic []) :pk_lst (get_pk_lst lst_pk dic []) :lst lst :dic dic})
+            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :sql (format "select %s from %s.%s where %s" pk_line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :items (get_items_type (-> obj :items) dic []) :pk_lst (get_pk_lst lst_pk dic []) :lst lst :dic dic})
         ))
 
 (defn get_update_query_sql_fun [^Ignite ignite group_id obj ^clojure.lang.PersistentArrayMap dic_paras]
