@@ -718,11 +718,11 @@
                             (let [data_set_name (get_data_set_name ignite group_id)]
                                 (if (Strings/isNullOrEmpty data_set_name)
                                     table_name
-                                    (str/join [data_set_name "_" table_name])))
+                                    (str/join [data_set_name "." table_name])))
                             (let [data_set_name (get_data_set_name ignite group_id)]
                                 (if (Strings/isNullOrEmpty data_set_name)
                                     (str/join [table_name " " table_alias])
-                                    (str/join [(str/join [data_set_name "_" table_name]) " " table_alias])))
+                                    (str/join [(str/join [data_set_name "." table_name]) " " table_alias])))
                             ))))
             ; 获取 data_set 的名字和对应的表
             (get_data_set_name [^Ignite ignite ^Long group_id]

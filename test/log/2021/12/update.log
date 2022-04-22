@@ -9,6 +9,7 @@
     '[org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
     '[org.gridgain.plus.dml.my-select :as my-select]
     '[org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+    '[org.gridgain.plus.dml.my-select-plus-args :as my-select-plus-args]
     '[org.gridgain.plus.dml.my-insert :as my-insert]
     '[org.gridgain.plus.dml.my-update :as my-update]
     '[org.gridgain.plus.dml.my-delete :as my-delete]
