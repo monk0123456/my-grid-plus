@@ -48,6 +48,7 @@ public class MyCache_case {
 
         IgniteCache<Integer, String> cache = ignite.cache("my_test_cache");
         System.out.println(cache.get(2));
+
     }
 
     @Test

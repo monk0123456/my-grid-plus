@@ -86,14 +86,6 @@
                )
          (run-express stack_number stack_symbol args-dic))))
 
-; 判断 func
-(defn is-func? [^Ignite ignite ^String func-name]
-    (.containsKey (.cache ignite "my_func") func-name))
-
-; 判断 scenes
-(defn is-scenes? [^Ignite ignite ^Long group_id ^String scenes-name]
-    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. group_id scenes-name)))
-
 ; 判断是否有函数
 (defn has-func? [let-obj func-name]
     (cond (contains? let-obj :seq-obj) (if (contains? #{"add" "remove" "nth" "concat" "pop" "take" "takeLast" "drop" "dropLast"} (str/lower-case func-name))

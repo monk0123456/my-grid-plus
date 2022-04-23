@@ -3,6 +3,7 @@
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.context.my-context :as my-context]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
+        [org.gridgain.plus.tools.my-cache :as my-cache]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -142,9 +143,27 @@
             (func-to-line [ignite group_id dic-args m]
                 (if (and (contains? m :alias) (not (nil? (-> m :alias))))
                     (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
-                        {:sql (concat [(-> m :func-name) "("] sql [")" " as"] [(-> m :alias)]) :args args})
+                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args}
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args})
+                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args (concat [group_id] args)}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?" (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args (concat [group_id] args)})
+                              :else
+                              {:sql (concat [(-> m :func-name) "("] sql [")" " as"] [(-> m :alias)]) :args args}
+                              )
+                        )
                     (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
-                        {:sql (concat [(-> m :func-name) "("] sql [")"]) :args args})
+                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args}
+                                                                                                {:sql (concat ["my_fun(" (format "'%s'" (-> m :func-name))] sql [")"] [(-> m :alias)]) :args args})
+                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?," (-> m :func-name))] sql [")"] [(-> m :alias)]) :args (concat [group_id] args)}
+                                                                                                           {:sql (concat ["my_invoke(" (format "'%s', ?" (-> m :func-name))] sql [")"] [(-> m :alias)]) :args (concat [group_id] args)})
+                              :else
+                              {:sql (concat [(-> m :func-name) "("] sql [")"]) :args args}
+                              )
+                        )
                     ))
             (item-to-line [dic-args m]
                 (let [{table_alias :table_alias item_name :item_name alias :alias} m]

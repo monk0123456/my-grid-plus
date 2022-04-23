@@ -5,6 +5,7 @@
     (:import (org.apache.ignite Ignite IgniteCache)
              (org.apache.ignite.internal IgnitionEx)
              (org.apache.ignite.configuration CacheConfiguration)
+             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache CacheMode)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              )
@@ -20,7 +21,9 @@
         :constructors {[org.apache.ignite.Ignite] []}
         ; 生成 java 调用的方法
         :methods [[getMetaCache [] org.apache.ignite.IgniteCache]
-                  [getPublicCache [] org.apache.ignite.IgniteCache]]
+                  [getPublicCache [] org.apache.ignite.IgniteCache]
+                  ^:static [isFunc [org.apache.ignite.Ignite String] Boolean]
+                  ^:static [isScenes [org.apache.ignite.Ignite Long String] Boolean]]
         ))
 
 ; 构造函数
@@ -41,4 +44,17 @@
         (.cache ignite "public_meta")
         ))
 
+; 判断 func
+(defn is-func? [^Ignite ignite ^String func-name]
+    (.containsKey (.cache ignite "my_func") func-name))
+
+; 判断 scenes
+(defn is-scenes? [^Ignite ignite ^Long group_id ^String scenes-name]
+    (.containsKey (.cache ignite "my_scenes") (MyScenesCachePk. group_id scenes-name)))
+
+(defn -isFunc [^Ignite ignite ^String func-name]
+    (is-func? ignite func-name))
+
+(defn -isScenes [^Ignite ignite ^Long group_id ^String scenes-name]
+    (is-scenes? ignite group_id scenes-name))
 
