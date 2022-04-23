@@ -138,7 +138,7 @@
             (on-to-line [ignite group_id dic-args m]
                 (if (some? m)
                     (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (get m :on))]
-                        {:sql (str/join ["on" sql]) :args args})
+                        {:sql (str/join ["on " (str/join " " sql)]) :args args})
                     ))
             (func-to-line [ignite group_id dic-args m]
                 (if (and (contains? m :alias) (not (nil? (-> m :alias))))

@@ -243,9 +243,9 @@
             (get-token
                 [lst]
                 (if (some? lst)
-                    (if (instance? String lst)
+                    (if (string? lst)
                         (get-token-line lst)
-                        (if (and (= (count lst) 1) (instance? String (first lst)))
+                        (if (and (= (count lst) 1) (string? (first lst)))
                             (get-token-line (first lst))
                             (let [where-line-m (get-where-line lst)]
                                 (if (is-true? where-line-m)
@@ -269,7 +269,7 @@
                                                                             ds-m))))))))
                                             ))))
                             )
-                        ;(cond (and (= (count lst) 1) (instance? String (first lst))) (get-token-line (first lst))
+                        ;(cond (and (= (count lst) 1) (string? (first lst))) (get-token-line (first lst))
                         ;      (is-true? get-where-line-m lst) (map get-token (get-where-line-m lst))
                         ;      (is-true? get-where-item-line-m lst) (map get-token (get-where-item-line-m lst))
                         ;      (some? (func-fn-m lst)) (when-let [m (func-fn-m lst)] m)
@@ -282,7 +282,7 @@
             ; 预处理 get-query-items 输入
             (pre-query-lst [[f & rs]]
                 (if (some? f)
-                    (cond (instance? String (first f)) (if (my-lexical/is-eq? (first f) "distinct") (concat [{:keyword "distinct"}] (pre-query-lst (concat [(rest f)] rs))) (concat [f] (pre-query-lst rs)))
+                    (cond (string? (first f)) (if (my-lexical/is-eq? (first f) "distinct") (concat [{:keyword "distinct"}] (pre-query-lst (concat [(rest f)] rs))) (concat [f] (pre-query-lst rs)))
                           :else
                           (concat [f] (pre-query-lst rs)))))
             ; 处理别名
@@ -317,19 +317,14 @@
                         (table-join [[f & rs]]
                             (if (some? f)
                                 (cond (contains? f :tables)
-                                      (let [{tables :tables join :join} f]
-                                          (cond (and (= (count tables) 1) (empty? join)) (concat [{:table_name (first tables) :table_alias ""}] (table-join rs))
-                                                (and (= (count tables) 1) (not (empty? join))) (concat [{:join join} {:table_name (first tables) :table_alias ""}] (table-join rs))
-                                                (and (= (count tables) 2) (empty? join)) (concat [{:table_name (nth tables 0) :table_alias (nth tables 1)}] (table-join rs))
-                                                (and (= (count tables) 2) (contains? f :join)) (concat [{:join join} {:table_name (nth tables 0) :table_alias (nth tables 1)}] (table-join rs))
-                                                (and (= (count tables) 3) (empty? join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [{:table_name (nth tables 0) :table_alias (nth tables 2)}] (table-join rs))
-                                                (and (= (count tables) 3) (contains? f :join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [{:table_name (nth tables 0) :table_alias (nth tables 2)} {:join join}] (table-join rs))
+                                      (let [{tables :tables} f]
+                                          (cond (= (count tables) 1)(concat [(assoc (my-lexical/get-schema (first tables)) :table_alias "")] (table-join rs))
+                                                (= (count tables) 2) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 1))] (table-join rs))
+                                                (and (= (count tables) 3) (my-lexical/is-eq? (nth tables 1) "as")) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 2))] (table-join rs))
                                                 :else
-                                                (when-let [m (get-query-items tables)]
-                                                    (if (empty? join)
-                                                        (concat [m] (table-join rs))
-                                                        (concat [m {:join join}] (table-join rs))))
+                                                (throw (Exception. "sql 语句错误！from 关键词之后"))
                                                 ))
+                                      (contains? f :join) (concat [{:join (-> f :join)}] (table-join rs))
                                       (contains? f :on) (cons {:on (map get-token (get f :on))} (table-join rs))
                                       )))
                         ; 处理 table-items
@@ -339,8 +334,8 @@
                             ([[f & rs] stack lst]
                              (if (some? f)
                                  (cond (and (my-lexical/is-eq? f "on") (= (count stack) 0)) (if (> (count lst) 0) (concat [{:on (reverse lst)}] (get-table rs stack [])) (get-table rs stack []))
-                                       (and (my-lexical/is-eq? f "join") (contains? #{"left" "inner" "right"} (str/lower-case (first rs))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst) :join (str/join [(first rs) " " f])}] (get-table (rest rs) stack [])) (get-table (rest rs) stack []))
-                                       (and (my-lexical/is-eq? f "join") (not (contains? #{"left" "inner" "right"} (str/lower-case (first rs)))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst) :join f}] (get-table rs stack [])) (get-table rs stack []))
+                                       (and (my-lexical/is-eq? f "join") (contains? #{"left" "inner" "right"} (str/lower-case (first rs))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst)}] [{:join (str/join [(first rs) " " f])}] (get-table (rest rs) stack [])) (get-table (rest rs) stack []))
+                                       (and (my-lexical/is-eq? f "join") (not (contains? #{"left" "inner" "right"} (str/lower-case (first rs)))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst)}] [{:join f}] (get-table rs stack [])) (get-table rs stack []))
                                        (= f ")") (get-table rs (conj stack f) (conj lst f))
                                        (= f "(") (get-table rs (pop stack) (conj lst f))
                                        :else
@@ -350,7 +345,7 @@
                         ; 处理逗号类型的
                         (table-comma
                             [lst]
-                            (if (and (instance? String lst) (my-lexical/is-eq? lst ","))
+                            (if (and (string? lst) (my-lexical/is-eq? lst ","))
                                 (get-token-line lst)
                                 (cond (= (count lst) 1) {:table_name (first lst) :table_alias ""}
                                       (= (count lst) 2) {:table_name (nth lst 0) :table_alias (nth lst 1)}
@@ -362,7 +357,7 @@
                         ]
                     (if (= (count table-items) 1)
                         (let [m (nth table-items 0)]
-                            (cond (instance? String m) (concat [{:table_name m, :table_alias nil}])
+                            (cond (string? m) (concat [{:table_name m, :table_alias nil}])
                                   (and (my-lexical/is-seq? m) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
                                   :else
                                   (if (my-lexical/is-contains? (nth table-items 0) "join")
@@ -392,7 +387,7 @@
                 (when-let [{query-items :query-items table-items :table-items where-items :where-items group-by :group-by having :having order-by :order-by limit :limit} (my-lexical/get-segments-list sql-lst)]
                     {:query-items (get-query-items (my-lexical/to-lazy query-items)) :table-items (get-table-items (my-lexical/to-lazy table-items)) :where-items (get-token where-items) :group-by (get-token group-by) :having (get-token having) :order-by (get-order-by order-by) :limit (get-limit limit)}))
             (to-ast [lst]
-                (if (instance? String lst) {:keyword lst}
+                (if (string? lst) {:keyword lst}
                                            {:sql_obj (sql-to-ast-single lst)}))]
         (if-not (my-lexical/is-eq? (first sql-lst) "select")
             (get-token sql-lst)

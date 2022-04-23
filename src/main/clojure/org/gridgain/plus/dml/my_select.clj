@@ -337,8 +337,8 @@
     ([[f & rs] stack lst]
      (if (some? f)
          (cond (and (my-lexical/is-eq? f "on") (= (count stack) 0)) (if (> (count lst) 0) (concat [{:on (reverse lst)}] (get-table rs stack [])) (get-table rs stack []))
-               (and (my-lexical/is-eq? f "join") (contains? #{"left" "inner" "right"} (str/lower-case (first rs))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst) :join (str/join [(first rs) " " f])}] (get-table (rest rs) stack [])) (get-table (rest rs) stack []))
-               (and (my-lexical/is-eq? f "join") (not (contains? #{"left" "inner" "right"} (str/lower-case (first rs)))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst) :join f}] (get-table rs stack [])) (get-table rs stack []))
+               (and (my-lexical/is-eq? f "join") (contains? #{"left" "inner" "right"} (str/lower-case (first rs))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst)}] [{:join (str/join [(first rs) " " f])}] (get-table (rest rs) stack [])) (get-table (rest rs) stack []))
+               (and (my-lexical/is-eq? f "join") (not (contains? #{"left" "inner" "right"} (str/lower-case (first rs)))) (= (count stack) 0)) (if (> (count lst) 0) (concat [{:tables (reverse lst)}] [{:join f}] (get-table rs stack [])) (get-table rs stack []))
                (= f ")") (get-table rs (conj stack f) (conj lst f))
                (= f "(") (get-table rs (pop stack) (conj lst f))
                :else
@@ -363,19 +363,17 @@
 (defn table-join [[f & rs]]
     (if (some? f)
         (cond (contains? f :tables)
-              (let [{tables :tables join :join} f]
-                  (cond (and (= (count tables) 1) (empty? join)) (concat [(assoc (my-lexical/get-schema (first tables)) :table_alias "")] (table-join rs))
-                        (and (= (count tables) 1) (not (empty? join))) (concat [{:join join} (assoc (my-lexical/get-schema (first tables)) :table_alias "")] (table-join rs))
-                        (and (= (count tables) 2) (empty? join)) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 1))] (table-join rs))
-                        (and (= (count tables) 2) (contains? f :join)) (concat [{:join join} (assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 1))] (table-join rs))
-                        (and (= (count tables) 3) (empty? join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 2))] (table-join rs))
-                        (and (= (count tables) 3) (contains? f :join) (my-lexical/is-eq? (nth tables 1) "as")) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 2)) {:join join}] (table-join rs))
-                        :else
-                        (when-let [m (get-query-items tables)]
-                            (if (empty? join)
-                                (concat [m] (table-join rs))
-                                (concat [m {:join join}] (table-join rs))))
+              (let [{tables :tables} f]
+                  (cond (= (count tables) 1)(concat [(assoc (my-lexical/get-schema (first tables)) :table_alias "")] (table-join rs))
+                        (= (count tables) 2) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 1))] (table-join rs))
+                        (and (= (count tables) 3) (my-lexical/is-eq? (nth tables 1) "as")) (concat [(assoc (my-lexical/get-schema (nth tables 0)) :table_alias (nth tables 2))] (table-join rs))
+                        ;:else
+                        ;(when-let [m (get-query-items tables)]
+                        ;    (if (empty? join)
+                        ;        (concat [m] (table-join rs))
+                        ;        (concat [m {:join join}] (table-join rs))))
                         ))
+              (contains? f :join) (concat [{:join (-> f :join)}] (table-join rs))
               (contains? f :on) (cons {:on (map get-token (get f :on))} (table-join rs))
               )))
 

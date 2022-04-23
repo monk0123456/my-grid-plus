@@ -14,7 +14,7 @@
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
         [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
-        [org.gridgain.plus.dml.my-scenes :as my-scenes]
+        [org.gridgain.plus.dml.my-select-plus-args :as my-select-plus-args]
         [org.gridgain.plus.dml.my-trans :as my-trans]
         [org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
         [clojure.core.reducers :as r]
@@ -76,7 +76,8 @@
     (letfn []
         (let [args-dic (args-to-dic args)]
             (let [{schema_name :schema_name table_name :table_name sql :sql items :items}  (my-update/get_update_obj ignite group_id (my-lexical/to-back (apply format (str/replace sql #"\?" "%s") (keys args-dic))))]
-                ()))))
+                (let [{select-sql :sql select-args :args} (my-select-plus-args/ast_to_sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) args-dic)]
+                    ())))))
 
 (defn query_sql [ignite group_id sql & args]
     (cond (re-find #"^(?i)select\s+" sql) (if (nil? args)

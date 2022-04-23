@@ -28,6 +28,7 @@
     '[org.gridgain.plus.init.plus-init :as plus-init]
     '[org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
     '[org.gridgain.plus.tools.my-util :as my-util]
+    '[org.gridgain.plus.tools.my-cache :as my-cache]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
     '[clojure.walk :as w])
