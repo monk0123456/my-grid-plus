@@ -1,0 +1,23 @@
+
+(defn get_query_view
+    ([query-items] (get_query_view query-items {}))
+    ([[f & r] dic]
+     (if (some? f)
+         (cond (contains? f :item_name) (recur r (assoc dic (get f :item_name) nil))
+               (and (contains? f :func-name) (my-lexical/is-eq? (get f :func-name) "convert_to") (= (count (get f :lst_ps)) 3)) (recur r (assoc dic (get (first (get f :lst_ps)) :item_name) (last (get f :lst_ps))))
+               (contains? f :comma_symbol) (recur r dic)
+               :else
+               (throw (Exception. "select 权限视图中只能是字段或者是转换函数！")))
+         dic)))
+
+(def sql_objs (my-select-plus/sql-to-ast (my-lexical/to-back "SELECT convert_to(CustomerID, f(CustomerID)) FROM wudagui.Orders WHERE CustomerID = 'AROUT'")))
+(first sql_objs)
+(if (= (count sql_objs) 1)
+    (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+        (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+            {:query-items nil :where-items where-items}
+            {:query-items (get_query_view query-items) :where-items where-items})
+        ))
+
+;(get_select_view ignite 1 "public" "customers")
+;(get_select_view ignite 1 "wudagui" "orders")

@@ -10,6 +10,7 @@
         [org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select]
+        [org.gridgain.plus.dml.my-select-plus-args :as my-select-plus-args]
         [org.gridgain.plus.dml.my-insert :as my-insert]
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
@@ -108,6 +109,11 @@
             (recur (+ index 1) my-count (conj rs (nth lst index)))
             (my-lexical/get_str_value (str/join " " rs)))))
 
+(defn my_plus_sql [^Ignite ignite ^Long group_id lst-sql]
+    (if-let [ast (my-select/get_my_ast ignite group_id lst-sql)]
+        (-> (my-select-plus-args/ast_to_sql ignite group_id nil ast) :sql)
+        (throw (Exception. (format "查询字符串 %s 错误！" (str/join " " lst-sql))))))
+
 (defn super-sql-lst [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id [sql & r] ^StringBuilder sb]
     (if (some? sql)
         (do
@@ -127,7 +133,7 @@
                                                                            (.append sb (format "select show_msg('%s') as tip;" (first (first rs))))
                                                                            (.append sb "select show_msg('true') as tip;")))
                           (my-lexical/is-eq? (first lst) "select") (if (has-from? (rest lst))
-                                                                       (.append sb (str (my-select/my_plus_sql ignite group_id lst) ";"))
+                                                                       (.append sb (str (my_plus_sql ignite group_id lst) ";"))
                                                                        (.append sb (str sql ";")))
                           ; 执行事务
                           (and (= (first lst) "{") (= (last lst) "}")) (.append sb (str (my-trans/tran_run ignite group_id lst) ";"))

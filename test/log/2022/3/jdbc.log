@@ -25,3 +25,21 @@
         ))
 
 (show-rs rs)
+
+-------------------------------------------
+
+(Class/forName "org.apache.ignite.IgniteJdbcDriver")
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=dafu"))
+
+(def line-insert "select m.dataset_name from MY_META.my_dataset m INNER JOIN MY_META.my_meta_tables o on m.id = o.data_set_id where o.table_name='products'")
+(def stmt (.prepareStatement conn line-insert))
+(def rs (.executeQuery stmt))
+
+(defn show-rs [rs]
+    (if (true? (.next rs))
+        (do
+            (println (.getString rs 1))
+            (recur rs))
+        ))
+
+(show-rs rs)

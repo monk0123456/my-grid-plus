@@ -177,20 +177,20 @@
                         )))
             (table-to-line [ignite group_id dic-args m]
                 (if (some? m)
-                    (if-let [{table_name :table_name table_alias :table_alias} m]
-                        (if (Strings/isNullOrEmpty table_alias)
-                            {:sql table_name :args nil}
-                            {:sql (str/join [table_name " " table_alias]) :args nil}
-                            ;(let [data_set_name (get_data_set_name ignite group_id)]
-                            ;    (if (Strings/isNullOrEmpty data_set_name)
-                            ;        {:sql table_name :args nil}
-                            ;        {:sql (str/join [data_set_name "." table_name]) :args nil}))
-                            ;(let [data_set_name (get_data_set_name ignite group_id)]
-                            ;    (if (Strings/isNullOrEmpty data_set_name)
-                            ;        {:sql (str/join [table_name " " table_alias]) :args nil}
-                            ;        {:sql (str/join [(str/join [data_set_name "." table_name]) " " table_alias]) :args nil}
-                            ;        ))
-                            ))))
+                    (if-let [{schema_name :schema_name table_name :table_name table_alias :table_alias} m]
+                        (if-not (Strings/isNullOrEmpty schema_name)
+                            (if (Strings/isNullOrEmpty table_alias)
+                                {:sql (format "%s.%s" schema_name table_name) :args nil}
+                                {:sql (str/join [(format "%s.%s" schema_name table_name) " " table_alias]) :args nil})
+                            (if (= group_id 0)
+                                (if (Strings/isNullOrEmpty table_alias)
+                                    {:sql (format "MY_META.%s" table_name) :args nil}
+                                    {:sql (str/join [(format "MY_META.%s" table_name) " " table_alias]) :args nil})
+                                (let [schema_name (get_data_set_name ignite group_id)]
+                                    (if (Strings/isNullOrEmpty table_alias)
+                                        {:sql (format "%s.%s" schema_name table_name) :args nil}
+                                        {:sql (str/join [(format "%s.%s" schema_name table_name) " " table_alias]) :args nil}))))
+                        )))
             ; 获取 data_set 的名字和对应的表
             (get_data_set_name [^Ignite ignite ^Long group_id]
                 (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name from my_users_group as g JOIN my_dataset as m ON m.id = g.data_set_id where g.id = ?") (to-array [group_id])))))]
@@ -212,3 +212,152 @@
                                (throw (Exception. "select 语句错误！"))) (throw (Exception. "select 语句错误！")))
                      {:sql (str/join " " lst_rs) :args (filter #(not (nil? %)) lst-args)})))]
         (select-to-sql ignite group_id dic-args ast)))
+
+; 重新获取新的 ast 将 权限添加进去
+; 1、扫描 :sql_obj --> :table-items --> :table_name
+; 2、判断 :sql_obj --> :query-items 中的 :item_name 是否存在于权限中
+; 3、添加 :sql_obj --> :where-items
+(defn re-select-ast [ignite group_id ast]
+    (letfn [(get-table-items [ignite group_id sql-obj]
+                (letfn [
+                        ; 获取 table_select_view 的 ast
+                        ; 重新生成新的 ast
+                        ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
+                        (get_select_view [ignite group_id schema_name talbe_name]
+                            (if-let [code (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
+                                (if-let [sql_objs (my-select-plus/sql-to-ast (my-lexical/to-back (first code)))]
+                                    (if (= (count sql_objs) 1)
+                                        (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                            (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                                {:query-items nil :where-items where-items}
+                                                {:query-items (get_query_view query-items) :where-items where-items})
+                                            )))))
+                        (get_query_view
+                            ([query-items] (get_query_view query-items {}))
+                            ([[f & r] dic]
+                             (if (some? f)
+                                 (cond (contains? f :item_name) (recur r (assoc dic (get f :item_name) nil))
+                                       (and (contains? f :func-name) (my-lexical/is-eq? (get f :func-name) "convert_to") (= (count (get f :lst_ps)) 3)) (recur r (assoc dic (get (first (get f :lst_ps)) :item_name) (last (get f :lst_ps))))
+                                       (contains? f :comma_symbol) (recur r dic)
+                                       :else
+                                       (throw (Exception. "select 权限视图中只能是字段或者是转换函数！")))
+                                 dic)))]
+                    (loop [[f & r] (-> sql-obj :table-items) dic {}]
+                        (if (some? f)
+                            (if (contains? f :table_name)
+                                (let [table_ast (get_select_view ignite group_id (get f :schema_name) (get f :table_name))]
+                                    (if-not (Strings/isNullOrEmpty (-> f :table_alias))
+                                        (recur r (assoc dic (-> f :table_alias) table_ast))
+                                        (if-not (nil? r)
+                                            (throw (Exception. "两个表以上要给表取别名"))
+                                            (recur r (assoc dic "" table_ast))))
+                                    ))
+                            dic)))
+                )
+            (replace-alias [table_alias m]
+                (cond (my-lexical/is-seq? m) (map (partial replace-alias table_alias) m)
+                      (map? m) (if (and (contains? m :item_name) (false? (-> m :const)))
+                                   (assoc m :table_alias table_alias)
+                                   (loop [[f & r] (keys m) rs m]
+                                       (if (some? f)
+                                           (let [vs (get m f)]
+                                               (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (replace-alias table_alias vs)))
+                                                     (map? vs) (recur r (assoc rs f (replace-alias table_alias vs)))
+                                                     :else
+                                                     (recur r rs)
+                                                     ))
+                                           rs))
+                                   )
+                      ))
+            (my-table-items [ignite group_id sql-obj]
+                (let [table-ast (get-table-items ignite group_id sql-obj)]
+                    (loop [[f & r] (keys table-ast) rs table-ast]
+                        (if (some? f)
+                            (let [new-where-items (replace-alias f (-> (get table-ast f) :where-items))]
+                                (let [my-vs (assoc (get table-ast f) :where-items new-where-items)]
+                                    (recur r (assoc rs f my-vs)))
+                                )
+                            rs))))
+            (is-authority? [item table-items]
+                (if (nil? table-items)
+                    true
+                    (let [table_alias (-> table-items :table_alias)]
+                        )
+                    ))
+            (get-query [ignite group_id m table-items]
+                (cond (map? m) (if (contains? m :item_name)
+                                   )
+                      (my-lexical/is-seq? m) (map (partial get-query ignite group_id) m)
+                      ))]
+        ()))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

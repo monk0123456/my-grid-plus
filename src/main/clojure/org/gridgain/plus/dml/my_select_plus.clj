@@ -34,10 +34,16 @@
 
 ; 确定 query items 的权限
 ; 函数的参数
-(defrecord table_select_view [table_name ast])
+(defrecord table_select_view [schema_name table_name ast])
 
 (defn get-scenes [^Ignite ignite ^String scenes_name]
     (scenesObj. nil nil))
+
+(declare sql-to-ast get-my-sql-to-ast)
+(defn get-my-sql-to-ast [m]
+                   (try
+                       (sql-to-ast m)
+                       (catch Exception e)))
 
 (defn sql-to-ast [^clojure.lang.LazySeq sql-lst]
     (letfn [
@@ -179,7 +185,7 @@
                                         m
                                         (eliminate-parentheses (my-lexical/get-contain-lst lst))))))]
                     (when-let [m (is-operate-fn? (get-lazy lst))]
-                        (let [ast-m (sql-to-ast m)]
+                        (let [ast-m (get-my-sql-to-ast m)]
                             (if (is-sql-obj? ast-m)
                                 {:parenthesis ast-m}
                                 (let [where-line-m (get-where-line m)]
@@ -233,7 +239,7 @@
                 ([lst] (ds-func lst nil))
                 ([[f & r] my-obj]
                  (if (some? f)
-                     (let [func-obj (sql-to-ast f)]
+                     (let [func-obj (get-my-sql-to-ast f)]
                          (let [[schema_name func-name] (str/split (-> func-obj :func-name) #"\.")]
                              (if (nil? my-obj)
                                  (recur r (assoc func-obj :ds-name schema_name :func-name func-name))
@@ -305,7 +311,7 @@
                                        (if (and (= (first lst) "(") (= (last lst) ")"))
                                            (let [m (is-select? (rest lst) [])]
                                                (if (and (some? m) (> (count m) 0))
-                                                   (when-let [sql_objs (sql-to-ast m)]
+                                                   (when-let [sql_objs (get-my-sql-to-ast m)]
                                                        (if (> (count sql_objs) 0) true)))))))
                             ([[f & r] my-lst]
                              (if (empty? r) my-lst (recur r (concat my-lst [f])))))
@@ -347,9 +353,9 @@
                             [lst]
                             (if (and (string? lst) (my-lexical/is-eq? lst ","))
                                 (get-token-line lst)
-                                (cond (= (count lst) 1) {:table_name (first lst) :table_alias ""}
-                                      (= (count lst) 2) {:table_name (nth lst 0) :table_alias (nth lst 1)}
-                                      (and (= (count lst) 3) (my-lexical/is-eq? (nth lst 1) "as")) {:table_name (nth lst 0) :table_alias (nth lst 2)}
+                                (cond (= (count lst) 1) (assoc (my-lexical/get-schema (first lst)) :table_alias nil) ;{:table_name (first lst) :table_alias ""}
+                                      (= (count lst) 2) (assoc (my-lexical/get-schema (first lst)) :table_alias (second lst)) ;{:table_name (nth lst 0) :table_alias (nth lst 1)}
+                                      (and (= (count lst) 3) (my-lexical/is-eq? (nth lst 1) "as")) (assoc (my-lexical/get-schema (first lst)) :table_alias (last lst)) ;{:table_name (nth lst 0) :table_alias (nth lst 2)}
                                       :else
                                       (when-let [m (get-query-items (concat [lst]))]
                                           (first m))
@@ -357,8 +363,8 @@
                         ]
                     (if (= (count table-items) 1)
                         (let [m (nth table-items 0)]
-                            (cond (string? m) (concat [{:table_name m, :table_alias nil}])
-                                  (and (my-lexical/is-seq? m) (is-select? m)) {:parenthesis (sql-to-ast (get-select-line m))}
+                            (cond (string? m) (concat [(assoc (my-lexical/get-schema m) :table_alias nil)])
+                                  (and (my-lexical/is-seq? m) (is-select? m)) {:parenthesis (get-my-sql-to-ast (get-select-line m))}
                                   :else
                                   (if (my-lexical/is-contains? (nth table-items 0) "join")
                                       (table-join (get-table (nth table-items 0)))
@@ -486,20 +492,20 @@
                 ([ignite group_id [f & rs] m]
                  (if (some? f)
                      (if (contains? f :table_name)
-                         (let [table_ast (get_select_view ignite group_id (get f :table_name))]
+                         (let [table_ast (get_select_view ignite group_id (get f :schema_name) (get f :table_name))]
                              (if (some? table_ast)
                                  (if (contains? f :table_alias)
-                                     (recur ignite group_id rs (assoc m (get f :table_alias) (table_select_view. (str/lower-case (str/trim (get f :table_name))) table_ast)))
-                                     (recur ignite group_id rs (assoc m "" (table_select_view. (get f :table_name) table_ast))))
+                                     (recur ignite group_id rs (assoc m (get f :table_alias) (table_select_view. (get f :schema_name) (str/lower-case (str/trim (get f :table_name))) table_ast)))
+                                     (recur ignite group_id rs (assoc m "" (table_select_view. (get f :schema_name) (get f :table_name) table_ast))))
                                  (if (contains? f :table_alias)
-                                     (recur ignite group_id rs (assoc m (get f :table_alias) (table_select_view. (get f :table_name) nil)))
-                                     (recur ignite group_id rs (assoc m "" (table_select_view. (get f :table_name) nil)))))) (recur ignite group_id rs m)) m)))
+                                     (recur ignite group_id rs (assoc m (get f :table_alias) (table_select_view. (get f :schema_name) (get f :table_name) nil)))
+                                     (recur ignite group_id rs (assoc m "" (table_select_view. (get f :schema_name) (get f :table_name) nil)))))) (recur ignite group_id rs m)) m)))
             ; 获取 table_select_view 的 ast
             ; 重新生成新的 ast
             ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
-            (get_select_view [ignite group_id talbe_name]
-                (when-let [code (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m, my_group_view as v where m.id = v.view_id and m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [talbe_name group_id "查"])))))]
-                    (when-let [sql_objs (sql-to-ast (my-lexical/to-back (nth code 0)))]
+            (get_select_view [ignite group_id schema_name talbe_name]
+                (when-let [code (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m, my_dataset as ds, my_group_view as v where m.data_set_id = ds.id and m.id = v.view_id and ds.dataset_name = ? and m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [schema_name talbe_name group_id "查"])))))]
+                    (when-let [sql_objs (get-my-sql-to-ast (my-lexical/to-back (nth code 0)))]
                         (if (= (count sql_objs) 1)
                             (when-let [{query-items :query-items where-items :where-items} (get (nth sql_objs 0) :sql_obj)]
                                 {:query-items (get_query_view query-items) :where-items where-items})))))
@@ -694,7 +700,7 @@
                         )))
             (on-to-line [ignite group_id m]
                 (if (some? m)
-                    (str/join ["on" (token-to-sql ignite group_id (get m :on))])))
+                    (str/join ["on " (str/join " " (token-to-sql ignite group_id (get m :on)))])))
             (func-to-line [ignite group_id m]
                 (if (and (contains? m :alias) (not (nil? (-> m :alias))))
                     (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")" " as"] [(-> m :alias)])
@@ -706,19 +712,35 @@
                         (and (not (Strings/isNullOrEmpty table_alias)) (Strings/isNullOrEmpty alias)) (str/join [table_alias "." item_name])
                         (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) item_name
                         )))
+            ;(table-to-line [ignite group_id m]
+            ;    (if (some? m)
+            ;        (if-let [{table_name :table_name table_alias :table_alias} m]
+            ;            (if (Strings/isNullOrEmpty table_alias)
+            ;                (let [data_set_name (get_data_set_name ignite group_id)]
+            ;                    (if (Strings/isNullOrEmpty data_set_name)
+            ;                        table_name
+            ;                        (str/join [data_set_name "." table_name])))
+            ;                (let [data_set_name (get_data_set_name ignite group_id)]
+            ;                    (if (Strings/isNullOrEmpty data_set_name)
+            ;                        (str/join [table_name " " table_alias])
+            ;                        (str/join [(str/join [data_set_name "." table_name]) " " table_alias])))
+            ;                ))))
             (table-to-line [ignite group_id m]
                 (if (some? m)
-                    (if-let [{table_name :table_name table_alias :table_alias} m]
-                        (if (Strings/isNullOrEmpty table_alias)
-                            (let [data_set_name (get_data_set_name ignite group_id)]
-                                (if (Strings/isNullOrEmpty data_set_name)
-                                    table_name
-                                    (str/join [data_set_name "." table_name])))
-                            (let [data_set_name (get_data_set_name ignite group_id)]
-                                (if (Strings/isNullOrEmpty data_set_name)
-                                    (str/join [table_name " " table_alias])
-                                    (str/join [(str/join [data_set_name "." table_name]) " " table_alias])))
-                            ))))
+                    (if-let [{schema_name :schema_name table_name :table_name table_alias :table_alias} m]
+                        (if-not (Strings/isNullOrEmpty schema_name)
+                            (if (Strings/isNullOrEmpty table_alias)
+                                (format "%s.%s" schema_name table_name)
+                                (str/join [(format "%s.%s" schema_name table_name) " " table_alias]))
+                            (if (= group_id 0)
+                                (if (Strings/isNullOrEmpty table_alias)
+                                    (format "MY_META.%s" table_name)
+                                    (str/join [(format "MY_META.%s" table_name) " " table_alias]))
+                                (let [schema_name (get_data_set_name ignite group_id)]
+                                    (if (Strings/isNullOrEmpty table_alias)
+                                        (format "%s.%s" schema_name table_name)
+                                        (str/join [(format "%s.%s" schema_name table_name) " " table_alias])))))
+                        )))
             ; 获取 data_set 的名字和对应的表
             (get_data_set_name [^Ignite ignite ^Long group_id]
                 (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name from my_users_group as g JOIN my_dataset as m ON m.id = g.data_set_id where g.id = ?") (to-array [group_id])))))]
@@ -751,13 +773,13 @@
 
 ; sql to myAst
 (defn get_my_ast [ignite group_id lst-sql]
-    (when-let [ast (sql-to-ast lst-sql)]
+    (when-let [ast (get-my-sql-to-ast lst-sql)]
         (when-let [func_ast (find-table-func ignite ast)]
             (get_query_table ignite group_id func_ast))))
 
 (defn get_my_ast_lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
     (if-not (empty? sql_lst)
-        (when-let [ast (sql-to-ast sql_lst)]
+        (when-let [ast (get-my-sql-to-ast sql_lst)]
             (when-let [func_ast (find-table-func ignite ast)]
                 (get_query_table ignite group_id func_ast)))
         (throw (Exception. "查询字符串不能为空！"))
@@ -765,7 +787,7 @@
 
 (defn get_update_delete_ast [ignite group_id sql]
     (if-not (Strings/isNullOrEmpty sql)
-        (when-let [ast (sql-to-ast (my-lexical/to-back sql))]
+        (when-let [ast (get-my-sql-to-ast (my-lexical/to-back sql))]
             (get_query_table ignite group_id ast))))
 
 ; 输入 sql 获取处理后的 sql

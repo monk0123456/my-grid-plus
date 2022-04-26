@@ -1,0 +1,27 @@
+(declare get_select_view get_query_view)
+(defn get_select_view [ignite group_id schema_name talbe_name]
+                 (if-let [code (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m, my_dataset as ds, my_group_view as v where m.data_set_id = ds.id and m.id = v.view_id and ds.dataset_name = ? and m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [schema_name talbe_name group_id "查"])))))]
+                     (if-let [sql_objs (my-select-plus/sql-to-ast (my-lexical/to-back (first code)))]
+                         (if (= (count sql_objs) 1)
+                             (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                 {:query-items (get_query_view query-items) :where-items where-items})))))
+(defn get_query_view
+    ([query-items] (get_query_view query-items {}))
+    ([[f & r] dic]
+     (if (some? f)
+         (cond (contains? f :item_name) (recur r (assoc dic (get f :item_name) nil))
+               (and (contains? f :func-name) (my-lexical/is-eq? (get f :func-name) "convert_to") (= (count (get f :lst_ps)) 3)) (recur r (assoc dic (get (first (get f :lst_ps)) :item_name) (last (get f :lst_ps))))
+               (contains? f :comma_symbol) (recur r dic)
+               :else
+               (throw (Exception. "select 权限视图中只能是字段或者是转换函数！")))
+         dic)))
+
+(def line-select_views "insert into my_select_views (id, view_name, table_name, data_set_id, code) values (1, 'vn_public_customers', 'customers', 0, ?)")
+(.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. line-select_views) (to-array ["SELECT m_ct.CustomerID, m_ct.CompanyName, m_ct.ContactName, m_ct.ContactTitle, m_ct.City from public.Customers as m_ct where m_ct.City in ('London', 'Mannheim', 'Anchorage') AND m_ct.ContactTitle IN ('Sales Agent', 'Sales Associate', 'Sales Representative')"]))))
+
+(def line-select_views "insert into my_select_views (id, view_name, table_name, data_set_id, code) values (2, 'vn_wudagui_orders', 'orders', 3, ?)")
+(.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. line-select_views) (to-array ["SELECT * FROM wudagui.Orders WHERE CustomerID IN ('AROUT', 'BLAUS', 'BSBEV', 'CONSH')"]))))
+
+
+(my-select-plus/sql-to-ast (my-lexical/to-back "SELECT * from public.Customers where City in ('London', 'Mannheim', 'Anchorage')"))
+(my-select-plus-args/ast_to_sql ignite 0 nil (my-select-plus/sql-to-ast (my-lexical/to-back "SELECT * from public.Customers where City in ('London', 'Mannheim', 'Anchorage')")))
