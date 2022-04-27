@@ -147,4 +147,5 @@
 (def source-ast (my-select-plus/sql-to-ast (my-lexical/to-back "SELECT m.CompanyName, m.ContactName from public.Customers m WHERE m.City = 'London'")))
 source-ast
 (re-all-sql-obj ignite 1 source-ast)
+(my-select-plus-args/re-select-ast ignite 1 source-ast)
 ;(println "吴大富")

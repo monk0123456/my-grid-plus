@@ -131,8 +131,8 @@
                                      (loop [[f & r] (keys ast) rs ast]
                                          (if (some? f)
                                              (let [vs (get ast f)]
-                                                 (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-all-sql-obj vs)))
-                                                       (map? vs) (recur r (assoc rs f (re-all-sql-obj vs)))
+                                                 (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-all-sql-obj ignite group_id vs)))
+                                                       (map? vs) (recur r (assoc rs f (re-all-sql-obj ignite group_id vs)))
                                                        :else
                                                        (recur r rs)
                                                        ))
@@ -325,9 +325,12 @@
                                :else
                                (throw (Exception. "select 语句错误！"))) (throw (Exception. "select 语句错误！")))
                      {:sql (str/join " " lst_rs) :args (filter #(not (nil? %)) lst-args)})))]
-        (select-to-sql ignite group_id dic-args (re-select-ast ignite group_id ast))))
+        (select-to-sql ignite group_id dic-args ast)))
 
 
+(defn my-ast-to-sql [ignite group_id dic-args ast]
+    (let [my-ast (re-select-ast ignite group_id ast)]
+        (ast_to_sql ignite group_id dic-args my-ast)))
 
 
 
