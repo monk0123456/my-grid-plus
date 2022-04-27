@@ -26,6 +26,120 @@
         ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
         ))
 
+; 重新获取新的 ast 将 权限添加进去
+; 1、扫描 :sql_obj --> :table-items --> :table_name
+; 2、判断 :sql_obj --> :query-items 中的 :item_name 是否存在于权限中
+; 3、添加 :sql_obj --> :where-items
+(defn re-select-ast [ignite group_id ast]
+    (letfn [(get-table-items [ignite group_id sql-obj]
+                (letfn [
+                        ; 获取 table_select_view 的 ast
+                        ; 重新生成新的 ast
+                        ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
+                        (get_select_view [ignite group_id schema_name talbe_name]
+                            (if-let [code (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
+                                (if-let [sql_objs (my-select-plus/sql-to-ast (my-lexical/to-back (first code)))]
+                                    (if (= (count sql_objs) 1)
+                                        (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
+                                            (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
+                                                {:query-items nil :where-items where-items}
+                                                {:query-items (get_query_view query-items) :where-items where-items})
+                                            )))))
+                        (get_query_view
+                            ([query-items] (get_query_view query-items {}))
+                            ([[f & r] dic]
+                             (if (some? f)
+                                 (cond (contains? f :item_name) (recur r (assoc dic (get f :item_name) nil))
+                                       (and (contains? f :func-name) (my-lexical/is-eq? (get f :func-name) "convert_to") (= (count (get f :lst_ps)) 3)) (recur r (assoc dic (get (first (get f :lst_ps)) :item_name) (last (get f :lst_ps))))
+                                       (contains? f :comma_symbol) (recur r dic)
+                                       :else
+                                       (throw (Exception. "select 权限视图中只能是字段或者是转换函数！")))
+                                 dic)))]
+                    (loop [[f & r] (-> sql-obj :table-items) dic {}]
+                        (if (some? f)
+                            (if (contains? f :table_name)
+                                (let [table_ast (get_select_view ignite group_id (get f :schema_name) (get f :table_name))]
+                                    (if-not (Strings/isNullOrEmpty (-> f :table_alias))
+                                        (recur r (assoc dic (-> f :table_alias) table_ast))
+                                        (if-not (nil? r)
+                                            (throw (Exception. "两个表以上要给表取别名"))
+                                            (recur r (assoc dic "" table_ast))))
+                                    ))
+                            dic)))
+                )
+            (replace-alias [table_alias m]
+                (cond (my-lexical/is-seq? m) (map (partial replace-alias table_alias) m)
+                      (map? m) (if (and (contains? m :item_name) (false? (-> m :const)))
+                                   (assoc m :table_alias table_alias)
+                                   (loop [[f & r] (keys m) rs m]
+                                       (if (some? f)
+                                           (let [vs (get m f)]
+                                               (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (replace-alias table_alias vs)))
+                                                     (map? vs) (recur r (assoc rs f (replace-alias table_alias vs)))
+                                                     :else
+                                                     (recur r rs)
+                                                     ))
+                                           rs))
+                                   )
+                      ))
+            (my-table-items [ignite group_id sql-obj]
+                (let [table-ast (get-table-items ignite group_id sql-obj)]
+                    (loop [[f & r] (keys table-ast) rs table-ast]
+                        (if (some? f)
+                            (let [new-where-items (replace-alias f (-> (get table-ast f) :where-items))]
+                                (let [my-vs (assoc (get table-ast f) :where-items new-where-items)]
+                                    (recur r (assoc rs f my-vs)))
+                                )
+                            rs))))
+            (my-query-items [authority-ast m]
+                (cond (my-lexical/is-seq? m) (map (partial my-query-items authority-ast) m)
+                      (map? m) (if (and (contains? m :item_name) (false? (-> m :const)))
+                                   (if-let [ar-query-items (-> (get authority-ast (-> m :table_alias)) :query-items)]
+                                       (if (my-lexical/is-seq-contains? (keys ar-query-items) (-> m :item_name))
+                                           (if (nil? (get ar-query-items (-> m :item_name)))
+                                               m
+                                               (get ar-query-items (-> m :item_name)))
+                                           (throw (Exception. (format "没有访问字段 %s 的权限" (-> m :item_name)))))
+                                       m)
+                                   (loop [[f & r] (keys m) rs m]
+                                       (if (some? f)
+                                           (let [vs (get m f)]
+                                               (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (my-query-items authority-ast vs)))
+                                                     (map? vs) (recur r (assoc rs f (my-query-items authority-ast vs)))
+                                                     :else
+                                                     (recur r rs)
+                                                     ))
+                                           rs))
+                                   )
+                      ))
+            (my-where-items
+                ([authority-ast m] (my-where-items authority-ast m []))
+                ([authority-ast m lst]
+                 (if (and (not (nil? (-> m :where-items))) (not (empty? (-> m :where-items))))
+                     (loop [[f & r] (keys authority-ast) lst-rs []]
+                         (if (some? f)
+                             (recur r (concat lst-rs [{:parenthesis (-> (get authority-ast f) :where-items)} {:and_or_symbol "and"}]))
+                             (concat lst lst-rs [{:parenthesis (-> m :where-items)}])))
+                     m)))
+            (re-all-sql-obj [ignite group_id ast]
+                (cond (my-lexical/is-seq? ast) (map (partial re-all-sql-obj ignite group_id) ast)
+                      (map? ast) (if (contains? ast :sql_obj)
+                                     (if-let [authority-ast (my-table-items ignite group_id (-> ast :sql_obj))]
+                                         (let [new-sql-obj (assoc (-> ast :sql_obj) :query-items (my-query-items authority-ast (-> ast :sql_obj :query-items)) :where-items (my-where-items authority-ast (-> ast :sql_obj)))]
+                                             (assoc ast :sql_obj new-sql-obj))
+                                         ast)
+                                     (loop [[f & r] (keys ast) rs ast]
+                                         (if (some? f)
+                                             (let [vs (get ast f)]
+                                                 (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-all-sql-obj vs)))
+                                                       (map? vs) (recur r (assoc rs f (re-all-sql-obj vs)))
+                                                       :else
+                                                       (recur r rs)
+                                                       ))
+                                             rs)))
+                      ))]
+        (re-all-sql-obj ignite group_id ast)))
+
 ; ast to sql
 (defn ast_to_sql [ignite group_id dic-args ast]
     (letfn [(select_to_sql_single [ignite group_id dic-args ast]
@@ -211,85 +325,9 @@
                                :else
                                (throw (Exception. "select 语句错误！"))) (throw (Exception. "select 语句错误！")))
                      {:sql (str/join " " lst_rs) :args (filter #(not (nil? %)) lst-args)})))]
-        (select-to-sql ignite group_id dic-args ast)))
+        (select-to-sql ignite group_id dic-args (re-select-ast ignite group_id ast))))
 
-; 重新获取新的 ast 将 权限添加进去
-; 1、扫描 :sql_obj --> :table-items --> :table_name
-; 2、判断 :sql_obj --> :query-items 中的 :item_name 是否存在于权限中
-; 3、添加 :sql_obj --> :where-items
-(defn re-select-ast [ignite group_id ast]
-    (letfn [(get-table-items [ignite group_id sql-obj]
-                (letfn [
-                        ; 获取 table_select_view 的 ast
-                        ; 重新生成新的 ast
-                        ; 新的 ast = {query_item = {'item_name': '转换的函数'}}
-                        (get_select_view [ignite group_id schema_name talbe_name]
-                            (if-let [code (my-lexical/get-select-code ignite schema_name talbe_name group_id)]
-                                (if-let [sql_objs (my-select-plus/sql-to-ast (my-lexical/to-back (first code)))]
-                                    (if (= (count sql_objs) 1)
-                                        (if-let [{query-items :query-items where-items :where-items} (get (first sql_objs) :sql_obj)]
-                                            (if (and (= (count query-items) 1) (contains? (first query-items) :operation_symbol))
-                                                {:query-items nil :where-items where-items}
-                                                {:query-items (get_query_view query-items) :where-items where-items})
-                                            )))))
-                        (get_query_view
-                            ([query-items] (get_query_view query-items {}))
-                            ([[f & r] dic]
-                             (if (some? f)
-                                 (cond (contains? f :item_name) (recur r (assoc dic (get f :item_name) nil))
-                                       (and (contains? f :func-name) (my-lexical/is-eq? (get f :func-name) "convert_to") (= (count (get f :lst_ps)) 3)) (recur r (assoc dic (get (first (get f :lst_ps)) :item_name) (last (get f :lst_ps))))
-                                       (contains? f :comma_symbol) (recur r dic)
-                                       :else
-                                       (throw (Exception. "select 权限视图中只能是字段或者是转换函数！")))
-                                 dic)))]
-                    (loop [[f & r] (-> sql-obj :table-items) dic {}]
-                        (if (some? f)
-                            (if (contains? f :table_name)
-                                (let [table_ast (get_select_view ignite group_id (get f :schema_name) (get f :table_name))]
-                                    (if-not (Strings/isNullOrEmpty (-> f :table_alias))
-                                        (recur r (assoc dic (-> f :table_alias) table_ast))
-                                        (if-not (nil? r)
-                                            (throw (Exception. "两个表以上要给表取别名"))
-                                            (recur r (assoc dic "" table_ast))))
-                                    ))
-                            dic)))
-                )
-            (replace-alias [table_alias m]
-                (cond (my-lexical/is-seq? m) (map (partial replace-alias table_alias) m)
-                      (map? m) (if (and (contains? m :item_name) (false? (-> m :const)))
-                                   (assoc m :table_alias table_alias)
-                                   (loop [[f & r] (keys m) rs m]
-                                       (if (some? f)
-                                           (let [vs (get m f)]
-                                               (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (replace-alias table_alias vs)))
-                                                     (map? vs) (recur r (assoc rs f (replace-alias table_alias vs)))
-                                                     :else
-                                                     (recur r rs)
-                                                     ))
-                                           rs))
-                                   )
-                      ))
-            (my-table-items [ignite group_id sql-obj]
-                (let [table-ast (get-table-items ignite group_id sql-obj)]
-                    (loop [[f & r] (keys table-ast) rs table-ast]
-                        (if (some? f)
-                            (let [new-where-items (replace-alias f (-> (get table-ast f) :where-items))]
-                                (let [my-vs (assoc (get table-ast f) :where-items new-where-items)]
-                                    (recur r (assoc rs f my-vs)))
-                                )
-                            rs))))
-            (is-authority? [item table-items]
-                (if (nil? table-items)
-                    true
-                    (let [table_alias (-> table-items :table_alias)]
-                        )
-                    ))
-            (get-query [ignite group_id m table-items]
-                (cond (map? m) (if (contains? m :item_name)
-                                   )
-                      (my-lexical/is-seq? m) (map (partial get-query ignite group_id) m)
-                      ))]
-        ()))
+
 
 
 

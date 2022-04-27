@@ -81,6 +81,14 @@
         (= (str/lower-case (str/trim s-one)) (str/lower-case (str/trim s-two)))
         false))
 
+; 判断 item_name 是否在序列中，大小写不敏感
+(defn is-seq-contains? [[f & r] item_name]
+    (if (some? f)
+        (if (is-eq? f item_name)
+            true
+            (recur r item_name))
+        false))
+
 ; 通过表名获取数据集的名称，返回 List
 ;(defn get_all_ds [^Ignite ignite ^String table_name]
 ;    (if (true? (.isDataSetEnabled (.configuration ignite)))

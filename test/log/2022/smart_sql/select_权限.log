@@ -17,7 +17,9 @@
          dic)))
 
 (def line-select_views "insert into my_select_views (id, view_name, table_name, data_set_id, code) values (1, 'vn_public_customers', 'customers', 0, ?)")
-(.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. line-select_views) (to-array ["SELECT m_ct.CustomerID, m_ct.CompanyName, m_ct.ContactName, m_ct.ContactTitle, m_ct.City from public.Customers as m_ct where m_ct.City in ('London', 'Mannheim', 'Anchorage') AND m_ct.ContactTitle IN ('Sales Agent', 'Sales Associate', 'Sales Representative')"]))))
+(.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. line-select_views) (to-array ["SELECT m_ct.CustomerID, convert_to(m_ct.CompanyName, f(m_ct.CompanyName + '吴大富'), m_ct.ContactName, m_ct.ContactTitle, m_ct.City from public.Customers as m_ct where m_ct.City in ('London', 'Mannheim', 'Anchorage') AND m_ct.ContactTitle IN ('Sales Agent', 'Sales Associate', 'Sales Representative')"]))))
+
+(.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "update my_select_views set code = ? where id = 1") (to-array ["SELECT m_ct.CustomerID, convert_to(m_ct.CompanyName, f(m_ct.CompanyName + '吴大富')), m_ct.ContactName, m_ct.ContactTitle, m_ct.City from public.Customers as m_ct where m_ct.City in ('London', 'Mannheim', 'Anchorage') AND m_ct.ContactTitle IN ('Sales Agent', 'Sales Associate', 'Sales Representative')"]))))
 
 (def line-select_views "insert into my_select_views (id, view_name, table_name, data_set_id, code) values (2, 'vn_wudagui_orders', 'orders', 3, ?)")
 (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. line-select_views) (to-array ["SELECT * FROM wudagui.Orders WHERE CustomerID IN ('AROUT', 'BLAUS', 'BSBEV', 'CONSH')"]))))
