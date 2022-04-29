@@ -113,20 +113,24 @@
     (cond (my-lexical/is-seq? ast) (map (partial re-ast ignite group_id) ast)
           (map? ast) (if (contains? ast :sql_obj)
                          (let [new-ast (re-all-sql-obj ignite group_id ast)]
-                             ;(println new-ast)
-                             (loop [[f & r] (keys (-> new-ast :sql_obj))]
+                             (loop [[f & r] (keys (-> new-ast :sql_obj)) rs (-> new-ast :sql_obj)]
                                  (if (some? f)
-                                     (println f)))
-                             )
-                         ;;  (loop [[f & r] (keys ast) rs ast]
-                         ;;      (if (some? f)
-                         ;;          (let [vs (get ast f)]
-                         ;;              (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
-                         ;;                    (map? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
-                         ;;                    :else
-                         ;;                    (recur r rs)
-                         ;;                    )
-                         ;;              rs)))
+                                     (let [vs (get (-> new-ast :sql_obj) f)]
+                                         (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                               (map? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                               :else
+                                               (recur r rs)
+                                               ))
+                                     (assoc new-ast :sql_obj rs))))
+                         (loop [[f & r] (keys ast) rs ast]
+                             (if (some? f)
+                                 (let [vs (get ast f)]
+                                     (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                           (map? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                           :else
+                                           (recur r rs)
+                                           ))
+                                 rs))
                          )))
 
 (def source-ast (my-select-plus/sql-to-ast (my-lexical/to-back "SELECT m.CompanyName, m.ContactName, (select da.EmployeeID+12 from wudagui.Orders as da where da.CustomerID = m.CustomerID) as my_exployeeId from public.Customers m WHERE m.City = 'London'")))

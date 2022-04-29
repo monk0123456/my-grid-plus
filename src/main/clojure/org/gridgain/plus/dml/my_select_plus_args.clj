@@ -137,8 +137,31 @@
                                                        (recur r rs)
                                                        ))
                                              rs)))
-                      ))]
-        (re-all-sql-obj ignite group_id ast)))
+                      ))
+            (re-ast [ignite group_id ast]
+                (cond (my-lexical/is-seq? ast) (map (partial re-ast ignite group_id) ast)
+                      (map? ast) (if (contains? ast :sql_obj)
+                                     (let [new-ast (re-all-sql-obj ignite group_id ast)]
+                                         (loop [[f & r] (keys (-> new-ast :sql_obj)) rs (-> new-ast :sql_obj)]
+                                             (if (some? f)
+                                                 (let [vs (get (-> new-ast :sql_obj) f)]
+                                                     (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                                           (map? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                                           :else
+                                                           (recur r rs)
+                                                           ))
+                                                 (assoc new-ast :sql_obj rs))))
+                                     (loop [[f & r] (keys ast) rs ast]
+                                         (if (some? f)
+                                             (let [vs (get ast f)]
+                                                 (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                                       (map? vs) (recur r (assoc rs f (re-ast ignite group_id vs)))
+                                                       :else
+                                                       (recur r rs)
+                                                       ))
+                                             rs))
+                                     )))]
+        (re-ast ignite group_id ast)))
 
 ; ast to sql
 (defn ast_to_sql [ignite group_id dic-args ast]
@@ -245,7 +268,9 @@
                         (contains? m :exists) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (get (get m :select_sql) :parenthesis))]
                                                   {:sql (concat [(get m :exists) "("] sql [")"]) :args args})
                         (contains? m :parenthesis) (let [{sql :sql args :args} (token-to-sql ignite group_id dic-args (get m :parenthesis))]
-                                                       {:sql (concat ["("] sql [")"]) :args args})
+                                                       (if (contains? m :alias)
+                                                           {:sql (concat ["("] sql [")" " " (-> m :alias)]) :args args}
+                                                           {:sql (concat ["("] sql [")"]) :args args}))
                         :else
                         (throw (Exception. "select 语句错误！请仔细检查！"))
                         )))

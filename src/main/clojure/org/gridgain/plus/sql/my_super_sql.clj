@@ -111,7 +111,7 @@
 
 (defn my_plus_sql [^Ignite ignite ^Long group_id lst-sql]
     (if-let [ast (my-select/get_my_ast ignite group_id lst-sql)]
-        (-> (my-select-plus-args/ast_to_sql ignite group_id nil ast) :sql)
+        (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
         (throw (Exception. (format "查询字符串 %s 错误！" (str/join " " lst-sql))))))
 
 (defn super-sql-lst [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id [sql & r] ^StringBuilder sb]

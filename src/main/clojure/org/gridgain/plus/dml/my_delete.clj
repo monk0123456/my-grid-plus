@@ -65,14 +65,14 @@
         ))
 
 (defn get_delete_query_sql [^Ignite ignite obj]
-    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
+    (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (str/lower-case (-> obj :schema_name)) (str/lower-case (-> obj :table_name)))]
         (letfn [(get_pk_lst [[f & r] dic lst]
                     (if (some? f)
                         (if (contains? dic f)
                             (recur r dic (conj lst {:item_name f :item_type (get dic f)}))
                             (recur r dic lst))
                         lst))]
-            {:table_name (-> obj :table_name) :sql (format "select %s from %s where %s" pk_line (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst (get_pk_lst lst_pk dic []) :lst lst :dic dic})
+            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :sql (format "select %s from %s.%s where %s" pk_line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst (get_pk_lst lst_pk dic []) :lst lst :dic dic})
         ))
 
 (defn get_delete_query_sql_fun [^Ignite ignite group_id obj ^clojure.lang.PersistentArrayMap dic_paras]

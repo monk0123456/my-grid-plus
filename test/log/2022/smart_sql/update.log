@@ -1,0 +1,72 @@
+(def sql "UPDATE public.Customers SET CustomerID= CustomerID + ? WHERE CompanyName = ?")
+(def args-dic (my-smart-db/args-to-dic ["wudafu" "吴大富"]))
+
+(import (org.tools MyConvertUtil KvSql MyDbUtil MyLineToBinary))
+
+(def sql "UPDATE public.Customers SET CustomerID= CustomerID + ? WHERE CompanyName = ?")
+(def group_id 1)
+(def args ["wudafu" "吴大富"])
+(def args-dic (my-smart-db/args-to-dic args))
+(let [{schema_name :schema_name table_name :table_name sql :sql items :items} (my-update/get_update_obj ignite group_id (my-lexical/to-back (apply format (str/replace sql #"\?" "%s") (keys args-dic))))]
+    (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) args-dic)]
+        (.iterator (.query (.getOrCreateCache ignite (MyDbUtil/getPublicCfg)) (doto (SqlFieldsQuery. select-sql)
+                                                                                  (.setArgs select-args)
+                                                                                  (.setLazy true))))))
+(println "**********************")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
