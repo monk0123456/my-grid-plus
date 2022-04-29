@@ -126,16 +126,25 @@
                                               (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (my-select-plus/my_plus_sql ignite group_id (my-lexical/to-back sql))) (.setLazy true) (.setArgs (to-array args))))))
           (re-find #"^(?i)insert\s+" sql) (let [logCache (insert-to-cache ignite group_id sql args)]
                                               (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
-          (re-find #"^(?i)update\s+" sql) ()
-          (re-find #"^(?i)delete\s+" sql) ()
+          (re-find #"^(?i)update\s+" sql) (let [logCache (update-to-cache ignite group_id sql args)]
+                                              (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+          (re-find #"^(?i)delete\s+" sql) (let [logCache (delete-to-cache ignite group_id sql args)]
+                                              (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList logCache)))
+          :else
+          (throw (Exception. "query_sql 只能执行 DML 语句！"))
           ))
 
-;(defn query_sql [ignite group_id sql & args]
-;    (if (nil? args)
-;        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (get-sql ignite group_id sql)) (.setLazy true))))
-;        (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (get-sql ignite group_id sql)) (.setLazy true) (.setArgs (to-array args)))))))
+(defn trans [ignite group_id [f & r] lst-rs]
+    (if (some? f)
+        (cond (re-find #"^(?i)insert\s+" (first f)) (let [logCache (insert-to-cache ignite group_id (first f) (last f))]
+                                                        (recur ignite group_id r (concat lst-rs [logCache])))
+              (re-find #"^(?i)update\s+" (first f)) (let [logCache (update-to-cache ignite group_id (first f) (last f))]
+                                                        (recur ignite group_id r (concat lst-rs logCache)))
+              (re-find #"^(?i)delete\s+" (first f)) (let [logCache (delete-to-cache ignite group_id (first f) (last f))]
+                                                        (recur ignite group_id r (concat lst-rs logCache)))
+              :else
+              (throw (Exception. "trans 只能执行 insert、update、delete 语句！"))
+              )
+        (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList lst-rs))))
 
-; iterator 转 loop
-(defn my-iterator [it]
-    (if (.hasNext it)
-        [(.next it) it]))
+

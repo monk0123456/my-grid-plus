@@ -140,7 +140,7 @@
           (my-lexical/is-eq? func-name "count") "count"
           (my-lexical/is-eq? func-name "concat") "concat"
           (my-lexical/is-eq? func-name "put") "assoc"
-          (my-lexical/is-eq? func-name "get") "my-lexical/map-list-add"
+          (my-lexical/is-eq? func-name "get") "my-lexical/map-list-get"
           (my-lexical/is-eq? func-name "remove") "dissoc"
           (my-lexical/is-eq? func-name "pop") "my-lexical/list-peek"
           (my-lexical/is-eq? func-name "peek") "my-lexical/list-peek"

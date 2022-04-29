@@ -3,6 +3,7 @@
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
+        [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
@@ -15,6 +16,7 @@
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
+             (org.log MyCljLogger)
              (java.util List ArrayList Date Iterator)
              )
     (:gen-class
@@ -117,18 +119,18 @@
 
 (defn for-seq [ignite group_id f my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (-> f :args :seq :item_name) my-it (get-my-it my-context)]
-        (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) (conj (-> my-context :let-params) tmp-val-name my-it))]
+        (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil})) loop-r (gensym "loop-r")]
             (format "(cond (instance? Iterator %s) (loop [%s %s]\n
                                                        (if (.hasNext %s)\n
                                                            (let [%s (.next %s)]\n
                                                                %s\n
                                                                (recur %s)\n
                                                                )))\n
-                        (my-lexical/is-seq? %s) (loop [[%s & r] %s]\n
+                        (my-lexical/is-seq? %s) (loop [[%s & %s] %s]\n
                                          (if (some? %s)\n
                                              (do\n
                                                   %s\n
-                                             (recur r))))\n
+                                             (recur %s))))\n
                         :else\n
                         (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                         )"
@@ -137,15 +139,16 @@
                     tmp-val-name my-it
                     for-inner-clj
                     my-it
-                    seq-name tmp-val-name seq-name
+                    seq-name tmp-val-name loop-r seq-name
                     tmp-val-name
-                    for-inner-clj)
+                    for-inner-clj
+                    loop-r)
             )
         ))
 
 (defn for-seq-func [ignite group_id f my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (get-my-let my-context) my-it (get-my-it my-context) func-clj (token-to-clj ignite group_id (-> f :args :seq) my-context)]
-        (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) (conj (-> my-context :let-params) tmp-val-name my-it))]
+        (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil})) loop-r (gensym "loop-r")]
             (format "(let [%s %s]\n
                           (cond (instance? Iterator %s) (loop [%s %s]\n
                                                               (if (.hasNext %s)\n
@@ -153,11 +156,11 @@
                                                                        %s\n
                                                                        (recur %s)\n
                                                                        )))\n
-                                (my-lexical/is-seq? %s) (loop [[%s & r] %s]\n
+                                (my-lexical/is-seq? %s) (loop [[%s & %s] %s]\n
                                                   (if (some? %s)\n
                                                       (do\n
                                                            %s\n
-                                                      (recur r))))\n
+                                                      (recur %s))))\n
                                 :else\n
                                 (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                                 ))"
@@ -167,9 +170,10 @@
                     tmp-val-name my-it
                     for-inner-clj
                     my-it
-                    seq-name tmp-val-name seq-name
+                    seq-name tmp-val-name loop-r seq-name
                     tmp-val-name
-                    for-inner-clj))
+                    for-inner-clj
+                    loop-r))
         ))
 
 (defn match-to-clj
@@ -221,6 +225,9 @@
                                                                                  (let [express-line (express-to-clj ignite group_id (concat [f] r) let-my-context)]
                                                                                      (format "%s (do\n    %s) %s" let-first express-line let-tail))
                                                                                  ))
+               :else
+               (let [express-line (express-to-clj ignite group_id (concat [f] r) my-context)]
+                   express-line)
              ))))
 
 ; my-context 记录上下文
