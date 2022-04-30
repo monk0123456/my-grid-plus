@@ -31,7 +31,13 @@
         ))
 
 (declare ast-to-clj body-to-clj token-to-clj token-lst-clj for-seq for-seq-func
-         express-to-clj)
+         express-to-clj query_sql trans)
+
+(defn query_sql [ignite group_id sql & args]
+    (my-smart-db/query_sql ignite group_id sql args))
+
+(defn trans [ignite group_id sql & args]
+    (my-smart-db/trans ignite group_id sql args))
 
 (defn contains-context? [my-context token-name]
     (cond (contains? (-> my-context :input-params) token-name) true
@@ -180,10 +186,9 @@
     ([ignite group_id lst-pair my-context] (match-to-clj ignite group_id lst-pair my-context []))
     ([ignite group_id [f-pair & r-pair] my-context lst]
      (if (some? f-pair)
-         (cond (contains? f-pair :pair) (let [pair-line (format "(%s) (%s)" (express-to-clj ignite group_id (-> f-pair :pair) my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+         (cond (contains? f-pair :pair) (let [pair-line (format "%s %s" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id [(-> f-pair :pair-vs)] my-context))]
                                             (recur ignite group_id r-pair my-context (conj lst pair-line)))
-               (contains? f-pair :else-vs) (if (= (count (-> f-pair :else-vs)) 1)
-                                               (recur ignite group_id r-pair my-context (conj lst (format ":else (%s)" (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context)))))
+               (contains? f-pair :else-vs) (recur ignite group_id r-pair my-context (conj lst (format ":else %s" (body-to-clj ignite group_id [(-> f-pair :else-vs)] my-context))))
                )
          (str/join "\n          " lst))))
 
@@ -203,7 +208,7 @@
                                                                                                                   :else
                                                                                                                   (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
                                                                                                                   )
-               (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "match")) (recur ignite group_id r-express my-context (conj lst (match-to-clj ignite group_id (-> f-express :pairs) my-context)))
+               (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "match")) (recur ignite group_id r-express my-context (conj lst (format "(cond %s)" (match-to-clj ignite group_id (-> f-express :pairs) my-context))))
                ; 内置方法
                (contains? f-express :functions) (inner-functions ignite group_id (-> f-express :functions) my-context)
                (contains? f-express :express) (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id (-> f-express :express) my-context)))
@@ -248,6 +253,9 @@
 
 (defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast smart-sql)) nil)]
-        (str/replace code #"^\(\s*" "(defn ")))
+        (if (re-find #"^\(defn\s*" code)
+            code
+            (str/replace code #"^\(\s*" "(defn "))
+        ))
 
 

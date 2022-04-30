@@ -179,24 +179,7 @@
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
-        (cond (my-lexical/is-eq? func-name "trans") (let [t_f (gensym "t_f") t_r (gensym "t_r") lst-rs (gensym "lst-rs-")]
-                                                        (format "(loop [[f_%s & r_%s] %s lst-rs-%s []]
-                                                                   (if (some? f_%s)
-                                                                         (let [[sql args] f_%s]
-                                                                                 (let [sql-lst (my-lexical/to-back (apply format sql (my-args args)))]
-                                                                                     (cond (my-lexical/is-eq? (first sql-lst) \"insert\") (recur r_%s (conj lst-rs-%s (insert-to-cache ignite group_id %s sql-lst)))
-                                                                                           (my-lexical/is-eq? (first sql-lst) \"update\") ()
-                                                                                           (my-lexical/is-eq? (first sql-lst) \"delete\") ()
-                                                                                     )))
-                                                                         (if-not (empty? lst-rs-%s)
-                                                                             (MyCacheExUtil/transCache ignite lst-rs-%s))
-                                                                   ))" t_f t_r (-> (first lst_ps) :item_name) lst-rs
-                                                                t_f
-                                                                t_f
-                                                                t_r lst-rs (str my-context)
-                                                                lst-rs
-                                                                lst-rs
-                                                                ))
+        (cond (my-lexical/is-eq? func-name "trans") (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (my-lexical/is-eq? "log" func-name) (format "(log %s)" (token-to-clj ignite group_id lst_ps my-context))
@@ -218,7 +201,8 @@
               (get-inner-function-context (str/lower-case func-name) my-context) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "query_sql") (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               :else
-              (println "Inner func")
+              (format "(my-smart-scenes/my-invoke-func ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
+              ;(println "Inner func")
               )))
 
 (defn item-to-clj [m my-context]
@@ -227,21 +211,31 @@
             (format "(.getVar %s)" (-> m :item_name))
             (-> m :item_name))))
 
+;(defn judge [ignite group_id lst my-context]
+;    (cond (= (count lst) 3) (format "(%s %s %s)" (str/lower-case (-> (second lst) :and_or_symbol)) (token-to-clj ignite group_id (first lst) my-context) (token-to-clj ignite group_id (last lst) my-context))
+;          (> (count lst) 3) (let [top (judge ignite group_id (take 3 lst) my-context)]
+;                                (judge ignite group_id (concat [top] (drop 3 lst)) my-context))
+;          :else
+;          (throw (Exception. "判断语句错误！"))
+;          ))
+
 (defn judge [ignite group_id lst my-context]
-    (cond (= (count lst) 3) (format "(%s %s %s)" (str/lower-case (-> (second lst) :and_or_symbol)) (token-to-clj ignite group_id (first lst) my-context) (token-to-clj ignite group_id (last lst) my-context))
-          (> (count lst) 3) (let [top (judge ignite group_id (take 3 lst) my-context)]
-                                (judge ignite group_id (concat [top] (drop 3 lst)) my-context))
-          :else
-          (throw (Exception. "判断语句错误！"))
-          ))
+    (let [[f s t & rs] lst]
+        (if (and (not (empty? f)) (not (empty? s)) (not (empty? t)))
+            (let [rs-line (format "(%s %s %s)" (str/lower-case (-> s :and_or_symbol)) (token-to-clj ignite group_id f my-context) (token-to-clj ignite group_id t my-context))]
+                (if (nil? rs)
+                    rs-line
+                    (judge ignite group_id (concat [rs-line] rs) my-context)))
+            (throw (Exception. "判断语句错误！")))))
 
 (defn parenthesis-to-clj [ignite group_id m my-context]
-    (if (> (count (filter #(contains? % :comma_symbol) (-> m :parenthesis))))
-        (loop [[f & r] (filter #(not (contains? % :comma_symbol)) (-> m :parenthesis)) lst []]
-            (if (some? f)
-                (recur r (conj lst (token-to-clj ignite group_id f my-context)))
-                (str/join " " lst)))
-        (calculate ignite group_id (reverse (-> m :parenthesis)) my-context)))
+    (cond (> (count (filter #(and (map? %) (contains? % :comma_symbol)) (-> m :parenthesis))) 0) (loop [[f & r] (filter #(and (map? %) (contains? % :comma_symbol)) (-> m :parenthesis)) lst []]
+                                                                                                     (if (some? f)
+                                                                                                         (recur r (conj lst (token-to-clj ignite group_id f my-context)))
+                                                                                                         (str/join " " lst)))
+          (and (> (count (filter #(and (map? %) (contains? % :comparison_symbol)) (-> m :parenthesis))) 0) (= (count (-> m :parenthesis)) 3)) (format "(%s %s %s)" (-> (second (-> m :parenthesis)) :comparison_symbol) (token-to-clj ignite group_id (first (-> m :parenthesis)) my-context) (token-to-clj ignite group_id (last (-> m :parenthesis)) my-context))
+          :else
+          (calculate ignite group_id (reverse (-> m :parenthesis)) my-context)))
 
 (defn token-lst-to-clj [ignite group_id m my-context]
     (cond (and (= (count m) 3) (and (contains? (second m) :comparison_symbol) (= (-> (second m) :comparison_symbol) "=")) (contains? (first m) :item_name)) (format "(.setVar %s %s)" (-> (first m) :item_name) (token-to-clj ignite group_id (last m) my-context))
