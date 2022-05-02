@@ -7,11 +7,63 @@ ast
 (my-smart-clj/ast-to-clj ignite 0 ast func-context)
 
 
-(defn judge-express-to-clj [ignite group_id lst-express my-context]
-    (cond (and (= (count lst-express) 3) (contains? (second lst-express) :comparison_symbol)) (format "(%s %s %s)" (-> (second lst-express) :comparison_symbol) (token-to-clj ignite group_id (first lst-express) my-context) (token-to-clj ignite group_id (last lst-express) my-context))
+(def line "function my_match(table_name)\n{\n   match {\n     table_name == \"Customers\": query_sql(\"select * from public.Customers limit 0, 5\");\n     table_name == \"Employees\": query_sql(\"select * from wudafu.Employees limit 0, 5\");\n     else query_sql(\"select * from wudagui.OrderDetails limit 0, 5\");\n   }\n}")
+(my-smart-clj/smart-to-clj ignite 0 line)
 
-          ))
 
-(def judge (my-select-plus/sql-to-ast (my-lexical/to-back "(a+b > 0) and g(a) and f(c) > 10")))
-=> #'user/judge
-(count judge)
+function my_trans(OrderID, CustomerID)
+{
+   lst.add(["INSERT INTO wudagui.Orders (OrderID, CustomerID) Values (?, ?);", [OrderID, CustomerID]);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

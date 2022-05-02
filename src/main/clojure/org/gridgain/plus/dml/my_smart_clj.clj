@@ -210,7 +210,8 @@
                                                                                                                   )
                (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "match")) (recur ignite group_id r-express my-context (conj lst (format "(cond %s)" (match-to-clj ignite group_id (-> f-express :pairs) my-context))))
                ; 内置方法
-               (contains? f-express :functions) (inner-functions ignite group_id (-> f-express :functions) my-context)
+               (contains? f-express :functions) (let [inner-func-line (inner-functions ignite group_id (-> f-express :functions) my-context)]
+                                                    (format "(letfn [%s] \n    (%s))" inner-func-line (express-to-clj ignite group_id r-express my-context)))
                (contains? f-express :express) (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id (-> f-express :express) my-context)))
                :else
                (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id f-express my-context)))

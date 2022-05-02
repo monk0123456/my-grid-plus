@@ -1,0 +1,20 @@
+(def lst-body-segment ["lst.add"
+                       "("
+                       "["
+                       "\"INSERT INTO wudagui.Orders (OrderID, CustomerID) Values (?, ?);\""
+                       ","
+                       "["
+                       "OrderID"
+                       ","
+                       "CustomerID"
+                       "]"
+                       ")"])
+
+
+(my-select-plus/sql-to-ast lst-body-segment)
+
+
+(def line "lst.add([\"INSERT INTO wudagui.Orders (OrderID, CustomerID) Values (?, ?)\"], [OrderID, CustomerID])")
+(def lst (my-lexical/to-back line))
+lst
+(my-select-plus/sql-to-ast lst)

@@ -179,7 +179,7 @@
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
-        (cond (my-lexical/is-eq? func-name "trans") (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
+        (cond (my-lexical/is-eq? func-name "trans") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (my-lexical/is-eq? "log" func-name) (format "(log %s)" (token-to-clj ignite group_id lst_ps my-context))
@@ -199,7 +199,7 @@
               (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               ; inner function
               (get-inner-function-context (str/lower-case func-name) my-context) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
-              (my-lexical/is-eq? func-name "query_sql") (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "query_sql") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               :else
               (format "(my-smart-scenes/my-invoke-func ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               ;(println "Inner func")
