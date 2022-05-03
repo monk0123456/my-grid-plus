@@ -69,11 +69,9 @@ function my_inner_func (a, b)
     c + 10;
 }
 
-function my_func()
-{
-   a = b+c;
-   log(a);
-}
+// 6、对 no sql 的支持
+// 6.1、保存到 no sql cache
+query_sql({table_name: "表名", key: "G350_成都东_北京西", value: [{token: "B001", price: 778}, {token: "B002", price: 778}, {token: "B003", price: 778}, {token: "B004", price: 1246}, {token: "B005", price: 1246}]});
 
 
 

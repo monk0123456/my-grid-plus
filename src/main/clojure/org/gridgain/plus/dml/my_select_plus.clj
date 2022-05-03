@@ -161,15 +161,15 @@
                         (recur r-dic (conj lst-kv {:key (to-token (first f-dic)) :value (to-token (last f-dic))}))
                         lst-kv)))
             (to-token [vs]
-                (cond (and (= (first vs) "[") (= (last vs) "]")) {:seq-obj (get-item-tokens vs)}
-                      (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens vs)}
+                (cond (and (= (first vs) "[") (= (last vs) "]")) {:seq-obj (get-item-tokens (my-lexical/get-contain-lst vs))}
+                      (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens (my-lexical/get-contain-lst vs))}
                       :else
                       (get-token vs)
                       ))
             (get-item-tokens [lst]
-                (loop [[f & r] (get-items (my-lexical/get-contain-lst lst)) lst-rs []]
+                (loop [[f & r] (get-items lst) lst-rs []]
                     (if (some? f)
-                        (cond (and (= (first f) "[") (= (last f) "]")) (recur r (conj lst-rs {:seq-obj (get-item-tokens f)}))
+                        (cond (and (= (first f) "[") (= (last f) "]")) (recur r (conj lst-rs {:seq-obj (get-item-tokens (my-lexical/get-contain-lst f))}))
                               (and (= (first f) "{") (= (last f) "}")) (let [lst-dic (get-items-dic (my-lexical/get-contain-lst f))]
                                                                            (recur r (conj lst-rs {:map-obj (kv-to-token lst-dic)})))
                               :else

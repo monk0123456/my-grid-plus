@@ -86,7 +86,8 @@
             lst-kv)))
 (defn to-token [vs]
     (cond (and (= (first vs) "[") (= (last vs) "]")) {:seq-obj (get-item-tokens vs)}
-          (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens vs)}
+ser/lst-ps
+(my-select-plus/my-get-items lst-ps)          (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens vs)}
           :else
           (sql-to-ast vs)
           ))
