@@ -1,0 +1,32 @@
+(def line "function my_add(a, b)\n        {\n           lpg(\"测试 a + b\");\n           a + b;\n        }")
+(def ast (first (my-smart-sql/get-ast line)))
+
+(defn do-express [[f-express & r-express] lst]
+    (if (some? f-express)
+        (cond (contains? f-express :express) ())))
+
+(defn body-to-clj
+    ([ignite group_id lst my-context] (body-to-clj ignite group_id lst my-context []))
+    ([ignite group_id [f & r] my-context lst-rs]
+     (if (some? f)
+         (cond (contains? f :let-name) (recur ignite group_id r my-context (conj lst-rs f))
+               (and (not (empty? lst-rs)) (not (contains? f :let-name))) (if (nil? r)
+                                                                             (let [[let-first let-tail let-my-context] (my-smart-clj/let-to-clj ignite group_id lst-rs my-context)]
+                                                                                 (let [express-line (my-smart-clj/express-to-clj ignite group_id [f] let-my-context)]
+                                                                                     (format "%s %s %s" let-first express-line let-tail)))
+                                                                             (let [[let-first let-tail let-my-context] (my-smart-clj/let-to-clj ignite group_id lst-rs my-context)]
+                                                                                 (let [express-line (my-smart-clj/express-to-clj ignite group_id (concat [f] r) let-my-context)]
+                                                                                     (format "%s (do\n    %s) %s" let-first express-line let-tail))
+                                                                                 ))
+               :else
+               (do
+                   (println (concat [f] r))
+                   (let [express-line (my-smart-clj/express-to-clj ignite group_id (concat [f] r) my-context)]
+                       express-line))
+               ))))
+(def my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context nil})
+(def func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) (-> ast :args-lst))))
+;ast
+(-> (first (-> ast :body-lst)) :express :func-name)
+(contains? (first (-> ast :body-lst)) :express)
+;(body-to-clj ignite 0 body-lst func-context)

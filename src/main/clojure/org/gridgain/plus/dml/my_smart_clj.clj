@@ -5,6 +5,7 @@
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
         [org.gridgain.plus.dml.my-smart-db :as my-smart-db]
         [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
+        [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -31,7 +32,11 @@
         ))
 
 (declare ast-to-clj body-to-clj token-to-clj token-lst-clj for-seq for-seq-func
-         express-to-clj query_sql trans)
+         express-to-clj query_sql trans do-express)
+
+(defn do-express [f-express r-express]
+    (if (and (some? f-express) (some? r-express) (contains? f-express :expression) (contains? #{"for" "match"} (-> f-express :expression)))
+        false true))
 
 (defn query_sql [ignite group_id sql & args]
     (my-smart-db/query_sql ignite group_id sql args))
@@ -192,10 +197,20 @@
                )
          (str/join "\n          " lst))))
 
-(defn inner-functions [ignite group_id funcs-express my-context]
-    (loop [[f & r] funcs-express lst []]
+(defn get-inner-func-name [funcs-express]
+    (loop [[f & r] funcs-express lst-func-name []]
         (if (some? f)
-            (recur r (conj lst (ast-to-clj ignite group_id f my-context)))
+            (recur r (conj lst-func-name (-> f :func-name)))
+            lst-func-name)))
+
+(defn add-inner-to-context [my-context funcs-express]
+    (let [inner-func (-> my-context :inner-func)]
+        (assoc my-context :inner-func (apply conj inner-func (get-inner-func-name funcs-express)))))
+
+(defn inner-functions [ignite group_id funcs-express my-context]
+    (loop [[f & r] funcs-express lst [] inner-context (add-inner-to-context my-context funcs-express)]
+        (if (some? f)
+            (recur r (conj lst (ast-to-clj ignite group_id f inner-context)) inner-context)
             (str/join " " lst))))
 
 ; 表达式 to clj
@@ -211,8 +226,11 @@
                (and (contains? f-express :expression) (my-lexical/is-eq? (-> f-express :expression) "match")) (recur ignite group_id r-express my-context (conj lst (format "(cond %s)" (match-to-clj ignite group_id (-> f-express :pairs) my-context))))
                ; 内置方法
                (contains? f-express :functions) (let [inner-func-line (inner-functions ignite group_id (-> f-express :functions) my-context)]
-                                                    (format "(letfn [%s] \n    (%s))" inner-func-line (express-to-clj ignite group_id r-express my-context)))
+                                                    (format "(letfn [%s] \n    %s)" inner-func-line (express-to-clj ignite group_id r-express (add-inner-to-context my-context (-> f-express :functions)))))
                (contains? f-express :express) (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id (-> f-express :express) my-context)))
+               (contains? f-express :let-name) (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id [f-express] my-context)]
+                                                   (let [express-line (express-to-clj ignite group_id r-express let-my-context)]
+                                                       (format "%s %s %s" let-first express-line let-tail)))
                :else
                (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id f-express my-context)))
                )
@@ -233,7 +251,9 @@
                                                                                  ))
                :else
                (let [express-line (express-to-clj ignite group_id (concat [f] r) my-context)]
-                   express-line)
+                   (if (true? (do-express f r))
+                       (format "(do\n    %s)" express-line)
+                       express-line))
              ))))
 
 ; my-context 记录上下文
