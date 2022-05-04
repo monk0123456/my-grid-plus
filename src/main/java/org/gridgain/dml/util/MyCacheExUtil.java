@@ -21,11 +21,20 @@ import java.util.stream.Collectors;
 public class MyCacheExUtil implements Serializable {
     private static final long serialVersionUID = 7714300623488330841L;
 
-    public static void transLogCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
+//    public static void transLogCache(final Ignite ignite, final List<MyLogCache> lstLogCache)
+//    {
+//        List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
+//        long log_id = ignite.atomicSequence("my_log", 0, true).incrementAndGet();
+//        List<MyCacheEx> lst = lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
+//        lstCache.addAll(lst);
+//        transMyCache(ignite, lstCache);
+//    }
+
+    public static void transLogCache(final Ignite ignite, final List lstLogCache)
     {
-        List<MyCacheEx> lstCache = lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
+        List<MyCacheEx> lstCache = (List<MyCacheEx>) lstLogCache.stream().map(m -> convertToCacheEx(ignite, m)).collect(Collectors.toList());
         long log_id = ignite.atomicSequence("my_log", 0, true).incrementAndGet();
-        List<MyCacheEx> lst = lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
+        List<MyCacheEx> lst = (List<MyCacheEx>) lstLogCache.stream().map(m -> new MyCacheEx(ignite.cache("my_log"), log_id, MyCacheExUtil.objToBytes(m), SqlType.INSERT)).collect(Collectors.toList());
         lstCache.addAll(lst);
         transMyCache(ignite, lstCache);
     }
@@ -87,7 +96,14 @@ public class MyCacheExUtil implements Serializable {
     /**
      * MyLogCache 转换到 MyCacheEx
      * */
-    public static MyCacheEx convertToCacheEx(final Ignite ignite, final MyLogCache logCache)
+    public static MyCacheEx convertToCacheEx(final Ignite ignite, final Object logCache)
+    {
+        if (logCache instanceof MyLogCache)
+            return convertToCacheEx_logCache(ignite, (MyLogCache)logCache);
+        else
+            return convertToCacheEx_noSql(ignite, (MyNoSqlCache)logCache);
+    }
+    public static MyCacheEx convertToCacheEx_logCache(final Ignite ignite, final MyLogCache logCache)
     {
         switch (logCache.getSqlType())
         {
@@ -105,6 +121,20 @@ public class MyCacheExUtil implements Serializable {
                     binaryObjectBuilder.setField(m.getName(), m.getValue());
                 }
                 return new MyCacheEx(igniteCache, key, binaryObjectBuilder.build(), logCache.getSqlType());
+        }
+        return null;
+    }
+
+    public static MyCacheEx convertToCacheEx_noSql(final Ignite ignite, final MyNoSqlCache sqlCache)
+    {
+        switch (sqlCache.getSqlType())
+        {
+            case INSERT:
+                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), sqlCache.getValue(), sqlCache.getSqlType());
+            case DELETE:
+                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), null, sqlCache.getSqlType());
+            case UPDATE:
+                return new MyCacheEx(ignite.cache(sqlCache.getCache_name()), sqlCache.getKey(), sqlCache.getValue(), sqlCache.getSqlType());
         }
         return null;
     }

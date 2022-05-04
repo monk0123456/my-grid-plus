@@ -92,7 +92,7 @@ query_sql(myUpdate({table_name: "表名", key: "G350_成都东_北京西", value
 query_sql(myDelete({table_name: "表名", key: "G350_成都东_北京西"}));
 
 // 6.4、删除 no sql table
-query_sql(myDelete({table_name: "表名"}));
+query_sql(myDrop({table_name: "表名"}));
 
 
 

@@ -61,6 +61,16 @@
                       )))
         name))
 
+
+(defn get_group_schema_name [^Ignite ignite ^Long group_id]
+    (if (= group_id 0)
+        ["MY_META" "ALL"]
+        (when-let [m (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.dataset_name, g.group_type from my_users_group as g, my_dataset as m where g.data_set_id = m.id and g.id = ?") (to-array [group_id])))))]
+            m))
+    )
+
+(def my_group_schema_name (memoize get_group_schema_name))
+
 ; 剔除单括号或双括号
 (defn get_str_value [^String line]
                (if (some? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$|^\'\'$|^\"\"$" line))
