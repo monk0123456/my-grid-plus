@@ -267,7 +267,9 @@
     (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context up-my-context}]
         (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) args-lst))]
             (if (nil? up-my-context)
-                (format "(defn %s [^Ignite ignite ^Long group_id %s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context))
+                (if-not (empty? args-lst)
+                    (format "(defn %s [^Ignite ignite ^Long group_id %s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context))
+                    (format "(defn %s [^Ignite ignite ^Long group_id]\n    %s)" func-name (body-to-clj ignite group_id body-lst func-context)))
                 (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
             )
         ))

@@ -22,6 +22,7 @@
     (:import (org.apache.ignite Ignite IgniteCache)
              (org.apache.ignite.internal IgnitionEx)
              (com.google.common.base Strings)
+             (org.gridgain.smart MyVar MyLetLayer)
              (org.tools MyConvertUtil KvSql MyDbUtil MyLineToBinary)
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
@@ -120,6 +121,52 @@
                                 )
                             lst-rs)))))))
 
+; no sql
+(defn my-inert [ignite group_id my-obj]
+    (cond (instance? MyVar my-obj) (if (map? (.getVar my-obj))
+                                       (let [{table-name "table_name" key "key" value "value"} (.getVar my-obj)]
+                                           (.put (.cache ignite table-name) key value)))
+          (map? my-obj) (let [{table-name "table_name" key "key" value "value"} my-obj]
+                            (.put (.cache ignite table-name) key value))
+          :else
+          (throw (Exception. "No Sql 插入格式错误！"))))
+
+(defn my-insert [ignite group_id my-obj]
+    (cond (instance? MyVar my-obj) (if (map? (.getVar my-obj))
+                                       (let [{table-name "table_name" key "key" value "value"} (.getVar my-obj)]
+                                           (.put (.cache ignite table-name) key value)))
+          (map? my-obj) (let [{table-name "table_name" key "key" value "value"} my-obj]
+                            (.put (.cache ignite table-name) key value))
+          :else
+          (throw (Exception. "No Sql 插入格式错误！"))))
+
+(defn my-update [ignite group_id my-obj]
+    (cond (instance? MyVar my-obj) (if (map? (.getVar my-obj))
+                                       (let [{table-name "table_name" key "key" value "value"} (.getVar my-obj)]
+                                           (.replace (.cache ignite table-name) key value)))
+          (map? my-obj) (let [{table-name "table_name" key "key" value "value"} my-obj]
+                            (.replace (.cache ignite table-name) key value))
+          :else
+          (throw (Exception. "No Sql 插入格式错误！"))))
+
+(defn my-delete [ignite group_id my-obj]
+    (cond (instance? MyVar my-obj) (if (map? (.getVar my-obj))
+                                       (let [{table-name "table_name" key "key"} (.getVar my-obj)]
+                                           (.remove (.cache ignite table-name) key)))
+          (map? my-obj) (let [{table-name "table_name" key "key"} my-obj]
+                            (.remove (.cache ignite table-name) key))
+          :else
+          (throw (Exception. "No Sql 插入格式错误！"))))
+
+(defn my-drop [ignite group_id my-obj]
+    (cond (instance? MyVar my-obj) (if (map? (.getVar my-obj))
+                                       (let [{table-name "table_name"} (.getVar my-obj)]
+                                           (.destroy (.cache ignite table-name))))
+          (map? my-obj) (let [{table-name "table_name"} my-obj]
+                            (.destroy (.cache ignite table-name)))
+          :else
+          (throw (Exception. "No Sql 插入格式错误！"))))
+
 (defn query_sql [ignite group_id sql & args]
     (cond (re-find #"^(?i)select\s+" sql) (if (nil? args)
                                               (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (my-select-plus/my_plus_sql ignite group_id (my-lexical/to-back sql))) (.setLazy true))))
@@ -146,5 +193,7 @@
               (throw (Exception. "trans 只能执行 insert、update、delete 语句！"))
               )
         (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList lst-rs))))
+
+
 
 
