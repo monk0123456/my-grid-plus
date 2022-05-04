@@ -288,5 +288,7 @@
 (defn map-obj-to-clj [ignite group_id m my-context]
     (loop [[f & r] m lst-rs []]
         (if (some? f)
-            (recur r (concat lst-rs [(token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)]))
+            (if (and (contains? (-> f :key) :item_name) (nil? (-> f :key :java_item_type)) (false? (-> f :key :const)))
+                (recur r (concat lst-rs [(format "\"%s\"" (-> f :key :item_name)) (token-to-clj ignite group_id (-> f :value) my-context)]))
+                (recur r (concat lst-rs [(token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)])))
             (format "{%s}" (str/join " " lst-rs)))))

@@ -204,8 +204,8 @@
                               :else
                               (recur r (conj lst-rs (my-select-plus/sql-to-ast f))))
                         lst-rs)))]
-        (cond (and (= (first lst) "[") (= (last lst) "]")) {:seq-obj (get-item-tokens lst)}
-              (and (= (first lst) "{") (= (last lst) "}")) {:map-obj (get-item-tokens lst)}
+        (cond (and (= (first lst) "[") (= (last lst) "]")) (get-item-tokens lst)
+              (and (= (first lst) "{") (= (last lst) "}")) (get-item-tokens lst)
               :else
               (my-select-plus/sql-to-ast lst))))
 
@@ -251,6 +251,7 @@
 
 (defn lst-to-token [lst]
     (cond (and (my-lexical/is-eq? (first lst) "let") (= (second (rest lst)) "=")) (let [my-let-vs (my-item-tokens (rest (rest (rest lst))))]
+                                                                                      (println (rest (rest (rest lst))))
                                                                                       {:let-name (second lst) :let-vs my-let-vs})
           (and (my-lexical/is-eq? (first lst) "let") (= (count lst) 2)) {:let-name (second lst) :let-vs nil}
           (my-lexical/is-eq? (first lst) "else") {:else-vs (my-select-plus/sql-to-ast (rest lst))}
