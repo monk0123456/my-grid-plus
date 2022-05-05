@@ -33,15 +33,6 @@ function my_for(sql, args)
    }
 }
 
-function my_for(sql, args)
-{
-   match {
-              (r.get(1) > 10):
-
-                                println(r.get(0));
-              else break;
-          }
-}
 
 // 3、 例子：match 循环
 function my_match(table_name)

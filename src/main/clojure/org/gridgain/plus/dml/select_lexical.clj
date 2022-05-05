@@ -61,6 +61,10 @@
                       )))
         name))
 
+(defn get-value [m]
+    (if (instance? MyVar m)
+        (.getVar m)
+        m))
 
 (defn get_group_schema_name [^Ignite ignite ^Long group_id]
     (if (= group_id 0)

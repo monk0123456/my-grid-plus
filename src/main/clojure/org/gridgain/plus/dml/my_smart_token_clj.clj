@@ -66,11 +66,11 @@
     (if (some? (peek stack_symbo))
         (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbo)]
             (cond (and (contains? (-> my-context :let-params) (-> first_item :item_name)) (contains? (-> my-context :let-params) (-> second_item :item_name)))
-                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
+                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
                   (contains? (-> my-context :let-params) (-> first_item :item_name))
-                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
+                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
                   (contains? (-> my-context :let-params) (-> second_item :item_name))
-                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
+                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
                   :else
                   (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) my-context)
                   ))
@@ -92,11 +92,11 @@
                                                    (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbol)]
                                                        ;(recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                        (cond (and (contains? (-> my-context :let-params) (-> first_item :item_name)) (contains? (-> my-context :let-params) (-> second_item :item_name)))
-                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              (contains? (-> my-context :let-params) (-> first_item :item_name))
-                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (.getVar %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              (contains? (-> my-context :let-params) (-> second_item :item_name))
-                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (.getVar %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              :else
                                                              (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) my-context)
                                                              ))
@@ -158,7 +158,7 @@
              (if-not (nil? (-> m :ds-lst))
                  (recur ignite group_id (-> m :ds-lst) my-context (conj head-lst (format "%s " func-name)) (conj tail-lst (token-to-clj ignite group_id lst_ps my-context)))
                  (if-not (= ds-name "")
-                     [(conj head-lst (format "%s (.getVar %s)" func-name ds-name)) (conj tail-lst (token-to-clj ignite group_id lst_ps my-context))]
+                     [(conj head-lst (format "%s (my-lexical/get-value %s)" func-name ds-name)) (conj tail-lst (token-to-clj ignite group_id lst_ps my-context))]
                      [(conj head-lst (format "%s " func-name)) (conj tail-lst (token-to-clj ignite group_id lst_ps my-context))])))
          )))
 
@@ -186,8 +186,8 @@
               (my-lexical/is-eq? "println" func-name) (format "(println %s)" (token-to-clj ignite group_id lst_ps my-context))
               (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
                                             (if (> (count lst_ps) 0)
-                                                (format "(%s (.getVar %s) %s)" (smart-func method-name) let-name (token-to-clj ignite group_id lst_ps my-context))
-                                                (format "(%s (.getVar %s))" (smart-func method-name) let-name))
+                                                (format "(%s (my-lexical/get-value %s) %s)" (smart-func method-name) let-name (token-to-clj ignite group_id lst_ps my-context))
+                                                (format "(%s (my-lexical/get-value %s))" (smart-func method-name) let-name))
                                             ;(if-let [let-obj (get-let-context let-name my-context)]
                                             ;    (if (and (true? (has-func? let-obj method-name)) (= let-name ""))
                                             ;        (if (> (count lst_ps) 0)
@@ -209,7 +209,7 @@
 (defn item-to-clj [m my-context]
     (let [my-let (get-let-context (-> m :item_name) my-context)]
         (if (some? my-let)
-            (format "(.getVar %s)" (-> m :item_name))
+            (format "(my-lexical/get-value %s)" (-> m :item_name))
             (-> m :item_name))))
 
 ;(defn judge [ignite group_id lst my-context]
