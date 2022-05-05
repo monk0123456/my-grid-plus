@@ -254,7 +254,9 @@
                                                                                       (println (rest (rest (rest lst))))
                                                                                       {:let-name (second lst) :let-vs my-let-vs})
           (and (my-lexical/is-eq? (first lst) "let") (= (count lst) 2)) {:let-name (second lst) :let-vs nil}
-          (my-lexical/is-eq? (first lst) "else") {:else-vs (my-select-plus/sql-to-ast (rest lst))}
+          (my-lexical/is-eq? (first lst) "else") (if (my-lexical/is-eq? (second lst) "break")
+                                                     {:else-vs {:break-vs true}}
+                                                     {:else-vs (my-select-plus/sql-to-ast (rest lst))})
           (my-lexical/is-eq? (first lst) "break") {:break-vs true}
           :else
           (let [pair-item (split-pair-item lst)]

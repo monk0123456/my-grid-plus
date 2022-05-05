@@ -2,3 +2,136 @@
 (def body-lst (-> (first (my-smart-sql/get-ast line)) :body-lst))
 (second body-lst)
 
+(def line "function my_for(sql, args)\n{\n   let lst = query_sql(sql, args);\n   for (r in lst)\n   {\n       if (r.get(1) > 10) \n       {\n           println(r.get(0));\n       }\n       else\n       {\n           break;\n       }\n   }\n}")
+(def lst (my-lexical/to-back line))
+;(my-smart-sql/get-func-name lst)
+(def body-lst (-> (my-smart-sql/get-func-name lst) :body-lst))
+;(my-smart-sql/get-big body-lst)
+
+(def big-lst (-> (my-smart-sql/get-big body-lst) :big-lst))
+(my-smart-sql/body-segment big-lst)
+
+(defn lst-to-token [lst]
+    (cond (and (my-lexical/is-eq? (first lst) "let") (= (second (rest lst)) "=")) (let [my-let-vs (my-smart-sql/my-item-tokens (rest (rest (rest lst))))]
+                                                                                      (println (rest (rest (rest lst))))
+                                                                                      {:let-name (second lst) :let-vs my-let-vs})
+          (and (my-lexical/is-eq? (first lst) "let") (= (count lst) 2)) {:let-name (second lst) :let-vs nil}
+          (my-lexical/is-eq? (first lst) "else") {:else-vs (my-select-plus/sql-to-ast (rest lst))}
+          (my-lexical/is-eq? (first lst) "break") {:break-vs true}
+          :else
+          (let [pair-item (my-smart-sql/split-pair-item lst)]
+              (cond (= (count pair-item) 2) {:pair (my-select-plus/sql-to-ast (first pair-item)) :pair-vs (my-select-plus/sql-to-ast (second pair-item))}
+                    (= (count pair-item) 1) {:express (my-select-plus/sql-to-ast (first pair-item))}
+                    :else
+                    (throw (Exception. "match 中的判断要成对出现！"))
+                    ))
+          ))
+
+(defn body-segment
+    ([lst] (body-segment lst [] []))
+    ([[f & r] stack-lst lst]
+     (if (some? f)
+         (cond (and (empty? stack-lst) (my-lexical/is-eq? f "for") (= (first r) "(")) (let [{args-lst :args-lst body-lst :body-lst} (my-smart-sql/get-small r)]
+                                                                                          (if-not (empty? body-lst)
+                                                                                              (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big body-lst)]
+                                                                                                  (println big-lst)
+                                                                                                  (recur rest-lst [] (conj lst {:expression "for" :args (my-smart-sql/get-for-in-args args-lst) :body (body-segment big-lst)})))))
+               (and (empty? stack-lst) (my-lexical/is-eq? f "match") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big r)]
+                                                                                            (recur rest-lst [] (conj lst {:expression "match" :pairs (my-smart-sql/my-re-match (body-segment big-lst))})))
+               (and (empty? stack-lst) (my-lexical/is-eq? f "innerFunction") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (my-smart-sql/get-big r)]
+                                                                                                    (recur rest-lst [] (conj lst {:functions (my-smart-sql/get-ast-lst big-lst)})))
+               (= f ";") (recur r [] (conj lst (lst-to-token stack-lst)))
+               :else
+               (recur r (conj stack-lst f) lst)
+               )
+         lst)))
+
+(def big-lst ["if"
+              "("
+              "r.get"
+              "("
+              "1"
+              ")"
+              ">"
+              "10"
+              ")"
+              "{"
+              "println"
+              "("
+              "r.get"
+              "("
+              "0"
+              ")"
+              ")"
+              ";"
+              "}"
+              "else"
+              "{"
+              "break"
+              ";"
+              "}"])
+(body-segment big-lst)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -14,8 +14,33 @@ function my_for(sql, args)
    let lst = query_sql(sql, args);
    for (r in lst)
    {
+       if (r.get(1)
        println(r.get(0));
    }
+}
+
+function my_for(sql, args)
+{
+   let lst = query_sql(sql, args);
+   for (r in lst)
+   {
+       match {
+           (r.get(1) > 10):
+                             log("吴大富");
+                             println(r.get(0));
+           else break;
+       }
+   }
+}
+
+function my_for(sql, args)
+{
+   match {
+              (r.get(1) > 10):
+
+                                println(r.get(0));
+              else break;
+          }
 }
 
 // 3、 例子：match 循环
