@@ -155,7 +155,7 @@
             (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) my-context-1) loop-r (gensym "loop-r")]
                 (format "(cond (instance? Iterator %s) (loop [%s %s]\n
                                                        (if (.hasNext %s)\n
-                                                           (let [%s (MyVar. (.next %s))]\n
+                                                           (let [%s (.next %s)]\n
                                                                %s\n
                                                                (recur %s)\n
                                                                )))\n
@@ -186,7 +186,7 @@
                 (format "(let [%s %s]\n
                           (cond (instance? Iterator %s) (loop [%s %s]\n
                                                               (if (.hasNext %s)\n
-                                                                  (let [%s (MyVar. (.next %s))]\n
+                                                                  (let [%s (.next %s)]\n
                                                                        %s\n
                                                                        (recur %s)\n
                                                                        )))\n
@@ -210,22 +210,49 @@
                         loop-r)))
         ))
 
+;(defn match-to-clj
+;    ([ignite group_id lst-pair my-context] (match-to-clj ignite group_id lst-pair my-context []))
+;    ([ignite group_id [f-pair & r-pair] my-context lst]
+;     (if (some? f-pair)
+;         (cond (contains? f-pair :pair) (if (contains? (-> f-pair :pair) :parenthesis)
+;                                            (cond (map? (-> f-pair :pair-vs)) (let [pair-line (format "%s %s" (express-to-clj ignite group_id [(-> f-pair :pair)] my-context) (body-to-clj ignite group_id [(-> f-pair :pair-vs)] my-context))]
+;                                                                                  (recur ignite group_id r-pair my-context (conj lst pair-line)))
+;                                                  (my-lexical/is-seq? (-> f-pair :pair-vs)) (if (> (count (-> f-pair :pair-vs)) 1)
+;                                                                                                (let [pair-line (format "%s (do \n    %s)" (express-to-clj ignite group_id [(-> f-pair :pair)] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+;                                                                                                    (recur ignite group_id r-pair my-context (conj lst pair-line)))
+;                                                                                                (let [pair-line (format "%s %s" (express-to-clj ignite group_id [(-> f-pair :pair)] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+;                                                                                                    (recur ignite group_id r-pair my-context (conj lst pair-line))))
+;                                                  )
+;                                            (cond (map? (-> f-pair :pair-vs)) (let [pair-line (format "%s %s" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id [(-> f-pair :pair-vs)] my-context))]
+;                                                                                  (recur ignite group_id r-pair my-context (conj lst pair-line)))
+;                                                  (my-lexical/is-seq? (-> f-pair :pair-vs)) (if (> (count (-> f-pair :pair-vs)) 1)
+;                                                                                                (let [pair-line (format "%s (do \n    %s)" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+;                                                                                                    (recur ignite group_id r-pair my-context (conj lst pair-line)))
+;                                                                                                (let [pair-line (format "%s %s" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+;                                                                                                    (recur ignite group_id r-pair my-context (conj lst pair-line))))
+;                                                  )
+;                                            )
+;               (contains? f-pair :else-vs) (recur ignite group_id r-pair my-context (conj lst (format ":else %s" (body-to-clj ignite group_id (-> f-pair :else-vs) my-context))))
+;               )
+;         (str/join "\n          " lst))))
+
 (defn match-to-clj
     ([ignite group_id lst-pair my-context] (match-to-clj ignite group_id lst-pair my-context []))
     ([ignite group_id [f-pair & r-pair] my-context lst]
      (if (some? f-pair)
-         (cond (contains? f-pair :pair) (if (contains? (-> f-pair :pair) :parenthesis)
-                                            (cond (map? (-> f-pair :pair-vs)) (let [pair-line (format "%s %s" (express-to-clj ignite group_id [(-> f-pair :pair)] my-context) (body-to-clj ignite group_id [(-> f-pair :pair-vs)] my-context))]
-                                                                                  (recur ignite group_id r-pair my-context (conj lst pair-line)))
-                                                  (my-lexical/is-seq? (-> f-pair :pair-vs)) (let [pair-line (format "%s (do \n    %s)" (express-to-clj ignite group_id [(-> f-pair :pair)] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
-                                                                                                (recur ignite group_id r-pair my-context (conj lst pair-line)))
-                                                  )
-                                            (cond (map? (-> f-pair :pair-vs)) (let [pair-line (format "%s %s" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id [(-> f-pair :pair-vs)] my-context))]
-                                                                                  (recur ignite group_id r-pair my-context (conj lst pair-line)))
-                                                  (my-lexical/is-seq? (-> f-pair :pair-vs)) (let [pair-line (format "%s (do \n    %s)" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
-                                                         (recur ignite group_id r-pair my-context (conj lst pair-line))))
-                                            )
-               (contains? f-pair :else-vs) (recur ignite group_id r-pair my-context (conj lst (format ":else %s" (body-to-clj ignite group_id [(-> f-pair :else-vs)] my-context))))
+         (cond (contains? f-pair :pair) (cond (or (contains? (-> f-pair :pair) :parenthesis) (contains? (-> f-pair :pair) :func-name)) (if (> (count (-> f-pair :pair-vs)) 1)
+                                                                                             (let [pair-line (format "%s (do \n    %s)" (express-to-clj ignite group_id [(-> f-pair :pair)] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+                                                                                                 (recur ignite group_id r-pair my-context (conj lst pair-line)))
+                                                                                             (let [pair-line (format "%s %s" (express-to-clj ignite group_id [(-> f-pair :pair)] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+                                                                                                 (recur ignite group_id r-pair my-context (conj lst pair-line))))
+                                              :else
+                                              (if (> (count (-> f-pair :pair-vs)) 1)
+                                                   (let [pair-line (format "%s (do \n    %s)" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+                                                       (recur ignite group_id r-pair my-context (conj lst pair-line)))
+                                                   (let [pair-line (format "%s %s" (express-to-clj ignite group_id [{:parenthesis (-> f-pair :pair)}] my-context) (body-to-clj ignite group_id (-> f-pair :pair-vs) my-context))]
+                                                       (recur ignite group_id r-pair my-context (conj lst pair-line))))
+                                              )
+               (contains? f-pair :else-vs) (recur ignite group_id r-pair my-context (conj lst (format ":else %s" (body-to-clj ignite group_id (-> f-pair :else-vs) my-context))))
                )
          (str/join "\n          " lst))))
 

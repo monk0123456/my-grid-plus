@@ -1,6 +1,7 @@
 package org.gridgain.smart;
 
 import clojure.lang.PersistentVector;
+import org.gridgain.myservice.MyJavaUtilService;
 
 import java.io.Serializable;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
  * */
 public class MyVar implements Serializable {
     private static final long serialVersionUID = 5645425225182146226L;
+    private MyJavaUtilService myJavaUtilService = MyJavaUtilService.getInstance();
     private Object var;
     private String varType;
 
@@ -18,11 +20,12 @@ public class MyVar implements Serializable {
 
     public MyVar(final Object var)
     {
-        this.var = var;
         if (var instanceof List)
         {
             this.varType = "List";
         }
+
+        this.var = myJavaUtilService.getJavaUtil().toArray(var);
     }
 
     public MyVar(final Object var, final String varType)

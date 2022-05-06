@@ -35,11 +35,11 @@
 (defn my-invoke-scenes [^Ignite ignite ^Long group_id ^String method-name & ps]
     (let [my-method-name (str/lower-case method-name)]
         (try
-            (apply (eval (read-string my-method-name)) ignite group_id ps)
+            (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps))
             (catch Exception e
                 (let [m (.get (.cache ignite "my_scenes") (MyScenesCachePk. (str/lower-case my-method-name) group_id))]
-                    (apply (eval (read-string (.getSql_code m))) ignite group_id ps)
-                    (apply (eval (read-string my-method-name)) ignite group_id ps))))))
+                    (my-lexical/get-value (apply (eval (read-string (.getSql_code m))) ignite group_id ps))
+                    (my-lexical/get-value (apply (eval (read-string my-method-name)) ignite group_id ps)))))))
 
 ; 首先调用方法，如果不存在，在从 cache 中读取数据在执行
 (defn -invokeScenes [^Ignite ignite ^Long group_id ^String method-name ^List ps]

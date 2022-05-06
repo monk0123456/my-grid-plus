@@ -32,6 +32,79 @@
 (defn add-let-name [my-context let-name]
     (assoc my-context :let-params (conj (-> my-context :let-params) let-name)))
 
+(defn get-pair-item-ex
+    ([lst] (get-pair-item-ex lst [] nil [] []))
+    ([[f & r] stack mid-small stack-lst lst]
+     (if (some? f)
+         (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "small" (conj stack-lst f) lst))
+               (= f "[") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "mid" (conj stack-lst f) lst))
+               (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "big" (conj stack-lst f) lst))
+               (= f ")") (cond (and (= (count stack) 1) (= mid-small "small")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "small")) (recur r (pop stack) "small" (conj stack-lst f) lst)
+                               (not (= mid-small "small")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "]") (cond (and (= (count stack) 1) (= mid-small "mid")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "mid")) (recur r (pop stack) "mid" (conj stack-lst f) lst)
+                               (not (= mid-small "mid")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "}") (cond (and (= (count stack) 1) (= mid-small "big")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "big")) (recur r (pop stack) "big" (conj stack-lst f) lst)
+                               (not (= mid-small "big")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f ";") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
+                             (recur nil [] nil [] (conj lst stack-lst (concat [";"] r)))
+                             (recur r stack mid-small (conj stack-lst f) lst))
+               :else
+               (recur r stack mid-small (conj stack-lst f) lst)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst stack-lst)
+             lst))))
+
+(defn split-pair-item-ex
+    ([lst] (split-pair-item-ex lst [] nil [] []))
+    ([[f & r] stack mid-small stack-lst lst]
+     (if (some? f)
+         (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "small" (conj stack-lst f) lst))
+               (= f "[") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "mid" (conj stack-lst f) lst))
+               (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
+                             (recur r stack mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) "big" (conj stack-lst f) lst))
+               (= f ")") (cond (and (= (count stack) 1) (= mid-small "small")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "small")) (recur r (pop stack) "small" (conj stack-lst f) lst)
+                               (not (= mid-small "small")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "]") (cond (and (= (count stack) 1) (= mid-small "mid")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "mid")) (recur r (pop stack) "mid" (conj stack-lst f) lst)
+                               (not (= mid-small "mid")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f "}") (cond (and (= (count stack) 1) (= mid-small "big")) (recur r [] nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "big")) (recur r (pop stack) "big" (conj stack-lst f) lst)
+                               (not (= mid-small "big")) (recur r stack mid-small (conj stack-lst f) lst)
+                               )
+               (= f ":") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
+                             (recur r [] nil [] (conj lst stack-lst))
+                             (recur r stack mid-small (conj stack-lst f) lst))
+               (my-lexical/is-eq? f "else") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
+                                                (recur r [] nil [] (conj lst stack-lst ["else"]))
+                                                (recur r stack mid-small (conj stack-lst f) lst))
+               :else
+               (recur r stack mid-small (conj stack-lst f) lst)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst stack-lst)
+             lst))))
+
 (defn split-pair-item
     ([lst] (split-pair-item lst [] [] []))
     ([[f & r] stack stack-lst lst]
@@ -251,7 +324,6 @@
 
 (defn lst-to-token [lst]
     (cond (and (my-lexical/is-eq? (first lst) "let") (= (second (rest lst)) "=")) (let [my-let-vs (my-item-tokens (rest (rest (rest lst))))]
-                                                                                      (println (rest (rest (rest lst))))
                                                                                       {:let-name (second lst) :let-vs my-let-vs})
           (and (my-lexical/is-eq? (first lst) "let") (= (count lst) 2)) {:let-name (second lst) :let-vs nil}
           (my-lexical/is-eq? (first lst) "else") (if (my-lexical/is-eq? (second lst) "break")
@@ -259,15 +331,49 @@
                                                      {:else-vs (my-select-plus/sql-to-ast (rest lst))})
           (my-lexical/is-eq? (first lst) "break") {:break-vs true}
           :else
-          (let [pair-item (split-pair-item lst)]
-              (cond (= (count pair-item) 2) {:pair (my-select-plus/sql-to-ast (first pair-item)) :pair-vs (my-select-plus/sql-to-ast (second pair-item))}
-                    (= (count pair-item) 1) {:express (my-select-plus/sql-to-ast (first pair-item))}
-                    :else
-                    (throw (Exception. "match 中的判断要成对出现！"))
-                    ))
+          {:express (my-select-plus/sql-to-ast lst)}
+          ;(let [pair-item (split-pair-item lst)]
+          ;    (cond (= (count pair-item) 2) {:pair (my-select-plus/sql-to-ast (first pair-item)) :pair-vs (my-select-plus/sql-to-ast (second pair-item))}
+          ;          (= (count pair-item) 1) {:express (my-select-plus/sql-to-ast (first pair-item))}
+          ;          :else
+          ;          (throw (Exception. "match 中的判断要成对出现！"))
+          ;          ))
           ))
 
-(declare body-segment get-ast-lst get-ast)
+(declare body-segment get-ast-lst get-ast get-re-pair get-pairs get-pairs-tokens)
+
+(defn get-re-pair
+    ([lst] (get-re-pair lst []))
+    ([[f & r] lst-rs]
+     (if (some? f)
+         (let [rs-pair (get-pair-item-ex (reverse f))]
+             (if (= (count rs-pair) 2)
+                 (recur r (conj lst-rs (reverse (second rs-pair)) (reverse (first rs-pair))))
+                 (recur r (conj lst-rs f))))
+         lst-rs)))
+
+(defn get-pairs [lst]
+    (if (even? (count lst))
+        (loop [[f & r] lst stack [] lst-rs []]
+            (if (some? f)
+                (if-not (= (count stack) 2)
+                    (recur r (conj stack f) lst-rs)
+                    (recur r (conj [] f) (conj lst-rs stack)))
+                (if-not (empty? stack)
+                    (conj lst-rs stack)
+                    lst-rs)))
+        (throw (Exception. "match 里面的语句要成对出现！"))))
+
+(defn get-pairs-tokens [lst]
+    (loop [[f & r] lst lst-rs []]
+        (if (some? f)
+            (if (and (= (count (first f)) 1) (my-lexical/is-eq? (first (first f)) "else"))
+                (recur r (conj lst-rs {:else-vs (body-segment (second f))}))
+                (let [pv (body-segment (second f))]
+                    (println f)
+                    (recur r (conj lst-rs {:pair (my-select-plus/sql-to-ast (first f)) :pair-vs pv})))
+                )
+            lst-rs)))
 
 (defn body-segment
     ([lst] (body-segment lst [] []))
@@ -278,7 +384,9 @@
                                                                                               (let [{big-lst :big-lst rest-lst :rest-lst} (get-big body-lst)]
                                                                                                   (recur rest-lst [] (conj lst {:expression "for" :args (get-for-in-args args-lst) :body (body-segment big-lst)})))))
                (and (empty? stack-lst) (my-lexical/is-eq? f "match") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
-                                                                                             (recur rest-lst [] (conj lst {:expression "match" :pairs (my-re-match (body-segment big-lst))})))
+                                                                                            ;(recur rest-lst [] (conj lst {:expression "match" :pairs (my-re-match (body-segment big-lst))}))
+                                                                                            ;(println (get-pairs (get-re-pair (split-pair-item-ex big-lst))))
+                                                                                            (recur rest-lst [] (conj lst {:expression "match" :pairs (get-pairs-tokens (get-pairs (get-re-pair (split-pair-item-ex big-lst))))})))
                (and (empty? stack-lst) (my-lexical/is-eq? f "innerFunction") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
                                                                                                     (recur rest-lst [] (conj lst {:functions (get-ast-lst big-lst)})))
                (= f ";") (recur r [] (conj lst (lst-to-token stack-lst)))

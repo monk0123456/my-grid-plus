@@ -16,7 +16,13 @@ function my_trans(OrderID, CustomerID)
    lst.add(["INSERT INTO wudagui.Orders (OrderID, CustomerID) Values (?, ?);", [OrderID, CustomerID]);
 }
 
-
+(def line "function my_test()\n{\n   match{\n                   my_lst.nth(i) > my_lst.nth(j):\n                                                   tmp = my_lst.nth(i);\n                                                   my_lst.set(i,  my_lst.nth(j));\n                                                   my_lst.set(j,  tmp);\n               }\n}")
+(def ast (first (my-smart-sql/get-ast line)))
+(def my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context nil})
+(def func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) (-> ast :args-lst))))
+ast
+(my-smart-clj/body-to-clj ignite 0 (-> ast :body-lst) func-context)
+(my-smart-clj/ast-to-clj ignite 0 ast func-context)
 
 
 

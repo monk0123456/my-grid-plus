@@ -3,6 +3,7 @@
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
+             (org.gridgain.smart MyVar MyLetLayer)
              (org.apache.ignite.transactions Transaction)
              (org.tools MyConvertUtil KvSql)
              (cn.plus.model MyLogCache SqlType)

@@ -19,6 +19,36 @@ function my_for(sql, args)
    }
 }
 
+function bubble_sort(lst)
+{
+    let my_lst = lst;
+    let tmp = 0;
+    let my_count = count(lst);
+    for (i in range(my_count - 1))
+    {
+        for(j in range(i + 1, my_count))
+        {
+            match{
+                my_lst.nth(i) > my_lst.nth(j):
+                                                tmp = my_lst.nth(i);
+                                                my_lst.set(i,  my_lst.nth(j));
+                                                my_lst.set(j,  tmp);
+            }
+        }
+    }
+    my_lst;
+}
+
+function my_test()
+{
+   match{
+                   my_lst.nth(i) > my_lst.nth(j):
+                                                   tmp = my_lst.nth(i);
+                                                   my_lst.set(i,  my_lst.nth(j));
+                                                   my_lst.set(j,  tmp);
+               }
+}
+
 function my_for(sql, args)
 {
    let lst = query_sql(sql, args);
