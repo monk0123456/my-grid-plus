@@ -80,13 +80,13 @@ function my_trans(OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, Ship
 {
    let lst = [];
    -- 1、保存订单信息
-   lst.add(["INSERT INTO wudagui.Orders (OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry) Values ((?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))"], [OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry]);
+   lst.add("INSERT INTO wudagui.Orders (OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry) Values ((?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))", [OrderID, CustomerID, EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry]);
    -- 2、保存订单详情
    for(rs in lst_OrderDetails)
    {
-      lst.add(["INSERT INTO wudagui.OrderDetails (OrderID, ProductID, UnitPrice, Quantity, Discount) Values (?, ?, ?, ?, ?)"], [OrderID, rs.get("ProductID"), rs.get("UnitPrice"), rs.get("Quantity"), rs.get("Discount")]);
+      lst.add("INSERT INTO wudagui.OrderDetails (OrderID, ProductID, UnitPrice, Quantity, Discount) Values (?, ?, ?, ?, ?)", [OrderID, rs.get("ProductID"), rs.get("UnitPrice"), rs.get("Quantity"), rs.get("Discount")]);
       -- 3、修改库存
-      lst.add(["update public.Products set UnitsInStock = UnitsInStock - ? where ProductID = ?"], [rs.get("UnitPrice"), rs.get("ProductID")]);
+      lst.add("update public.Products set UnitsInStock = UnitsInStock - ? where ProductID = ?", [rs.get("UnitPrice"), rs.get("ProductID")]);
    }
 
    -- 4、执行事务

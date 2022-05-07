@@ -1,0 +1,80 @@
+(def cf_ps_lst [23, 4, 65, 7, 12, 45, 61, 8])
+
+(defn bubble_sort [^Ignite ignite ^Long group_id cf_ps_lst]
+    (let [my_lst (MyVar. cf_ps_lst) tmp (MyVar. 0) my_count (MyVar. (count cf_ps_lst))]
+        (do
+            (let [big-range (range (- (my-lexical/get-value my_count) 1))]
+                (cond (instance? Iterator big-range) (loop [itr big-range]
+                                                         (if (.hasNext itr)
+                                                             (let [i (.next itr)]
+                                                                 (let [small-range (range (+ (my-lexical/get-value i) 1)  (my-lexical/get-value my_count))]
+                                                                     (cond (instance? Iterator small-range) (loop [itr-small small-range]
+                                                                                                                (if (.hasNext itr-small)
+                                                                                                                    (let [j (.next itr-small)]
+                                                                                                                        (cond (> (nth (my-lexical/get-value my_lst) i) (nth (my-lexical/get-value my_lst) j)) (do
+                                                                                                                                                                                                                  (.setVar tmp (nth (my-lexical/get-value my_lst) i))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) i  (nth (my-lexical/get-value my_lst) j))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) j  (my-lexical/get-value tmp))))
+
+                                                                                                                        (recur itr-small)
+                                                                                                                        )))
+                                                                           (my-lexical/is-seq? small-range) (loop [[j & loop-r2209] small-range]
+                                                                                                                (if (some? j)
+                                                                                                                    (do
+                                                                                                                        (cond (> (nth (my-lexical/get-value my_lst) i) (nth (my-lexical/get-value my_lst) j)) (do
+                                                                                                                                                                                                                  (.setVar tmp (nth (my-lexical/get-value my_lst) i))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) i  (nth (my-lexical/get-value my_lst) j))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) j  (my-lexical/get-value tmp))))
+                                                                                                                        (recur loop-r2209))))
+                                                                           )))
+                                                             (recur itr)))
+                      (my-lexical/is-seq? big-range) (loop [[i & loop-r2210] big-range]
+                                                         (if (some? i)
+                                                             (do
+                                                                 (let [small-range (range (+ (my-lexical/get-value i) 1)  (my-lexical/get-value my_count))]
+                                                                     (cond (instance? Iterator small-range) (loop [itr-small small-range]
+                                                                                                                (if (.hasNext itr-small)
+                                                                                                                    (let [j (.next itr-small)]
+                                                                                                                        (cond (> (nth (my-lexical/get-value my_lst) i) (nth (my-lexical/get-value my_lst) j)) (do
+                                                                                                                                                                                                                  (.setVar tmp (nth (my-lexical/get-value my_lst) i))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) i  (nth (my-lexical/get-value my_lst) j))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) j  (my-lexical/get-value tmp))))
+                                                                                                                        (recur itr-small)
+                                                                                                                        )))
+                                                                           (my-lexical/is-seq? small-range) (loop [[j & loop-r2209] small-range]
+                                                                                                                (if (some? j)
+                                                                                                                    (do
+                                                                                                                        (cond (> (nth (my-lexical/get-value my_lst) i) (nth (my-lexical/get-value my_lst) j)) (do
+                                                                                                                                                                                                                  (.setVar tmp (nth (my-lexical/get-value my_lst) i))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) i  (nth (my-lexical/get-value my_lst) j))
+                                                                                                                                                                                                                  (my-lexical/list-set (my-lexical/get-value my_lst) j  (my-lexical/get-value tmp))))
+                                                                                                                        (recur loop-r2209))))
+                                                                           )))
+                                                             (recur loop-r2210)))
+                      ))
+            (my-lexical/get-value my_lst))))
+(println "OK")
+
+
+function bubble_sort(lst)
+{
+    let my_lst = lst;
+    let tmp = 0;
+    let my_count = count(lst);
+    for (i in range(my_count - 1))
+    {
+        for(j in range(i + 1, my_count))
+        {
+            match{
+                my_lst.nth(i) > my_lst.nth(j):
+                                                tmp = my_lst.nth(i);
+                                                my_lst.set(i,  my_lst.nth(j));
+                                                my_lst.set(j,  tmp);
+            }
+        }
+    }
+    my_lst;
+}
+
+(def line "function bubble_sort(lst)\n{\n    let my_lst = lst;\n    let tmp = 0;\n    let my_count = count(lst);\n    for (i in range(my_count - 1))\n    {\n        for(j in range(i + 1, my_count))\n        {\n            match{\n                my_lst.nth(i) > my_lst.nth(j):\n                                                tmp = my_lst.nth(i);\n                                                my_lst.set(i,  my_lst.nth(j));\n                                                my_lst.set(j,  tmp);\n            }\n        }\n    }\n    my_lst;\n}")
+(eval (read-string (my-smart-clj/smart-to-clj ignite 0 line)))

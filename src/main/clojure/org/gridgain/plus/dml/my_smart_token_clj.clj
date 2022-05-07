@@ -198,11 +198,11 @@
               ; 系统函数
               (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               ; inner function
-              (get-inner-function-context (str/lower-case func-name) my-context) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
+              (get-inner-function-context (str/lower-case func-name) my-context) (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "query_sql") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
-              (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
+              (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               ;(println "Inner func")
               )))
 

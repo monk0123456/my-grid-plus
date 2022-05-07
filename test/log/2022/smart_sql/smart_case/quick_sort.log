@@ -1,0 +1,20 @@
+function quickSort(lst)
+{
+    innerFunction {
+        function getBigAndSmall(vs, seq)
+        {
+            let big = [];
+            let small = [];
+            for (m in seq)
+            {
+                match {
+                    m >= vs: big.add(m);
+                    m < vs: small.add(m);
+                }
+            }
+            [small, big];
+        }
+    }
+    let rs = getBigAndSmall(lst.first(), lst.rest());
+    concat(quickSort(rs.nth(0)), [lst.first()], quickSort(rs.nth(1)));
+}
