@@ -146,6 +146,8 @@
           (my-lexical/is-eq? func-name "peek") "my-lexical/list-peek"
           (my-lexical/is-eq? func-name "takeLast") "my-lexical/list-take-last"
           (my-lexical/is-eq? func-name "dropLast") "my-lexical/list-drop-last"
+          (my-lexical/is-eq? func-name "empty?") "empty?"
+          (my-lexical/is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
           :else
           (str/lower-case func-name)
           ))
@@ -200,6 +202,7 @@
               ; inner function
               (get-inner-function-context (str/lower-case func-name) my-context) (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "query_sql") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
+              (and (contains? my-context :top-func) (= func-name (-> my-context :top-func))) (format "(%s ignite group_id %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))

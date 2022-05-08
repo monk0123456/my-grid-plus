@@ -52,7 +52,7 @@
          (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
                              (recur r stack mid-small (conj stack-lst f) lst)
                              (recur r (conj stack f) "small" (conj stack-lst f) lst))
-               (= f "[") (if (or (= mid-small "mid") (= mid-small "big"))
+               (= f "[") (if (or (= mid-small "small") (= mid-small "big"))
                              (recur r stack mid-small (conj stack-lst f) lst)
                              (recur r (conj stack f) "mid" (conj stack-lst f) lst))
                (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
@@ -89,7 +89,7 @@
                      (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
                                          (recur r stack mid-small (conj stack-lst f) lst)
                                          (recur r (conj stack f) "small" (conj stack-lst f) lst))
-                           (= f "[") (if (or (= mid-small "mid") (= mid-small "big"))
+                           (= f "[") (if (or (= mid-small "small") (= mid-small "big"))
                                          (recur r stack mid-small (conj stack-lst f) lst)
                                          (recur r (conj stack f) "mid" (conj stack-lst f) lst))
                            (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
@@ -123,7 +123,7 @@
                      (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
                                          (recur r stack mid-small (conj stack-lst f) k-v lst)
                                          (recur r (conj stack f) "small" (conj stack-lst f) k-v lst))
-                           (= f "[") (if (or (= mid-small "mid") (= mid-small "big"))
+                           (= f "[") (if (or (= mid-small "small") (= mid-small "big"))
                                          (recur r stack mid-small (conj stack-lst f) k-v lst)
                                          (recur r (conj stack f) "mid" (conj stack-lst f) k-v lst))
                            (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
@@ -174,10 +174,12 @@
                                                                            (recur r (conj lst-rs {:map-obj (kv-to-token lst-dic)})))
                               :else
                               (recur r (conj lst-rs (get-token f))))
-                        lst-rs)))
+                        (if (= (count lst-rs) 1)
+                            (first lst-rs)
+                            lst-rs))))
             (my-item-tokens [lst]
-                (cond (and (= (first lst) "[") (= (last lst) "]")) {:seq-obj (get-item-tokens lst)}
-                      (and (= (first lst) "{") (= (last lst) "}")) {:map-obj (get-item-tokens lst)}
+                (cond (and (= (first lst) "[") (= (last lst) "]")) (get-item-tokens lst) ;{:seq-obj (get-item-tokens lst)}
+                      (and (= (first lst) "{") (= (last lst) "}")) (get-item-tokens lst) ;{:map-obj (get-item-tokens lst)}
                       :else
                       (get-token lst)))
             ; 判断是 () 的表达式

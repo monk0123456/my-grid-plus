@@ -205,6 +205,9 @@
 (defn list-pop [^ArrayList lst]
     (.subList lst 0 (- (count lst) 1)))
 
+(defn not-empty? [lst]
+    (not (empty? lst)))
+
 (defn map-list-get [dic-lst my-key]
     (cond (map? dic-lst) (get dic-lst my-key)
           (and (is-seq? dic-lst) (number? my-key)) (nth dic-lst my-key)

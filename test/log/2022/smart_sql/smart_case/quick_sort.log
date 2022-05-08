@@ -18,3 +18,5 @@ function quickSort(lst)
     let rs = getBigAndSmall(lst.first(), lst.rest());
     concat(quickSort(rs.nth(0)), [lst.first()], quickSort(rs.nth(1)));
 }
+
+(def lst-num [12 21 25 2 5 6 56 27 95 8])
