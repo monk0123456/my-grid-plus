@@ -1,3 +1,14 @@
+(defn get-vs-pair [lst]
+    (loop [index (- (count lst) 1) stack-lst [] rs []]
+        (if (> index -1)
+            (let [f (nth lst index)]
+                (cond (= f "}") (recur -1 [] (conj rs (take (+ index 1) lst) (reverse stack-lst)))
+                      (= f ";") (recur -1 [] (conj rs (take (+ index 1) lst) (reverse stack-lst)))
+                      :else
+                      (recur (- index 1) (conj stack-lst f) rs)
+                      ))
+            rs)))
+
 (defn split-pair-item-ex
     ([lst] (split-pair-item-ex lst [] nil [] [] []))
     ([[f & r] stack mid-small stack-lst k-v lst]
@@ -26,14 +37,24 @@
                (= f ":") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
                              (if (empty? k-v)
                                  (recur r [] nil [] (conj k-v stack-lst) lst)
-                                 )
+                                 (let [vs-pair (get-vs-pair stack-lst)]
+                                     (if (empty? vs-pair)
+                                         (recur r [] nil [] [] (conj lst (conj k-v stack-lst)))
+                                         (if (empty? (last vs-pair))
+                                             (recur r [] nil [] [] (conj lst (conj k-v stack-lst)))
+                                             (recur r [] nil [] [(last vs-pair)] (conj lst (conj k-v (first vs-pair))))))))
                              (recur r stack mid-small (conj stack-lst f) k-v lst))
                (my-lexical/is-eq? f "else") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
-                                                (recur r [] nil [] (conj lst stack-lst ["else"]))
+                                                (if-not (empty? k-v)
+                                                    (recur r [] nil [] [["else"]] (conj lst (conj k-v stack-lst)))
+                                                    (throw (Exception. "match 语句块中，不能只有 else")))
                                                 (recur r stack mid-small (conj stack-lst f) k-v lst))
                :else
                (recur r stack mid-small (conj stack-lst f) k-v lst)
                )
-         (if-not (empty? stack-lst)
-             (conj lst stack-lst)
+         (if (and (not (empty? k-v)) (not (empty? stack-lst)))
+             (conj lst (conj k-v stack-lst))
              lst))))
+
+(split-pair-item-ex (my-lexical/to-back "(notEmpty?(rs.nth(0)) and notEmpty?(rs.nth(1))): concat(quickSort(rs.nth(0)), [lst.first()], quickSort(rs.nth(1)));\n        (notEmpty?(rs.nth(0)) and empty?(rs.nth(1))): concat(quickSort(rs.nth(0)), [lst.first()]);\n        (empty?(rs.nth(0)) and notEmpty?(rs.nth(1))): concat([lst.first()], quickSort(rs.nth(1)));\n        else [lst.first()];"))
+(println "OK")
