@@ -212,6 +212,7 @@
     (cond (map? dic-lst) (get dic-lst my-key)
           (and (is-seq? dic-lst) (number? my-key)) (nth dic-lst my-key)
           (and (instance? java.util.List dic-lst) (number? my-key)) (nth dic-lst my-key)
+          (instance? java.util.Hashtable dic-lst) (.get dic-lst my-key)
           :else
           (throw (Exception. "数据集没有该方法"))
           ))

@@ -13,7 +13,7 @@
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
-             (java.util List ArrayList Date Iterator)
+             (java.util List ArrayList Hashtable Date Iterator)
              )
     (:gen-class
         ; 生成 class 的类名
@@ -139,7 +139,7 @@
           (my-lexical/is-eq? func-name "nth") "nth"
           (my-lexical/is-eq? func-name "count") "count"
           (my-lexical/is-eq? func-name "concat") "concat"
-          (my-lexical/is-eq? func-name "put") "assoc"
+          (my-lexical/is-eq? func-name "put") ".put"
           (my-lexical/is-eq? func-name "get") "my-lexical/map-list-get"
           (my-lexical/is-eq? func-name "remove") "dissoc"
           (my-lexical/is-eq? func-name "pop") "my-lexical/list-peek"
@@ -292,9 +292,18 @@
     (format "(my-lexical/to_arryList [%s])" (token-to-clj ignite group_id m my-context)))
 
 (defn map-obj-to-clj [ignite group_id m my-context]
-    (loop [[f & r] m lst-rs []]
+    (loop [[f & r] m sb (StringBuilder.)]
         (if (some? f)
             (if (and (contains? (-> f :key) :item_name) (nil? (-> f :key :java_item_type)) (false? (-> f :key :const)))
-                (recur r (concat lst-rs [(format "\"%s\"" (-> f :key :item_name)) (token-to-clj ignite group_id (-> f :value) my-context)]))
-                (recur r (concat lst-rs [(token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)])))
-            (format "{%s}" (str/join " " lst-rs)))))
+                (recur r (doto sb (.append (format "(.put %s %s)" (-> f :key :item_name) (token-to-clj ignite group_id (-> f :value) my-context)))))
+                (recur r (doto sb (.append (format "(.put %s %s)" (token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)))))
+                )
+            (format "(doto (Hashtable.)\n    %s)" (.toString sb)))))
+
+;(defn map-obj-to-clj [ignite group_id m my-context]
+;    (loop [[f & r] m lst-rs []]
+;        (if (some? f)
+;            (if (and (contains? (-> f :key) :item_name) (nil? (-> f :key :java_item_type)) (false? (-> f :key :const)))
+;                (recur r (concat lst-rs [(format "\"%s\"" (-> f :key :item_name)) (token-to-clj ignite group_id (-> f :value) my-context)]))
+;                (recur r (concat lst-rs [(token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)])))
+;            (format "{%s}" (str/join " " lst-rs)))))

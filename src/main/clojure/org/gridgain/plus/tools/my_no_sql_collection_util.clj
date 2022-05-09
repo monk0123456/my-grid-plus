@@ -12,7 +12,7 @@
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (cn.plus.model.db MyScenesCache)
              (org.gridgain.jdbc MyJdbc)
-             (java.util List ArrayList Date Iterator)
+             (java.util List ArrayList Hashtable Date Iterator)
              (java.sql Timestamp)
              (java.math BigDecimal))
     (:gen-class

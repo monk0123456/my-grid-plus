@@ -11,7 +11,7 @@
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
-             (java.util List ArrayList Date Iterator)
+             (java.util List ArrayList Hashtable Date Iterator)
              )
     (:gen-class
         ; 生成 class 的类名

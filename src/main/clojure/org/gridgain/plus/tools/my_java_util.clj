@@ -4,7 +4,7 @@
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)
-             (java.util List ArrayList Date Iterator)
+             (java.util List ArrayList Hashtable Date Iterator)
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache CacheMode)
              (com.google.gson Gson GsonBuilder)
