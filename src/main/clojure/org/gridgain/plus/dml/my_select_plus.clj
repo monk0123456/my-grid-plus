@@ -527,11 +527,9 @@
             ; query items 处理
             (get-query-items [lst]
                 (when-let [[f & rs] (pre-query-lst lst)]
-                    (try
-                        (if (map? f) (concat [f] (get-query-items rs))
-                                     (when-let [{item-lst :item-lst alias :alias} (get-item-lst f)]
-                                         (concat [(assoc (get-token item-lst) :alias alias)] (get-query-items rs))))
-                        (catch Exception e (.getMessage e)))))
+                    (if (map? f) (concat [f] (get-query-items rs))
+                                 (when-let [{item-lst :item-lst alias :alias} (get-item-lst f)]
+                                     (concat [(assoc (get-token item-lst) :alias alias)] (get-query-items rs))))))
             (sql-to-ast-single [sql-lst]
                 (when-let [{query-items :query-items table-items :table-items where-items :where-items group-by :group-by having :having order-by :order-by limit :limit} (my-lexical/get-segments-list sql-lst)]
                     {:query-items (get-query-items (my-lexical/to-lazy query-items)) :table-items (get-table-items (my-lexical/to-lazy table-items)) :where-items (get-token where-items) :group-by (get-token group-by) :having (get-token having) :order-by (get-order-by order-by) :limit (get-limit limit)}))

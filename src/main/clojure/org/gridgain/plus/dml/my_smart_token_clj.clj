@@ -203,6 +203,8 @@
               (get-inner-function-context (str/lower-case func-name) my-context) (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "query_sql") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
               (and (contains? my-context :top-func) (= func-name (-> my-context :top-func))) (format "(%s ignite group_id %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
+              (= func-name "empty?") (format "(empty? %s)" (token-to-clj ignite group_id lst_ps my-context))
+              (= func-name "notEmpty?") (format "(my-lexical/not-empty? %s)" (token-to-clj ignite group_id lst_ps my-context))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
               (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
@@ -238,6 +240,7 @@
                                                                                                          (recur r (conj lst (token-to-clj ignite group_id f my-context)))
                                                                                                          (str/join " " lst)))
           (and (> (count (filter #(and (map? %) (contains? % :comparison_symbol)) (-> m :parenthesis))) 0) (= (count (-> m :parenthesis)) 3)) (format "(%s %s %s)" (-> (second (-> m :parenthesis)) :comparison_symbol) (token-to-clj ignite group_id (first (-> m :parenthesis)) my-context) (token-to-clj ignite group_id (last (-> m :parenthesis)) my-context))
+          (and (>= (count (-> m :parenthesis)) 3) (contains? (second (-> m :parenthesis)) :and_or_symbol)) (judge ignite group_id (-> m :parenthesis) my-context)
           :else
           (calculate ignite group_id (reverse (-> m :parenthesis)) my-context)))
 

@@ -29,17 +29,11 @@
         ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
         ))
 
-(declare body-segment get-ast-lst get-ast get-re-pair get-pairs get-pairs-tokens items-to-ast
+(declare body-segment get-ast-lst get-ast get-re-pair get-pairs get-pairs-tokens
          my-item-tokens get-pair-item-ex split-pair-item-ex)
 
 (defn add-let-name [my-context let-name]
     (assoc my-context :let-params (conj (-> my-context :let-params) let-name)))
-
-(defn items-to-ast [lst]
-    (try
-        (my-select-plus/sql-to-ast lst)
-        (catch Exception e
-            (my-item-tokens lst))))
 
 (defn get-pair-item-ex
     ([lst] (get-pair-item-ex lst [] nil [] []))
@@ -351,7 +345,7 @@
 
 (defn get-for-in-args [lst]
     (if (my-lexical/is-eq? (second lst) "in")
-        {:tmp_val (items-to-ast [(first lst)]) :seq (items-to-ast (rest (rest lst)))}))
+        {:tmp_val (my-item-tokens [(first lst)]) :seq (my-item-tokens (rest (rest lst)))}))
 
 
 (defn lst-to-token [lst]
@@ -360,10 +354,10 @@
           (and (my-lexical/is-eq? (first lst) "let") (= (count lst) 2)) {:let-name (second lst) :let-vs nil}
           (my-lexical/is-eq? (first lst) "else") (if (my-lexical/is-eq? (second lst) "break")
                                                      {:else-vs {:break-vs true}}
-                                                     {:else-vs (items-to-ast (rest lst))})
+                                                     {:else-vs (my-item-tokens (rest lst))})
           (my-lexical/is-eq? (first lst) "break") {:break-vs true}
           :else
-          {:express (items-to-ast lst)}
+          {:express (my-item-tokens lst)}
           ;(let [pair-item (split-pair-item lst)]
           ;    (cond (= (count pair-item) 2) {:pair (my-select-plus/sql-to-ast (first pair-item)) :pair-vs (my-select-plus/sql-to-ast (second pair-item))}
           ;          (= (count pair-item) 1) {:express (my-select-plus/sql-to-ast (first pair-item))}
@@ -401,7 +395,7 @@
             (if (and (= (count (first f)) 1) (my-lexical/is-eq? (first (first f)) "else"))
                 (recur r (conj lst-rs {:else-vs (body-segment (second f))}))
                 (let [pv (body-segment (second f))]
-                    (recur r (conj lst-rs {:pair (items-to-ast (first f)) :pair-vs pv})))
+                    (recur r (conj lst-rs {:pair (my-item-tokens (first f)) :pair-vs pv})))
                 )
             lst-rs)))
 
@@ -414,12 +408,6 @@
                                                                                               (let [{big-lst :big-lst rest-lst :rest-lst} (get-big body-lst)]
                                                                                                   (recur rest-lst [] (conj lst {:expression "for" :args (get-for-in-args args-lst) :body (body-segment big-lst)})))))
                (and (empty? stack-lst) (my-lexical/is-eq? f "match") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]
-                                                                                            ;(recur rest-lst [] (conj lst {:expression "match" :pairs (my-re-match (body-segment big-lst))}))
-                                                                                            ;(println big-lst)
-                                                                                            (println (split-pair-item-ex big-lst))
-                                                                                            (println (get-pairs-tokens (split-pair-item-ex big-lst)))
-                                                                                            ;(println (get-pairs (get-re-pair (split-pair-item-ex big-lst))))
-                                                                                            ;(recur rest-lst [] (conj lst {:expression "match" :pairs (get-pairs-tokens (get-pairs (get-re-pair (split-pair-item-ex big-lst))))}))
                                                                                             (recur rest-lst [] (conj lst {:expression "match" :pairs (get-pairs-tokens (split-pair-item-ex big-lst))}))
                                                                                             )
                (and (empty? stack-lst) (my-lexical/is-eq? f "innerFunction") (= (first r) "{")) (let [{big-lst :big-lst rest-lst :rest-lst} (get-big r)]

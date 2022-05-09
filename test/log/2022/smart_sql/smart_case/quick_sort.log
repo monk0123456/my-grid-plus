@@ -16,7 +16,17 @@ function quickSort(lst)
         }
     }
     let rs = getBigAndSmall(lst.first(), lst.rest());
-    concat(quickSort(rs.nth(0)), [lst.first()], quickSort(rs.nth(1)));
+    match {
+        (notEmpty?(rs.nth(0)) and notEmpty?(rs.nth(1))): concat(quickSort(rs.nth(0)), [lst.first()], quickSort(rs.nth(1)));
+        (notEmpty?(rs.nth(0)) and empty?(rs.nth(1))): concat(quickSort(rs.nth(0)), [lst.first()]);
+        (empty?(rs.nth(0)) and notEmpty?(rs.nth(1))): concat([lst.first()], quickSort(rs.nth(1)));
+        else [lst.first()];
+    }
 }
 
 (def lst-num [12 21 25 2 5 6 56 27 95 8])
+
+(eval (read-string (my-smart-clj/smart-to-clj ignite 0 "function quickSort(lst)\n{\n    innerFunction {\n        function getBigAndSmall(vs, seq)\n        {\n            let big = [];\n            let small = [];\n            for (m in seq)\n            {\n                match {\n                    m >= vs: big.add(m);\n                    m < vs: small.add(m);\n                }\n            }\n            [small, big];\n        }\n    }\n    let rs = getBigAndSmall(lst.first(), lst.rest());\n    match {\n        (notEmpty?(rs.nth(0)) and notEmpty?(rs.nth(1))): concat(quickSort(rs.nth(0)), [lst.first()], quickSort(rs.nth(1)));\n        (notEmpty?(rs.nth(0)) and empty?(rs.nth(1))): concat(quickSort(rs.nth(0)), [lst.first()]);\n        (empty?(rs.nth(0)) and notEmpty?(rs.nth(1))): concat([lst.first()], quickSort(rs.nth(1)));\n        else [lst.first()];\n    }\n}")))
+=> #'user/quickSort
+(quickSort ignite 0 [12 3 42 50 18 96 61 5 16 27 51 8])
+=> (3 5 8 12 16 18 27 42 50 51 61 96)
