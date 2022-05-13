@@ -149,17 +149,17 @@
              )
          (conj (letLayer-to-clj letLayer) my-context))))
 
-(defn for-seq [ignite group_id f my-context]
+(defn for-seq-0 [ignite group_id f my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (-> f :args :seq :item_name) my-it (get-my-it my-context)]
         (let [my-context-1 (assoc my-context :let-params (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil}) :up-stm "for")]
             (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) my-context-1) loop-r (gensym "loop-r")]
-                (format "(cond (instance? Iterator %s) (loop [%s %s]\n
+                (format "(cond (my-lexical/my-is-iter? %s) (loop [%s (my-lexical/get-my-iter %s)]\n
                                                        (if (.hasNext %s)\n
                                                            (let [%s (.next %s)]\n
                                                                %s\n
                                                                (recur %s)\n
                                                                )))\n
-                        (my-lexical/is-seq? %s) (loop [[%s & %s] %s]\n
+                        (my-lexical/my-is-seq? %s) (loop [[%s & %s] (my-lexical/get-my-seq %s)]\n
                                          (if (some? %s)\n
                                              (do\n
                                                   %s\n
@@ -179,22 +179,58 @@
                 ))
         ))
 
+(defn for-seq [ignite group_id f my-context]
+    (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (-> f :args :seq :item_name) my-it (get-my-it my-context)]
+        (let [my-context-1 (assoc my-context :let-params (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil}) :up-stm "for")]
+            (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) my-context-1)]
+                (format "(cond (my-lexical/my-is-iter? %s) (try\n (loop [%s (my-lexical/get-my-iter %s)]\n
+                                                                (if (.hasNext %s)\n
+                                                                     (let [%s (.next %s)]\n
+                                                                             %s\n
+                                                                          (recur %s))))
+                                                            (catch Exception e\n
+                                                                 (if-not (= (.getMessage e) \"my-break\")\n
+                                                                 (throw e))))
+
+                        (my-lexical/my-is-seq? %s) (try\n   (doseq [%s (my-lexical/get-my-seq %s)]
+                                                             %s\n
+                                                         )
+                                                      (catch Exception e\n
+                                                            (if-not (= (.getMessage e) \"my-break\")
+                                                               (throw e))))
+                        :else\n
+                        (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
+                        )"
+                        seq-name my-it seq-name
+                        my-it
+                        tmp-val-name my-it
+                        for-inner-clj
+                        my-it
+                        seq-name tmp-val-name seq-name
+                        for-inner-clj
+                        )
+                ))
+        ))
+
 (defn for-seq-func [ignite group_id f my-context]
     (let [tmp-val-name (-> f :args :tmp_val :item_name) seq-name (get-my-let my-context) my-it (get-my-it my-context) func-clj (token-to-clj ignite group_id (-> f :args :seq) my-context)]
         (let [my-context-1 (assoc my-context :let-params (merge (-> my-context :let-params) {tmp-val-name nil} {my-it nil}) :up-stm "for")]
             (let [for-inner-clj (body-to-clj ignite group_id (-> f :body) my-context-1) loop-r (gensym "loop-r")]
                 (format "(let [%s %s]\n
-                          (cond (instance? Iterator %s) (loop [%s %s]\n
-                                                              (if (.hasNext %s)\n
-                                                                  (let [%s (.next %s)]\n
-                                                                       %s\n
-                                                                       (recur %s)\n
-                                                                       )))\n
-                                (my-lexical/is-seq? %s) (loop [[%s & %s] %s]\n
-                                                  (if (some? %s)\n
-                                                      (do\n
-                                                           %s\n
-                                                      (recur %s))))\n
+                          (cond (my-lexical/my-is-iter? %s) (try\n (loop [%s (my-lexical/get-my-iter %s)]\n
+                                                                 (if (.hasNext %s)\n
+                                                                     (let [%s (.next %s)]\n
+                                                                         %s\n
+                                                                     (recur %s)\n
+                                                                 )))\n
+                                                             (catch Exception e\n
+                                                                 (if-not (= (.getMessage e) \"my-break\")\n
+                                                                     (throw e))))
+                                (my-lexical/my-is-seq? %s) (try\n (doseq [%s (my-lexical/get-my-seq %s)] \n
+                                                                 %s)\n
+                                                             (catch Exception e\n
+                                                                 (if-not (= (.getMessage e) \"my-break\")\n
+                                                             (throw e))))
                                 :else\n
                                 (throw (Exception. \"for 循环只能处理列表或者是执行数据库的结果\"))\n
                                 ))"
@@ -204,10 +240,9 @@
                         tmp-val-name my-it
                         for-inner-clj
                         my-it
-                        seq-name tmp-val-name loop-r seq-name
-                        tmp-val-name
+                        seq-name tmp-val-name seq-name
                         for-inner-clj
-                        loop-r)))
+                        )))
         ))
 
 ;(defn match-to-clj
@@ -291,7 +326,7 @@
                                                    (let [express-line (express-to-clj ignite group_id r-express let-my-context)]
                                                        (format "%s %s %s" let-first express-line let-tail)))
                (contains? f-express :break-vs) (if (contains? my-context :up-stm)
-                                                   (recur ignite group_id r-express my-context (conj lst "(recur nil)"))
+                                                   (recur ignite group_id r-express my-context (conj lst "(throw (Exception. \"my-break\"))"))
                                                    (throw (Exception. "break 语句只能用于 for 语句块中！"))
                                                    )
                :else

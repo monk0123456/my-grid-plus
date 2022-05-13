@@ -1,0 +1,12 @@
+(defmacro my-loop [loop-definition & body]
+    `(let [continue# (atom true)
+           ~'break (fn [] (swap! continue# (constantly false)))]
+         (doseq [~@loop-definition :while @continue#]
+             ~@body)))
+=> #'user/my-loop
+(my-loop [cf (range 10)]
+         (if (>= cf 5)
+             (do
+                 (break)
+                 (println cf))
+             (println cf)))

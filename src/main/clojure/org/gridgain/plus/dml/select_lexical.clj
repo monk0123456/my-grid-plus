@@ -141,7 +141,7 @@
 
 ; 是否是序列
 (defn is-seq? [m]
-    (or (vector? m) (seq? m) (list? m)))
+    (or (vector? m) (seq? m) (list? m) (instance? java.util.List m)))
 
 ; 执行事务
 ; lst_cache: [MyCacheEx]
@@ -174,6 +174,26 @@
      (if (some? f)
          (recur r (doto lst (.add f)))
          lst)))
+
+(defn my-is-iter? [m]
+    (cond (instance? Iterator m) true
+          (and (instance? MyVar m) (instance? Iterator (.getVar m))) true
+          :else false))
+
+(defn get-my-iter [m]
+    (cond (instance? Iterator m) m
+          (and (instance? MyVar m) (instance? Iterator (.getVar m))) (.getVar m)
+          ))
+
+(defn my-is-seq? [m]
+    (cond (is-seq? m) true
+          (and (instance? MyVar m) (is-seq? (.getVar m))) true
+          :else false))
+
+(defn get-my-seq [m]
+    (cond (is-seq? m) m
+          (and (instance? MyVar m) (is-seq? (.getVar m))) (.getVar m)
+          ))
 
 ; smart 操作集合的函数
 (defn list-add [^ArrayList lst ^Object obj]

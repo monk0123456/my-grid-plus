@@ -1,9 +1,11 @@
 package org.gridgain.plus;
 
+import cn.plus.model.ddl.MyFuncPs;
 import org.gridgain.plus.tools.MyUtil;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class my_util {
     MyUtil util;
@@ -60,4 +62,78 @@ public class my_util {
         //map.keySet()
         //map.containsKey()
     }
+
+    @Test
+    public void my_case()
+    {
+        List<MyFuncPs> lst = new ArrayList<>();
+        lst.add(new MyFuncPs(1, "String"));
+        lst.add(new MyFuncPs(2, "Long"));
+        lst.add(new MyFuncPs(3, "Integer"));
+        StringBuilder sb = new StringBuilder();
+        List<MyFuncPs> lstFunc = lst.stream().sorted((a, b) -> a.getPs_index() - b.getPs_index()).collect(Collectors.toList());
+        for (MyFuncPs m : lstFunc)
+        {
+            sb.append(String.format("参数 %s: (%s) ", m.getPs_index().toString(), m.getPs_type()));
+        }
+        System.out.println(sb.toString());
+    }
+
+    public int add(final int n)
+    {
+        int rs = 0;
+        for (int i = 0; i <= n; i++)
+        {
+            rs += i;
+        }
+        return rs;
+    }
+
+    @Test
+    public void my_case_1()
+    {
+        List<String> lst = new ArrayList<>();
+
+        System.out.println(add(10));
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

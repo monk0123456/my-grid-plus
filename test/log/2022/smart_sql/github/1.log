@@ -1,0 +1,17 @@
+https://leetcode.cn/problems/two-sum/
+
+function twoSum(nums, target)
+{
+    let dic = {};
+    let my_count = count(nums);
+    let rs = [];
+
+    for (i in range(my_count))
+    {
+        match {
+            contains?(dic, target - nums.nth(i)): rs.add([i, dic.get(target - nums.nth(i))]);
+        }
+        dic.put(nums.nth(i), i);
+    }
+    rs;
+}

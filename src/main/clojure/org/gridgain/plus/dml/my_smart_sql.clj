@@ -297,6 +297,7 @@
                         (cond (and (= (first f) "[") (= (last f) "]")) (recur r (conj lst-rs {:seq-obj (get-item-tokens (my-lexical/get-contain-lst f))}))
                               (and (= (first f) "{") (= (last f) "}")) (let [lst-dic (get-items-dic (my-lexical/get-contain-lst f))]
                                                                            (recur r (conj lst-rs {:map-obj (kv-to-token lst-dic)})))
+                              (and (= (first f) "-") (not (empty? (rest f)))) (recur r (conj lst-rs (my-select-plus/sql-to-ast (concat ["0"] f))))
                               :else
                               (recur r (conj lst-rs (my-select-plus/sql-to-ast f))))
                         (if (= (count lst-rs) 1)
@@ -428,9 +429,25 @@
                     [{:func-name func-name :args-lst args-lst :body-lst (body-segment big-lst)}])
                 ))))
 
+(defn re-body-lst [args-lst body-lst]
+    (loop [[f & r] args-lst new-args-lst [] new-body-lst []]
+        (if (some? f)
+            (let [ps (str (gensym (format "c_%s_f" f)))]
+                (recur r (conj new-args-lst ps ) (conj new-body-lst {:let-name f, :let-vs {:table_alias "", :item_name ps, :item_type "", :java_item_type nil, :const false}})))
+            [new-args-lst (concat new-body-lst body-lst)])))
+
+(defn re-ast
+    ([lst] (re-ast lst []))
+    ([[f & r] lst]
+     (if (some? f)
+         (let [[new-args-lst new-body-lst] (re-body-lst (-> f :args-lst) (-> f :body-lst))]
+             (recur r (conj lst (assoc f :args-lst new-args-lst :body-lst new-body-lst))))
+         lst)))
+
 (defn get-ast [^String sql]
     (if-let [lst (my-lexical/to-back sql)]
-        (get-ast-lst lst)
+        ;(get-ast-lst lst)
+        (re-ast (get-ast-lst lst))
         ))
 
 ;(defn get-ast [^String sql]

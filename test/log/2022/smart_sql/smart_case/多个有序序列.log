@@ -1,0 +1,23 @@
+function getMix(lst)
+{
+    /**
+      获取集合 lst 中第一个元素最小的值，并记录下集合的 index
+    */
+    let min = [-1, -1];
+    for (index in range(count(lst)))
+    {
+        match {
+            lst.nth(index).first() < min: min = [lst.nth(index).first(), index];
+        }
+    }
+
+    /**
+      返回最小的值和重构的集合
+    */
+    let m = lst.get(index);
+    match {
+        empty?(m.rest()): lst.remove(index);
+        notEmpty?(m.rest()): lst.set(index, m.rest());
+    }
+    [mid.first(), lst];
+}
