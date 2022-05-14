@@ -36,3 +36,7 @@
 
 
 ((eval (read-string "(fn [a & b]\n     (apply + a b))")) 1 2 3 4 5 6)
+
+
+(my-smart-token-clj/smart-func-lst ignite 0 (my-select-plus/sql-to-ast (my-lexical/to-back "d.get(1).my(index)")) my-context)
+=> [["my-lexical/map-list-get " "my "] ["1" "index"]]

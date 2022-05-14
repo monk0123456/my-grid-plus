@@ -85,12 +85,11 @@
             (recur r-dic (conj lst-kv {:key (to-token (first f-dic)) :value (to-token (last f-dic))}))
             lst-kv)))
 (defn to-token [vs]
-    (cond (and (= (first vs) "[") (= (last vs) "]")) {:seq-obj (get-item-tokens vs)}
-ser/lst-ps
-(my-select-plus/my-get-items lst-ps)          (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens vs)}
-          :else
-          (sql-to-ast vs)
-          ))
+                (cond (and (= (first vs) "[") (= (last vs) "]")) {:seq-obj (get-item-tokens (my-lexical/get-contain-lst vs))}
+                      (and (= (first vs) "{") (= (last vs) "}")) {:map-obj (get-item-tokens (my-lexical/get-contain-lst vs))}
+                      :else
+                      (get-token vs)
+                      ))
 (defn get-item-tokens [lst]
     (loop [[f & r] (get-items (my-lexical/get-contain-lst lst)) lst-rs []]
         (if (some? f)
@@ -312,44 +311,48 @@ ser/lst-ps
          my-obj)))
 ; 获取 token ast
 (defn get-token
-    [lst]
-    (if (some? lst)
-        (if (string? lst)
-            (get-token-line lst)
-            (if (and (= (count lst) 1) (string? (first lst)))
-                (get-token-line (first lst))
-                (let [where-line-m (get-where-line lst)]
-                    (if (is-true? where-line-m)
-                        (map get-token where-line-m)
-                        (let [where-item-line-m (get-where-item-line lst)]
-                            (if (is-true? where-item-line-m)
-                                (map get-token where-item-line-m)
-                                (if-let [fn-m (func-fn lst)]
-                                    fn-m
-                                    (if-let [oprate-m (operation lst)]
-                                        oprate-m
-                                        (if-let [p-m (parenthesis lst)]
-                                            p-m
-                                            (let [not-exists-m (parenthesis (rest (rest lst)))]
-                                                (if (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? not-exists-m))
-                                                    {:exists "not exists" :select_sql not-exists-m}
-                                                    (let [exists-m (parenthesis (rest lst))]
-                                                        (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
-                                                            {:exists "exists" :select_sql exists-m}
-                                                            (if-let [ds-m (ds-func (ds-fun-lst lst))]
-                                                                ds-m))))))))
-                                ))))
-                )
-            ;(cond (and (= (count lst) 1) (string? (first lst))) (get-token-line (first lst))
-            ;      (is-true? get-where-line-m lst) (map get-token (get-where-line-m lst))
-            ;      (is-true? get-where-item-line-m lst) (map get-token (get-where-item-line-m lst))
-            ;      (some? (func-fn-m lst)) (when-let [m (func-fn-m lst)] m)
-            ;      (some? (operation-m lst)) (when-let [m (operation-m lst)] m)
-            ;      (some? (parenthesis-m lst)) (when-let [m (parenthesis-m lst)] m)
-            ;      (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? (parenthesis-m (rest (rest lst))))) (when-let [m (parenthesis-m (rest (rest lst)))] {:exists "not exists" :select_sql m})
-            ;      (and (my-lexical/is-eq? (first lst) "exists") (some? (parenthesis-m (rest lst)))) (when-let [m (parenthesis-m (rest lst))] {:exists "exists" :select_sql m})
-            ;      )
-            )))
+                      [lst]
+                      (if (some? lst)
+                          (if (string? lst)
+                              (get-token-line lst)
+                              (if (and (= (count lst) 1) (string? (first lst)))
+                                  (get-token-line (first lst))
+                                  (if (and (= (count lst) 3) (= (second lst) "."))
+                                      (if (and (re-find #"^(?i)\d+$" (first lst)) (re-find #"^(?i)\d+$" (last lst)))
+                                          {:table_alias "" :item_name (str (first lst) "." (last lst)) :item_type "" :java_item_type BigDecimal :const true}
+                                          {:item_name (last lst) :table_alias (first lst) :const false})
+                                      (let [where-line-m (get-where-line lst)]
+                                          (if (is-true? where-line-m)
+                                              (map get-token where-line-m)
+                                              (let [where-item-line-m (get-where-item-line lst)]
+                                                  (if (is-true? where-item-line-m)
+                                                      (map get-token where-item-line-m)
+                                                      (if-let [fn-m (func-fn lst)]
+                                                          fn-m
+                                                          (if-let [oprate-m (operation lst)]
+                                                              oprate-m
+                                                              (if-let [p-m (parenthesis lst)]
+                                                                  p-m
+                                                                  (let [not-exists-m (parenthesis (rest (rest lst)))]
+                                                                      (if (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? not-exists-m))
+                                                                          {:exists "not exists" :select_sql not-exists-m}
+                                                                          (let [exists-m (parenthesis (rest lst))]
+                                                                              (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
+                                                                                  {:exists "exists" :select_sql exists-m}
+                                                                                  (if-let [ds-m (ds-func (ds-fun-lst lst))]
+                                                                                      ds-m))))))))
+                                                      )))))
+                                  )
+                              ;(cond (and (= (count lst) 1) (string? (first lst))) (get-token-line (first lst))
+                              ;      (is-true? get-where-line-m lst) (map get-token (get-where-line-m lst))
+                              ;      (is-true? get-where-item-line-m lst) (map get-token (get-where-item-line-m lst))
+                              ;      (some? (func-fn-m lst)) (when-let [m (func-fn-m lst)] m)
+                              ;      (some? (operation-m lst)) (when-let [m (operation-m lst)] m)
+                              ;      (some? (parenthesis-m lst)) (when-let [m (parenthesis-m lst)] m)
+                              ;      (and (my-lexical/is-eq? (first lst) "not") (my-lexical/is-eq? (second lst) "exists") (some? (parenthesis-m (rest (rest lst))))) (when-let [m (parenthesis-m (rest (rest lst)))] {:exists "not exists" :select_sql m})
+                              ;      (and (my-lexical/is-eq? (first lst) "exists") (some? (parenthesis-m (rest lst)))) (when-let [m (parenthesis-m (rest lst))] {:exists "exists" :select_sql m})
+                              ;      )
+                              )))
 ; 预处理 get-query-items 输入
 (defn pre-query-lst [[f & rs]]
     (if (some? f)

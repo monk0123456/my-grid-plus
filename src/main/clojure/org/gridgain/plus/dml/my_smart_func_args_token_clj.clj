@@ -146,38 +146,15 @@
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m args-dic]
     (let [{func-name :func-name lst_ps :lst_ps} m]
-        (cond (my-lexical/is-eq? func-name "trans") (let [t_f (gensym "t_f") t_r (gensym "t_r") lst-rs (gensym "lst-rs-")]
-                                                        (format "(loop [[f_%s & r_%s] %s lst-rs-%s []]
-                                                                   (if (some? f_%s)
-                                                                         (let [[sql args] f_%s]
-                                                                                 (let [sql-lst (my-lexical/to-back (apply format sql (my-args args)))]
-                                                                                     (cond (my-lexical/is-eq? (first sql-lst) \"insert\") (recur r_%s (conj lst-rs-%s (insert-to-cache ignite group_id %s sql-lst)))
-                                                                                           (my-lexical/is-eq? (first sql-lst) \"update\") ()
-                                                                                           (my-lexical/is-eq? (first sql-lst) \"delete\") ()
-                                                                                     )))
-                                                                         (if-not (empty? lst-rs-%s)
-                                                                             (MyCacheExUtil/transCache ignite lst-rs-%s))
-                                                                   ))" t_f t_r (-> (first lst_ps) :item_name) lst-rs
-                                                                t_f
-                                                                t_f
-                                                                t_r lst-rs (str args-dic)
-                                                                lst-rs
-                                                                lst-rs
-                                                                ))
+        (cond (my-lexical/is-eq? func-name "trans") (format "(%s ignite group_id %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps args-dic))
               (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps args-dic))
               (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id %s %s)" func-name (token-to-clj ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? "log" func-name) (format "(log %s)" (token-to-clj ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? "println" func-name) (format "(println %s)" (token-to-clj ignite group_id lst_ps args-dic))
               (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
                                             (if (> (count lst_ps) 0)
-                                                (format "(%s (.getVar %s) %s)" (smart-func method-name) let-name (token-to-clj ignite group_id lst_ps args-dic))
-                                                (format "(%s (.getVar %s))" (smart-func method-name) let-name))
-                                            ;(if-let [let-obj (get-let-context let-name args-dic)]
-                                            ;    (if (and (true? (has-func? let-obj method-name)) (= let-name ""))
-                                            ;        (if (> (count lst_ps) 0)
-                                            ;            (format "(%s %s %s)" method-name let-name (token-to-clj ignite group_id lst_ps args-dic))
-                                            ;            (format "(%s %s)" method-name let-name)))
-                                            ;    )
+                                                (format "(%s (my-lexical/get-value %s) %s)" (smart-func method-name) let-name (token-to-clj ignite group_id lst_ps args-dic))
+                                                (format "(%s (my-lexical/get-value %s))" (smart-func method-name) let-name))
                                             )
               ; 系统函数
               (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps args-dic))

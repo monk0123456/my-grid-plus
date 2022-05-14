@@ -1,0 +1,12 @@
+(defn is-link-func? [lst]
+    (loop [[f & r] (filter odd? (range (count lst))) flag []]
+        (if (some? f)
+            (recur r (conj flag (nth lst f)))
+            (if (empty? (filter #(not (= % ".")) flag))
+                true false))))
+
+(defn link-func [lst]
+    (if (is-link-func? lst)
+        ))
+
+;(println "OK")

@@ -190,12 +190,6 @@
                                             (if (> (count lst_ps) 0)
                                                 (format "(%s (my-lexical/get-value %s) %s)" (smart-func method-name) let-name (token-to-clj ignite group_id lst_ps my-context))
                                                 (format "(%s (my-lexical/get-value %s))" (smart-func method-name) let-name))
-                                            ;(if-let [let-obj (get-let-context let-name my-context)]
-                                            ;    (if (and (true? (has-func? let-obj method-name)) (= let-name ""))
-                                            ;        (if (> (count lst_ps) 0)
-                                            ;            (format "(%s %s %s)" method-name let-name (token-to-clj ignite group_id lst_ps my-context))
-                                            ;            (format "(%s %s)" method-name let-name)))
-                                            ;    )
                                             )
               ; 系统函数
               (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (token-to-clj ignite group_id lst_ps my-context))
