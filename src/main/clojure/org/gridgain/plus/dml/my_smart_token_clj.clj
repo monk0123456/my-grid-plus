@@ -1,7 +1,6 @@
 (ns org.gridgain.plus.dml.my-smart-token-clj
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
-        [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -27,7 +26,7 @@
         ))
 
 (declare is-symbol-priority run-express calculate is-func? is-scenes? func-to-clj item-to-clj token-lst-to-clj
-         token-to-clj map-token-to-clj parenthesis-to-clj seq-obj-to-clj map-obj-to-clj smart-func-to-clj)
+         token-to-clj map-token-to-clj parenthesis-to-clj seq-obj-to-clj map-obj-to-clj smart-func-to-clj func-link-to-clj)
 
 ; 添加 let 定义到 my-context
 (defn add-let-to-context [let-name let-vs my-context]
@@ -269,8 +268,10 @@
 
 (defn map-token-to-clj [ignite group_id m my-context]
     (if (some? m)
-        (cond (and (contains? m :func-name) (contains? m :lst_ps) (not (contains? m :ds-name))) (func-to-clj ignite group_id m my-context)
-              (and (contains? m :func-name) (contains? m :lst_ps) (contains? m :ds-name)) (smart-func-to-clj ignite group_id m my-context)
+        (cond (contains? m :func-name) (func-to-clj ignite group_id m my-context)
+              ;(and (contains? m :func-name) (contains? m :lst_ps)) (func-to-clj ignite group_id m my-context)
+              ;(and (contains? m :func-name) (contains? m :lst_ps) (contains? m :ds-name)) (smart-func-to-clj ignite group_id m my-context)
+              (contains? m :func-link) (func-link-to-clj ignite group_id (reverse (-> m :func-link)) my-context)
               (contains? m :and_or_symbol) (get m :and_or_symbol)
               (contains? m :operation) (calculate ignite group_id (reverse (-> m :operation)) my-context)
               (contains? m :comparison_symbol) (get m :comparison_symbol)
@@ -293,6 +294,20 @@
                 (recur r (doto sb (.append (format "(.put %s %s)" (token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)))))
                 )
             (format "(doto (Hashtable.)\n    %s)" (.toString sb)))))
+
+(defn func-link-to-clj [ignite group_id [f & r] my-context]
+    (cond (and (some? f) (or (nil? r) (empty? r))) (token-clj ignite group_id f my-context)
+          (and (some? f) (some? r)) (let [up-items (func-link-to-clj ignite group_id r my-context)]
+                                        (if-not (Strings/isNullOrEmpty up-items)
+                                            (let [m (assoc f :lst_ps (conj (-> f :lst_ps) {:table_alias "", :item_name up-items, :item_type "", :java_item_type nil, :const false}))]
+                                                (func-to-clj ignite group_id m my-context))
+                                            ))
+          )
+    )
+
+; 生成联级方法调用的匿名函数
+(defn func-link-clj []
+    ())
 
 ;(defn map-obj-to-clj [ignite group_id m my-context]
 ;    (loop [[f & r] m lst-rs []]

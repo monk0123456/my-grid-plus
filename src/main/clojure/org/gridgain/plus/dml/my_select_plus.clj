@@ -2,6 +2,8 @@
     (:require
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.context.my-context :as my-context]
+        [org.gridgain.plus.tools.my-cache :as my-cache]
+        [org.gridgain.plus.dml.my-smart-token-clj :as my-smart-token-clj]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
@@ -908,10 +910,32 @@
             (on-to-line [ignite group_id m]
                 (if (some? m)
                     (str/join ["on " (str/join " " (token-to-sql ignite group_id (get m :on)))])))
+            ;(func-to-line [ignite group_id m]
+            ;    (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
+            ;        (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")" " as"] [(-> m :alias)])
+            ;        (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")"])))
             (func-to-line [ignite group_id m]
                 (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
-                    (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")" " as"] [(-> m :alias)])
-                    (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")"])))
+                    (let [lst-ps-items (map (partial token-to-sql ignite group_id) (-> m :lst_ps))]
+                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                (concat ["my_fun(" (format "'%s'," (-> m :func-name))] lst-ps-items [")" " as"] [(-> m :alias)])
+                                                                                                (concat ["my_fun(" (format "'%s'" (-> m :func-name))] [")" " as"] [(-> m :alias)]))
+                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] lst-ps-items [")" " as"] [(-> m :alias)])
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] [")" " as"] [(-> m :alias)]))
+                              :else
+                              (concat [(-> m :func-name) "("] lst-ps-items [")" " as"] [(-> m :alias)])
+                              ))
+                    (let [lst-ps-items (map (partial token-to-sql ignite group_id) (-> m :lst_ps))]
+                        (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                (concat ["my_fun(" (format "'%s'," (-> m :func-name))] lst-ps-items [")"] [(-> m :alias)])
+                                                                                                (concat ["my_fun(" (format "'%s'" (-> m :func-name))] [")"] [(-> m :alias)]))
+                              (my-cache/is-scenes? ignite group_id (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s," (-> m :func-name) group_id)] lst-ps-items [")"] [(-> m :alias)])
+                                                                                                           (concat ["my_invoke(" (format "'%s', %s" (-> m :func-name) group_id)] [")"] [(-> m :alias)]))
+                              :else
+                              (concat [(-> m :func-name) "("] lst-ps-items [")"] [(-> m :alias)])
+                              ))))
             (func-link-to-line
                 ([ignite group_id lst] (func-link-to-line ignite group_id lst []))
                 ([ignite group_id [f & r] lst]
