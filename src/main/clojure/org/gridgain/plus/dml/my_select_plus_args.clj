@@ -280,7 +280,7 @@
                         {:sql (str/join ["on " (str/join " " sql)]) :args args})
                     ))
             (func-to-line [ignite group_id dic-args m]
-                (if (and (contains? m :alias) (not (nil? (-> m :alias))))
+                (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
                     (let [{sql :sql args :args} (get-map-token-to-sql (map (partial token-to-sql ignite group_id dic-args) (-> m :lst_ps)))]
                         (cond (my-cache/is-func? ignite (str/lower-case (-> m :func-name))) (if-not (empty? (-> m :lst_ps))
                                                                                                 {:sql (concat ["my_fun(" (format "'%s'," (-> m :func-name))] sql [")" " as"] [(-> m :alias)]) :args args}

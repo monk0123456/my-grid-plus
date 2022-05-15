@@ -10,3 +10,26 @@
         ))
 
 ;(println "OK")
+
+(def lst (my-lexical/to-back "lst.nth(index).first()"))
+
+(def func-lst (my-select-plus/my-func-link lst))
+
+(defn is-link-func? [lst]
+    (loop [[f & r] (filter odd? (range (count lst))) flag []]
+        (if (some? f)
+            (recur r (conj flag (nth lst f)))
+            (if (empty? (filter #(not (= % ".")) flag))
+                true false))))
+
+lst
+(reverse func-lst)
+(is-link-func? func-lst)
+(defn link-func [lst]
+    (if (is-link-func? lst)
+        (loop [[f & r] lst rs []]
+            (if (some? f)
+                (if (string? f)
+                    (recur r rs)
+                    (recur r (conj rs (my-select-plus/sql-to-ast f))))
+                {:func-link rs}))))

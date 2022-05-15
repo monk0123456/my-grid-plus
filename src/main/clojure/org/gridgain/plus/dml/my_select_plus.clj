@@ -425,6 +425,23 @@
                                  (recur r (assoc func-obj :ds-name schema_name :func-name func-name))
                                  (recur r (assoc my-obj :ds-lst (assoc func-obj :ds-name schema_name :func-name func-name))))))
                      my-obj)))
+
+            (link-func [lst]
+                (let [func-lst (my-func-link lst)]
+                    (letfn [(is-link-func? [lst]
+                                (loop [[f & r] (filter odd? (range (count lst))) flag []]
+                                    (if (some? f)
+                                        (recur r (conj flag (nth lst f)))
+                                        (if (empty? (filter #(not (= % ".")) flag))
+                                            true false))))]
+                        (if (is-link-func? func-lst)
+                            (loop [[f & r] func-lst rs []]
+                                (if (some? f)
+                                    (if (string? f)
+                                        (recur r rs)
+                                        (recur r (conj rs (get-token f)))
+                                        )
+                                    {:func-link rs}))))))
             ; 获取 token ast
             (get-token
                 [lst]
@@ -455,7 +472,7 @@
                                                                     (let [exists-m (parenthesis (rest lst))]
                                                                         (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
                                                                             {:exists "exists" :select_sql exists-m}
-                                                                            (if-let [ds-m (ds-func (ds-fun-lst lst))]
+                                                                            (if-let [ds-m (link-func lst)]
                                                                                 ds-m))))))))
                                                 )))))
                             )
@@ -870,6 +887,7 @@
                     (cond
                         (contains? m :sql_obj) (select-to-sql ignite group_id m)
                         (and (contains? m :func-name) (contains? m :lst_ps)) (func-to-line ignite group_id m)
+                        (contains? m :func-link) (func-link-to-line ignite group_id (-> m :func-link))
                         (contains? m :and_or_symbol) (get m :and_or_symbol)
                         (contains? m :keyword) (get m :keyword)
                         (contains? m :operation) (map (partial token-to-sql ignite group_id) (get m :operation))
@@ -891,9 +909,15 @@
                 (if (some? m)
                     (str/join ["on " (str/join " " (token-to-sql ignite group_id (get m :on)))])))
             (func-to-line [ignite group_id m]
-                (if (and (contains? m :alias) (not (nil? (-> m :alias))))
+                (if (and (contains? m :alias) (not (Strings/isNullOrEmpty (-> m :alias))))
                     (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")" " as"] [(-> m :alias)])
                     (concat [(-> m :func-name) "("] (map (partial token-to-sql ignite group_id) (-> m :lst_ps)) [")"])))
+            (func-link-to-line
+                ([ignite group_id lst] (func-link-to-line ignite group_id lst []))
+                ([ignite group_id [f & r] lst]
+                 (if (some? f)
+                     (recur ignite group_id r (conj lst (token-to-sql ignite group_id f)))
+                     (str/join " " lst))))
             (item-to-line [m]
                 (let [{table_alias :table_alias item_name :item_name alias :alias} m]
                     (cond
