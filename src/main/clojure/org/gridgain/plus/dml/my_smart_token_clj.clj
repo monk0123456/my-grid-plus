@@ -305,9 +305,38 @@
           )
     )
 
+
+(declare func-link-to-ps-clj func-link-to-ps-map-clj func-link-to-ps-seq-clj)
+
+(defn func-link-to-ps-clj [ignite group_id m]
+    (cond (map? m) (func-link-to-ps-map-clj ignite group_id m)
+          (my-lexical/is-seq? m) (func-link-to-ps-seq-clj ignite group_id m)))
+
+(defn func-link-to-ps-map-clj [ignite group_id m]
+    (if (and (contains? m :item_name) (false? (-> m :const)))
+        [(-> m :item_name)]
+        (loop [[f & r] (keys m) lst-rs []]
+            (if (some? f)
+                (let [f-m (func-link-to-ps-clj ignite group_id f)]
+                    (if (and (not (empty? f-m)) (not (nil? f-m)))
+                        (recur r (concat lst-rs f-m))
+                        (recur r lst-rs)))
+                lst-rs))))
+
+(defn func-link-to-ps-seq-clj [ignite group_id m]
+    (loop [[f & r] m lst-rs []]
+        (if (some? f)
+            (let [f-m (func-link-to-ps-clj ignite group_id f)]
+                (if (and (not (empty? f-m)) (not (nil? f-m)))
+                    (recur r (concat lst-rs f-m))
+                    (recur r lst-rs)))
+            lst-rs)))
+
 ; 生成联级方法调用的匿名函数
-(defn func-link-clj []
-    ())
+; 1、 获取所有的参数，形成一个参数列表
+(defn func-link-clj [ignite group_id m]
+    (let [lst-ps (func-link-to-ps-clj ignite group_id m) func-body (func-link-to-clj ignite group_id (reverse m) nil)]
+        [(format "(fn [ignite group_id %s]\n     %s)" (str/join " " lst-ps) func-body) lst-ps]))
 
 ;(defn map-obj-to-clj [ignite group_id m my-context]
 ;    (loop [[f & r] m lst-rs []]
@@ -316,3 +345,39 @@
 ;                (recur r (concat lst-rs [(format "\"%s\"" (-> f :key :item_name)) (token-to-clj ignite group_id (-> f :value) my-context)]))
 ;                (recur r (concat lst-rs [(token-to-clj ignite group_id (-> f :key) my-context) (token-to-clj ignite group_id (-> f :value) my-context)])))
 ;            (format "{%s}" (str/join " " lst-rs)))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -65,7 +65,8 @@
                                             (throw (Exception. "两个表以上要给表取别名"))
                                             (recur r (assoc dic "" table_ast))))
                                     ))
-                            dic)))
+                            (if (= dic {})
+                                nil dic))))
                 )
             (replace-alias [table_alias m]
                 (cond (my-lexical/is-seq? m) (map (partial replace-alias table_alias) m)
