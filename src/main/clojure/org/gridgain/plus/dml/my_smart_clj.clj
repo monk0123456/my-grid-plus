@@ -379,4 +379,21 @@
             (str/replace code #"^\(\s*" "(defn "))
         ))
 
+(defn gson [m]
+    (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
+        (.toJson gs m)))
+; 执行 smart sql
+(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
+    (letfn [(get-func-code [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
+                (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast-lst lst)) nil)]
+                    (if (re-find #"^\(defn\s*" code)
+                        code
+                        (str/replace code #"^\(\s*" "(defn "))
+                    ))]
+        (cond (my-lexical/is-eq? (first lst) "function") (let [sql (get-func-code ignite group_id lst)]
+                                                             (format "select show_msg('%s') as tip;" (gson (eval (read-string sql)))))
+              ;(and )
+              )))
+
+
 

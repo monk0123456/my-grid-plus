@@ -64,7 +64,8 @@
                                         (if-not (nil? r)
                                             (throw (Exception. "两个表以上要给表取别名"))
                                             (recur r (assoc dic "" table_ast))))
-                                    ))
+                                    )
+                                (recur r dic))
                             (if (= dic {})
                                 nil dic))))
                 )
@@ -119,9 +120,11 @@
                  (if (and (not (nil? (-> m :where-items))) (not (empty? (-> m :where-items))))
                      (loop [[f & r] (keys authority-ast) lst-rs []]
                          (if (some? f)
-                             (recur r (concat lst-rs [{:parenthesis (-> (get authority-ast f) :where-items)} {:and_or_symbol "and"}]))
+                             (if-not (nil? (-> (get authority-ast f) :where-items))
+                                 (recur r (concat lst-rs [{:parenthesis (-> (get authority-ast f) :where-items)} {:and_or_symbol "and"}]))
+                                 (recur r lst-rs))
                              (concat lst lst-rs [{:parenthesis (-> m :where-items)}])))
-                     m)))
+                     (-> m :where-items))))
             (re-all-sql-obj [ignite group_id ast]
                 (cond (my-lexical/is-seq? ast) (map (partial re-all-sql-obj ignite group_id) ast)
                       (map? ast) (if (contains? ast :sql_obj)

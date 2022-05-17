@@ -6,8 +6,7 @@
         [org.gridgain.plus.ddl.my-drop-index :as my-drop-index]
         [org.gridgain.plus.ddl.my-drop-table :as my-drop-table]
         [org.gridgain.plus.ddl.my-create-dataset :as my-create-dataset]
-        [org.gridgain.plus.ddl.my-alter-dataset :as my-alter-dataset]
-        [org.gridgain.plus.ddl.my-drop-dataset :as my-drop-dataset]
+        [org.gridgain.plus.dml.my-smart-clj :as my-smart-clj]
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-select-plus :as my-select]
         [org.gridgain.plus.dml.my-select-plus-args :as my-select-plus-args]
@@ -114,6 +113,11 @@
         (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)
         (throw (Exception. (format "查询字符串 %s 错误！" (str/join " " lst-sql))))))
 
+; 执行 smart sql
+(defn my-smart-sql [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq smart-code-lst]
+    (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id smart-code-lst)]
+        (eval (read-string sql))))
+
 (defn super-sql-lst [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id [sql & r] ^StringBuilder sb]
     (if (some? sql)
         (do
@@ -136,10 +140,10 @@
                                                                        (.append sb (str (my_plus_sql ignite group_id lst) ";"))
                                                                        (.append sb (str sql ";")))
                           ; 执行事务
-                          (and (= (first lst) "{") (= (last lst) "}")) (.append sb (str (my-trans/tran_run ignite group_id lst) ";"))
+                          ;(and (= (first lst) "{") (= (last lst) "}")) (.append sb (str (my-trans/tran_run ignite group_id lst) ";"))
 
                           ; 保存 scenes
-                          (is-scenes? lst) (.append sb (str (my-scenes/save_scenes ignite group_id (get-scenes lst)) ";"))
+                          ;(is-scenes? lst) (.append sb (str (my-scenes/save_scenes ignite group_id (get-scenes lst)) ";"))
 
                           ; ddl
                           ; create dataset
@@ -190,7 +194,8 @@
                           ; no sql
                           (contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst))) (.append sb (str (my-super-cache/my-no-lst ignite group_id lst sql) ";"))
                           :else
-                          (throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
+                          (my-smart-sql ignite group_id lst)
+                          ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                           )))
             (recur ignite group_id dataset_name group_type dataset_id r sb))
         (.toString sb)))

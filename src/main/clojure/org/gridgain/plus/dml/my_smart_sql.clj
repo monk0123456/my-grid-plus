@@ -450,6 +450,9 @@
         (re-ast (get-ast-lst lst))
         ))
 
+(defn get-ast-lst [^clojure.lang.LazySeq lst]
+    (re-ast (get-ast-lst lst)))
+
 ;(defn get-ast [^String sql]
 ;    (if-let [lst (my-lexical/to-back sql)]
 ;        (loop [[f & r] (get-ast-lst lst) lst-rs []]
