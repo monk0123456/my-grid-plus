@@ -35,6 +35,52 @@
 (defn add-let-name [my-context let-name]
     (assoc my-context :let-params (conj (-> my-context :let-params) let-name)))
 
+(defn get-smart-segment
+    ([lst] (get-smart-segment lst [] nil nil [] []))
+    ([[f & r] stack func-for-match mid-small stack-lst lst]
+     (if (some? f)
+         (cond (= f "(") (if (or (= mid-small "mid") (= mid-small "big"))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) func-for-match "small" (conj stack-lst f) lst))
+               (= f "[") (if (or (= mid-small "small") (= mid-small "big"))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) func-for-match "mid" (conj stack-lst f) lst))
+               (= f "{") (if (or (= mid-small "mid") (= mid-small "small"))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                             (recur r (conj stack f) func-for-match "big" (conj stack-lst f) lst))
+               (= f ")") (cond (and (= (count stack) 1) (= mid-small "small")) (recur r [] func-for-match nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "small")) (recur r (pop stack) func-for-match "small" (conj stack-lst f) lst)
+                               (not (= mid-small "small")) (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                               )
+               (= f "]") (cond (and (= (count stack) 1) (= mid-small "mid")) (recur r [] func-for-match nil (conj stack-lst f) lst)
+                               (and (> (count stack) 1) (= mid-small "mid")) (recur r (pop stack) func-for-match "mid" (conj stack-lst f) lst)
+                               (not (= mid-small "mid")) (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                               )
+               (= f "}") (cond (and (= (count stack) 1) (= mid-small "big")) (if-not (nil? func-for-match)
+                                                                                 (recur r [] nil nil [] (conj lst (conj stack-lst f)))
+                                                                                 (recur r [] func-for-match nil (conj stack-lst f) lst))
+                               (and (> (count stack) 1) (= mid-small "big")) (recur r (pop stack) func-for-match "big" (conj stack-lst f) lst)
+                               (not (= mid-small "big")) (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+                               )
+               (= f ";") (if (and (nil? mid-small) (empty? stack) (not (empty? stack-lst)))
+                             (recur r [] func-for-match nil [] (conj lst (conj stack-lst f)))
+                             (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               (= f "function") (if (and (nil? mid-small) (empty? stack) (empty? stack-lst) (nil? func-for-match))
+                                    (recur r [] "function" nil (conj stack-lst f) lst)
+                                    (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               (= f "for") (if (and (nil? mid-small) (empty? stack) (empty? stack-lst) (nil? func-for-match))
+                               (recur r [] "for" nil (conj stack-lst f) lst)
+                               (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               (= f "match") (if (and (nil? mid-small) (empty? stack) (empty? stack-lst) (nil? func-for-match))
+                                 (recur r [] "match" nil (conj stack-lst f) lst)
+                                 (recur r stack func-for-match mid-small (conj stack-lst f) lst))
+               :else
+               (recur r stack func-for-match mid-small (conj stack-lst f) lst)
+               )
+         (if-not (empty? stack-lst)
+             (conj lst stack-lst)
+             lst))))
+
 (defn get-pair-item-ex
     ([lst] (get-pair-item-ex lst [] nil [] []))
     ([[f & r] stack mid-small stack-lst lst]
@@ -450,7 +496,7 @@
         (re-ast (get-ast-lst lst))
         ))
 
-(defn get-ast-lst [^clojure.lang.LazySeq lst]
+(defn my-get-ast-lst [^clojure.lang.LazySeq lst]
     (re-ast (get-ast-lst lst)))
 
 ;(defn get-ast [^String sql]
