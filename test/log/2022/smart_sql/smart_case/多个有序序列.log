@@ -1,23 +1,92 @@
+function seq_sort(lst)
+{
+    innerFunction {
+        function getMix(lst)
+        {
+            /**
+            获取集合 lst 中第一个元素最小的值，并记录下集合的 index
+            */
+            let min_vs = null;
+            for (index in range(count(lst)))
+            {
+                match {
+                    nil?(min_vs): min_vs = [lst.nth(index).first(), index];
+                    lst.nth(index).first() < min_vs.get(0): min_vs = [lst.nth(index).first(), index];
+                }
+            }
+
+            /**
+            返回最小的值和重构的集合
+            */
+            let index = min_vs.get(1);
+            let m = lst.get(index);
+            match {
+                empty?(m.rest()): lst.remove(index);
+                notEmpty?(m.rest()): lst.set(index, m.rest());
+            }
+            [min_vs.first(), lst];
+        }
+    }
+    let min_vs = getMix(lst);
+    match {
+        empty?(min_vs): [];
+        min_vs.count() == 2 and empty?(min_vs.last()): [min_vs.first()];
+        min_vs.count() == 2 and notEmpty?(min_vs.last()): match {
+            min_vs.last().count() == 1: concat([min_vs.first()], min_vs.last().first());
+            else concat([min_vs.first()], seq_sort(min_vs.last()));
+        }
+    }
+}
+
+
 function getMix(lst)
 {
     /**
       获取集合 lst 中第一个元素最小的值，并记录下集合的 index
     */
-    let min_vs = [-1, -1];
+    let min_vs = [];
     for (index in range(count(lst)))
     {
         match {
-            lst.nth(index).first() < min_vs: min_vs = [lst.nth(index).first(), index];
+            empty?(min_vs): min_vs = [lst.nth(index).first(), index];
+            lst.nth(index).first() < min_vs.get(0): min_vs = [lst.nth(index).first(), index];
         }
     }
 
     /**
       返回最小的值和重构的集合
     */
+    let index = min_vs.get(1);
     let m = lst.get(index);
     match {
         empty?(m.rest()): lst.remove(index);
         notEmpty?(m.rest()): lst.set(index, m.rest());
     }
-    [mid.first(), lst];
+    [min_vs.first(), lst];
+}
+
+function getMix(lst)
+{
+    /**
+      获取集合 lst 中第一个元素最小的值，并记录下集合的 index
+    */
+    let min_vs;
+    for (index in range(count(lst)))
+    {
+        match {
+            nil?(min_vs): min_vs = [lst.nth(index).first(), index];
+            lst.nth(index).first() < min_vs.get(0): min_vs = [lst.nth(index).first(), index];
+        }
+    }
+
+    /**
+      返回最小的值和重构的集合
+    */
+    let index = min_vs.get(1);
+    let m = lst.get(index);
+    match {
+        empty?(m.rest()): lst.remove(index);
+        notEmpty?(m.rest()): lst.set(index, m.rest());
+    }
+    [min_vs.first(), lst];
 }

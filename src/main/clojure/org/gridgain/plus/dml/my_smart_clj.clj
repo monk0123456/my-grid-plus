@@ -355,6 +355,14 @@
                        express-line))
              ))))
 
+(defn get-input [args-lst body-lst]
+    (loop [[f & r] body-lst lst []]
+        (if (some? f)
+            (if (and (contains? f :let-name) (contains? (-> f :let-vs) :item_name) (contains? (set args-lst) (-> f :let-vs :item_name)))
+                (recur r (conj lst (-> f :let-name)))
+                (recur r lst))
+            lst)))
+
 ; my-context 记录上下文
 ; :input-params 输入参数
 ; :let-params 定义变量
@@ -364,14 +372,14 @@
 ; my-context: {:input-params #{} :let-params {} :last-item nil :up-my-context nil}
 (defn ast-to-clj [ignite group_id ast up-my-context]
     (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context up-my-context}]
-        (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) args-lst))]
-            (if (nil? up-my-context)
-                (if-not (empty? args-lst)
-                    (format "(defn %s [^Ignite ignite ^Long group_id %s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name)))
-                    (format "(defn %s [^Ignite ignite ^Long group_id]\n    %s)" func-name (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name))))
-                (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
-            )
-        ))
+        (let [my-args-lst (get-input args-lst body-lst)]
+            (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) my-args-lst))]
+                (if (nil? up-my-context)
+                    (if-not (empty? args-lst)
+                        (format "(defn %s [^Ignite ignite ^Long group_id %s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name)))
+                        (format "(defn %s [^Ignite ignite ^Long group_id]\n    %s)" func-name (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name))))
+                    (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
+                ))))
 
 (defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast smart-sql)) nil)]
