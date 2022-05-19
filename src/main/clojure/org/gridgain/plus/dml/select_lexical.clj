@@ -14,6 +14,7 @@
              (org.gridgain.jdbc MyJdbc)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
+             (org.tools MyTools)
              (java.math BigDecimal))
     (:gen-class
         ; 生成 class 的类名
@@ -201,6 +202,10 @@
 
 (defn list-set [^ArrayList lst ^Integer index ^Object obj]
     (.set lst index obj))
+
+(defn list-remove [dic-lst ^Integer index]
+    (cond (instance? java.util.List dic-lst) (MyTools/removeIndex dic-lst index)
+          (instance? java.util.Hashtable dic-lst) (.remove dic-lst index)))
 
 (defn list-take [^ArrayList lst ^Integer index]
     (if (> (count lst) index)

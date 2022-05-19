@@ -3,11 +3,11 @@ function getMix(lst)
     /**
       获取集合 lst 中第一个元素最小的值，并记录下集合的 index
     */
-    let min = [-1, -1];
+    let min_vs = [-1, -1];
     for (index in range(count(lst)))
     {
         match {
-            lst.nth(index).first() < min: min = [lst.nth(index).first(), index];
+            lst.nth(index).first() < min_vs: min_vs = [lst.nth(index).first(), index];
         }
     }
 

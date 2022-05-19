@@ -140,7 +140,7 @@
           (my-lexical/is-eq? func-name "concat") "concat"
           (my-lexical/is-eq? func-name "put") ".put"
           (my-lexical/is-eq? func-name "get") "my-lexical/map-list-get"
-          (my-lexical/is-eq? func-name "remove") "dissoc"
+          (my-lexical/is-eq? func-name "remove") "my-lexical/list-remove"
           (my-lexical/is-eq? func-name "pop") "my-lexical/list-peek"
           (my-lexical/is-eq? func-name "peek") "my-lexical/list-peek"
           (my-lexical/is-eq? func-name "takeLast") "my-lexical/list-take-last"
@@ -200,7 +200,7 @@
               (= func-name "notEmpty?") (format "(my-lexical/not-empty? %s)" (token-to-clj ignite group_id lst_ps my-context))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
-              (format "(%s %s)" func-name (token-to-clj ignite group_id lst_ps my-context))
+              (format "(%s %s)" (smart-func func-name) (token-to-clj ignite group_id lst_ps my-context))
               ;(println "Inner func")
               )))
 
@@ -304,7 +304,6 @@
                                             ))
           )
     )
-
 
 (declare func-link-to-ps-clj func-link-to-ps-map-clj func-link-to-ps-seq-clj)
 

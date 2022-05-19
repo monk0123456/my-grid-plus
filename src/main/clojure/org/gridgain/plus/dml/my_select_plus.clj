@@ -219,6 +219,10 @@
                       (and (= (first lst) "{") (= (last lst) "}")) (get-item-tokens lst) ;{:map-obj (get-item-tokens lst)}
                       :else
                       (get-token lst)))
+            (smart-item-tokens [lst]
+                (cond (and (= (first lst) "[") (= (last lst) "]")) (get-item-tokens lst)
+                      (and (= (first lst) "{") (= (last lst) "}")) (get-item-tokens lst)
+                      ))
             ; 判断是 () 的表达式
             (is-operate-fn?
                 ([lst] (if (and (= (first lst) "(") (= (last lst) ")")) (let [m (is-operate-fn? lst [] [] [])]
@@ -476,7 +480,8 @@
                                                                         (if (and (my-lexical/is-eq? (first lst) "exists") (some? exists-m))
                                                                             {:exists "exists" :select_sql exists-m}
                                                                             (if-let [ds-m (link-func lst)]
-                                                                                ds-m))))))))
+                                                                                ds-m
+                                                                                (smart-item-tokens lst)))))))))
                                                 )))))
                             )
                         ;(cond (and (= (count lst) 1) (string? (first lst))) (get-token-line (first lst))

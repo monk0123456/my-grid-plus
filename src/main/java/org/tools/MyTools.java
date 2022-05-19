@@ -17,6 +17,11 @@ public class MyTools {
             .setDateFormat("yyyy-MM-dd HH:mm:ss")
             .create();
 
+    public static Object removeIndex (List lst, int index)
+    {
+        return lst.remove(index);
+    }
+
     /**
      * 如果 line 是字典类型
      * 会转换恒 LinkedTreeMap

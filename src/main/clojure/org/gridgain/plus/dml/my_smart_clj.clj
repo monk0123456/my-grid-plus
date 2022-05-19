@@ -325,7 +325,7 @@
                (contains? f-express :express) (recur ignite group_id r-express my-context (conj lst (token-to-clj ignite group_id (-> f-express :express) my-context)))
                (contains? f-express :let-name) (let [[let-first let-tail let-my-context] (let-to-clj ignite group_id [f-express] my-context)]
                                                    (let [express-line (express-to-clj ignite group_id r-express let-my-context)]
-                                                       (format "%s %s %s" let-first express-line let-tail)))
+                                                       (recur ignite group_id nil my-context (conj lst (format "%s %s %s" let-first express-line let-tail)))))
                (contains? f-express :break-vs) (if (contains? my-context :up-stm)
                                                    (recur ignite group_id r-express my-context (conj lst "(throw (Exception. \"my-break\"))"))
                                                    (throw (Exception. "break 语句只能用于 for 语句块中！"))
@@ -408,61 +408,21 @@
 
                                         (contains? express-obj :express) (recur r (conj lst-rs (token-to-clj ignite group_id (-> express-obj :express) nil)))
                                         (contains? express-obj :let-name) (recur r (conj lst-rs (format "(def %s (MyVar. %s))" (-> express-obj :let-name) (token-to-clj ignite group_id (-> express-obj :let-vs) nil))))
+                                        :else
+                                        (throw (Exception. (format "代码错误！%s" (str/join " " f))))
                                         ))
-                              (recur r (conj lst-rs (my-smart-sql/body-segment f)))
                               )
                         lst-rs)))
-            (get-func-code [^Ignite ignite ^Long group_id express]
-                (let [code (ast-to-clj ignite group_id express nil)]
-                    (if (re-find #"^\(defn\s*" code)
-                        code
-                        (str/replace code #"^\(\s*" "(defn "))
-                    ))
-            (get-for-code [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
-                (let [f-express (my-smart-sql/body-segment lst)]
-                    (cond (and (contains? (-> f-express :args :tmp_val) :item_name) (contains? (-> f-express :args :seq) :item_name)) (for-seq ignite group_id f-express nil)
-                          (and (contains? (-> f-express :args :tmp_val) :item_name) (contains? (-> f-express :args :seq) :func-name)) (for-seq-func ignite group_id f-express nil)
-                          :else
-                          (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
-                          )))
-            (get-match-code [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
-                (let [f-express (my-smart-sql/body-segment lst)]
-                    (format "(cond %s)" (match-to-clj ignite group_id (-> f-express :pairs) nil))))
-            (single-line [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
-                (cond (my-lexical/is-eq? (first lst) "function") (let [sql (get-func-code ignite group_id lst)]
-                                                                     (format "select show_msg('%s') as tip;" (gson (eval (read-string sql)))))
-                      (my-lexical/is-eq? (first lst) "let") (if (= (last lst) ";")
-                                                                (let [let-code (format "(def %s (MyVar. %s))" (second lst) (token-to-clj ignite group_id (my-select-plus/sql-to-ast (drop-last 1 (drop 3 lst))) nil))]
-                                                                    (if (nil? (eval (read-string let-code)))
-                                                                        (format "select show_msg('%s') as tip;" (second lst))))
-                                                                (throw (Exception. "let 语句必须以 ; 结尾！")))
-                      (my-lexical/is-eq? (first lst) "for") (let [sql (get-for-code ignite group_id lst)]
-                                                                (format "select show_msg('%s') as tip;" (gson (eval (read-string sql)))))
-                      (my-lexical/is-eq? (first lst) "match") (let [sql (get-match-code ignite group_id lst)]
-                                                                  (format "select show_msg('%s') as tip;" (gson (eval (read-string sql)))))
-                      ))
-            (multiple-line [^Ignite ignite ^Long group_id lst]
+            (eval-codes [lst]
                 (loop [[f & r] lst]
                     (if (some? f)
                         (if (nil? r)
-                            (single-line ignite group_id f)
+                            (eval (read-string f))
                             (do
-                                (cond (my-lexical/is-eq? (first lst) "function") (let [sql (get-func-code ignite group_id lst)]
-                                                                                     (eval (read-string sql)))
-                                      (my-lexical/is-eq? (first lst) "let") (if (= (last lst) ";")
-                                                                                (let [let-code (format "(def %s (MyVar. %s))" (second lst) (token-to-clj ignite group_id (my-select-plus/sql-to-ast (drop-last 1 (drop 3 lst))) nil))]
-                                                                                    (eval (read-string let-code)))
-                                                                                (throw (Exception. "let 语句必须以 ; 结尾！")))
-                                      (my-lexical/is-eq? (first lst) "for") (let [sql (get-for-code ignite group_id lst)]
-                                                                                (eval (read-string sql)))
-                                      (my-lexical/is-eq? (first lst) "match") (let [sql (get-match-code ignite group_id lst)]
-                                                                                  (eval (read-string sql)))
-                                      )
+                                (format "select show_msg('%s') as tip;" (gson (eval (read-string f))))
                                 (recur r))))))]
-        (let [smart-lst (get-smart-lst lst)]
-            (cond (= (count smart-lst) 1) (single-line ignite group_id (first smart-lst))
-                  (> (count smart-lst) 1) (multiple-line ignite group_id smart-lst)
-                  ))))
+        (let [smart-lst (get-smart-lst ignite group_id lst)]
+            (eval-codes smart-lst))))
 
 
 

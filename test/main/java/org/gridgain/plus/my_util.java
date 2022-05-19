@@ -1,5 +1,6 @@
 package org.gridgain.plus;
 
+import clojure.lang.Obj;
 import cn.plus.model.ddl.MyFuncPs;
 import org.gridgain.plus.tools.MyUtil;
 import org.junit.Test;
@@ -92,9 +93,39 @@ public class my_util {
     @Test
     public void my_case_1()
     {
-        List<String> lst = new ArrayList<>();
+        ArrayList<String> lst = new ArrayList<>();
+        lst.add("吴大富");
+        lst.add("美羊羊");
+        lst.add("吴大贵");
 
-        System.out.println(add(10));
+        Object my_lst = lst.remove(1);
+
+        System.out.println(my_lst);
+
+        for (String line : lst)
+        {
+            System.out.println(line);
+        }
+
+        System.out.println("OK");
+    }
+
+    @Test
+    public void my_case_2()
+    {
+        Hashtable<String, Object> ht = new Hashtable<>();
+        ht.put("a", 1);
+        ht.put("b", 2);
+        ht.put("c", 3);
+
+        ht.remove("a");
+
+        for (String line : ht.keySet())
+        {
+            System.out.println(line);
+        }
+
+        System.out.println("OK");
     }
 }
 
