@@ -212,9 +212,9 @@
      (if (some? f)
          (if-not (contains? f :comma_symbol)
              (let [m-line (token-to-clj ignite group_id f my-context)]
-                 (if (re-find #"^(?i)\(my-lexical/get-value\s" m-line)
-                     (recur ignite group_id r my-context (conj lst m-line))
-                     (recur ignite group_id r my-context (conj lst (format "(my-lexical/get-value %s)" m-line)))))
+                 (if (and (contains? f :item_name) (false? (-> f :const)) (not (re-find #"^\(my-lexical/get-value\s" m-line)))
+                     (recur ignite group_id r my-context (conj lst (format "(my-lexical/get-value %s)" m-line)))
+                     (recur ignite group_id r my-context (conj lst m-line))))
              (recur ignite group_id r my-context lst))
          (str/join " " lst))))
 

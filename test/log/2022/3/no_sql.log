@@ -3,7 +3,7 @@
         )
 
 (Class/forName "org.apache.ignite.IgniteJdbcDriver")
-(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=wudafu"))
+(def conn (DriverManager/getConnection "jdbc:ignite:thin://127.0.0.1:10800/public?lazy=true&userToken=dafu"))
 
 (def line-insert "no_sql_insert: {\n   table_name: my_train_ticket,\n   key: \"G350_成都东_北京西\",\n   doc: [{token: B001, price: 778}, {token: B002, price: 778}, {token: B003, price: 778}, {token: B004, price: 1246}, {token: B005, price: 1246}]\n}")
 (def stmt (.prepareStatement conn line-insert))

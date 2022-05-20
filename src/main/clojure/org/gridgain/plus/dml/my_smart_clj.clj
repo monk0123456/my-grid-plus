@@ -406,7 +406,7 @@
                     (if (some? f)
                         (cond (my-lexical/is-eq? (first f) "function") (recur r (conj lst-rs (my-smart-lst-to-clj ignite group_id f)))
                               :else
-                              (let [express-obj (my-smart-sql/body-segment f)]
+                              (let [express-obj (first (my-smart-sql/body-segment f))]
                                   (cond (and (contains? express-obj :expression) (my-lexical/is-eq? (-> express-obj :expression) "for")) (cond (and (contains? (-> express-obj :args :tmp_val) :item_name) (contains? (-> express-obj :args :seq) :item_name)) (recur r (conj lst-rs (for-seq ignite group_id express-obj nil)))
                                                                                                                                                (and (contains? (-> express-obj :args :tmp_val) :item_name) (contains? (-> express-obj :args :seq) :func-name)) (recur r (conj lst-rs (for-seq-func ignite group_id express-obj nil)))
                                                                                                                                                :else

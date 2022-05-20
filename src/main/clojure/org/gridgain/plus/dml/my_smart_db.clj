@@ -151,7 +151,7 @@
               (map? my-obj) (let [{table-name "table_name" key "key" value "value"} my-obj]
                                 (.replace (.cache ignite (format "%s_%s" schema_name table-name)) key value))
               :else
-              (throw (Exception. "No Sql 插入格式错误！")))))
+              (throw (Exception. "No Sql 修改格式错误！")))))
 
 (defn my-update-tran [ignite group_id my-obj]
     (let [[schema_name] (my-lexical/my_group_schema_name ignite group_id)]
@@ -161,7 +161,7 @@
               (map? my-obj) (let [{table-name "table_name" key "key" value "value"} my-obj]
                                 (MyNoSqlCache. (format "%s_%s" schema_name table-name) schema_name table-name key value (SqlType/UPDATE)))
               :else
-              (throw (Exception. "No Sql 插入格式错误！")))))
+              (throw (Exception. "No Sql 修改格式错误！")))))
 
 (defn my-delete [ignite group_id my-obj]
     (let [[schema_name] (my-lexical/my_group_schema_name ignite group_id)]
@@ -171,7 +171,7 @@
               (map? my-obj) (let [{table-name "table_name" key "key"} my-obj]
                                 (.remove (.cache ignite (format "%s_%s" schema_name table-name)) key))
               :else
-              (throw (Exception. "No Sql 插入格式错误！")))))
+              (throw (Exception. "No Sql 删除格式错误！")))))
 
 (defn my-delete-tran [ignite group_id my-obj]
     (let [[schema_name] (my-lexical/my_group_schema_name ignite group_id)]
@@ -182,7 +182,7 @@
               (map? my-obj) (let [{table-name "table_name" key "key"} my-obj]
                                 (MyNoSqlCache. (format "%s_%s" schema_name table-name) schema_name table-name key nil (SqlType/DELETE)))
               :else
-              (throw (Exception. "No Sql 插入格式错误！")))))
+              (throw (Exception. "No Sql 删除格式错误！")))))
 
 (defn my-drop [ignite group_id my-obj]
     (let [[schema_name] (my-lexical/my_group_schema_name ignite group_id)]
@@ -192,7 +192,7 @@
               (map? my-obj) (let [{table-name "table_name"} my-obj]
                                 (.destroy (.cache ignite (format "%s_%s" schema_name table-name))))
               :else
-              (throw (Exception. "No Sql 插入格式错误！")))))
+              (throw (Exception. "No Sql 清除格式错误！")))))
 
 (defn query_sql [ignite group_id sql & args]
     (cond (re-find #"^(?i)select\s+" sql) (if (nil? args)
