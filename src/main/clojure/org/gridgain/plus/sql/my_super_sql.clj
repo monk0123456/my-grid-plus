@@ -114,11 +114,11 @@
         (throw (Exception. (format "查询字符串 %s 错误！" (str/join " " lst-sql))))))
 
 ; 执行 smart sql
-(defn my-smart-sql [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq smart-code-lst]
-    (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id smart-code-lst)]
+(defn my-smart-sql [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq smart-code-lst]
+    (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id userToken smart-code-lst)]
         (eval (read-string sql))))
 
-(defn super-sql-lst [^Ignite ignite ^Long group_id ^String dataset_name ^String group_type ^Long dataset_id [sql & r] ^StringBuilder sb]
+(defn super-sql-lst [^Ignite ignite ^Long group_id ^String userToken ^String dataset_name ^String group_type ^Long dataset_id [sql & r] ^StringBuilder sb]
     (if (some? sql)
         (do
             (let [lst (my-lexical/to-back sql)]
@@ -194,17 +194,17 @@
                           ; no sql
                           (contains? #{"no_sql_create" "no_sql_insert" "no_sql_update" "no_sql_delete" "no_sql_query" "no_sql_drop" "push" "pop"} (str/lower-case (first lst))) (.append sb (str (my-super-cache/my-no-lst ignite group_id lst sql) ";"))
                           :else
-                          (my-smart-sql ignite group_id lst)
+                          (my-smart-sql ignite group_id userToken lst)
                           ;(throw (Exception. "输入字符有错误！不能解析，请确认输入正确！"))
                           )))
-            (recur ignite group_id dataset_name group_type dataset_id r sb))
+            (recur ignite group_id userToken dataset_name group_type dataset_id r sb))
         (.toString sb)))
 
 (defn super-sql [^Ignite ignite ^String userToken ^String sql]
     (if-not (Strings/isNullOrEmpty sql)
         (let [lst (get-lst-sql sql) [group_id dataset_name group_type dataset_id] (my_group_id ignite userToken)]
             ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
-            (super-sql-lst ignite group_id dataset_name group_type dataset_id lst (StringBuilder.)))))
+            (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id lst (StringBuilder.)))))
 
 (defn -superSql [^Ignite ignite ^Object userToken ^Object sql]
     (if (some? userToken)

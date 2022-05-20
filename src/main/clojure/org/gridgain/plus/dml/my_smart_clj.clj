@@ -399,36 +399,64 @@
 (defn gson [m]
     (let [gs (.create (.setDateFormat (.enableComplexMapKeySerialization (GsonBuilder.)) "yyyy-MM-dd HH:mm:ss"))]
         (.toJson gs m)))
+
+(defn re-ast [my-prefix ast]
+    (cond (my-lexical/is-seq? ast) (map (partial re-ast my-prefix) ast)
+          (map? ast) (cond (and (contains? ast :item_name) (false? (-> ast :const))) (assoc ast :item_name (format "%s-cnc-%s" my-prefix (-> ast :item_name)))
+                           (contains? ast :func-name) {:func-name (format "%s-cnc-%s" my-prefix (-> ast :func-name)) :lst_ps (re-ast my-prefix (-> ast :lst_ps))}
+                           (contains? ast :let-name) {:let-name (format "%s-cnc-%s" my-prefix (-> ast :let-name)) :let-vs (re-ast my-prefix (-> ast :let-vs))}
+                           :else
+                           (loop [[f & r] (keys ast) rs ast]
+                               (if (some? f)
+                                   (let [vs (get ast f)]
+                                       (cond (my-lexical/is-seq? vs) (recur r (assoc rs f (re-ast my-prefix vs)))
+                                             (map? vs) (recur r (assoc rs f (re-ast my-prefix vs)))
+                                             :else
+                                             (recur r rs)
+                                             ))
+                                   rs))
+                           )
+          ))
+
 ; 执行 smart sql
-(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
-    (letfn [(get-smart-lst [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
+; 要给所有的变量和方法名称换一个名字，避免和其它人的变量名冲突了
+(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq lst]
+    (letfn [(get-smart-lst [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq lst]
                 (loop [[f & r] (my-smart-sql/get-smart-segment lst) lst-rs []]
                     (if (some? f)
-                        (cond (my-lexical/is-eq? (first f) "function") (recur r (conj lst-rs (my-smart-lst-to-clj ignite group_id f)))
+                        (cond (my-lexical/is-eq? (first f) "function") (recur r (conj lst-rs {:stm-type "function" :sql (my-smart-lst-to-clj ignite group_id f)}))
                               :else
-                              (let [express-obj (first (my-smart-sql/body-segment f))]
-                                  (cond (and (contains? express-obj :expression) (my-lexical/is-eq? (-> express-obj :expression) "for")) (cond (and (contains? (-> express-obj :args :tmp_val) :item_name) (contains? (-> express-obj :args :seq) :item_name)) (recur r (conj lst-rs (for-seq ignite group_id express-obj nil)))
-                                                                                                                                               (and (contains? (-> express-obj :args :tmp_val) :item_name) (contains? (-> express-obj :args :seq) :func-name)) (recur r (conj lst-rs (for-seq-func ignite group_id express-obj nil)))
-                                                                                                                                               :else
-                                                                                                                                               (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
-                                                                                                                                               )
-                                        (and (contains? express-obj :expression) (my-lexical/is-eq? (-> express-obj :expression) "match")) (recur r (conj lst-rs (format "(cond %s)" (match-to-clj ignite group_id (-> express-obj :pairs) nil))))
+                              (let [express-obj-root (first (my-smart-sql/body-segment f))]
+                                  (let [express-obj (re-ast userToken express-obj-root)]
+                                      (cond (and (contains? express-obj :expression) (my-lexical/is-eq? (-> express-obj :expression) "for")) (cond (and (contains? (-> express-obj :args :tmp_val) :item_name) (contains? (-> express-obj :args :seq) :item_name)) (recur r (conj lst-rs {:stm-type "for" :sql (for-seq ignite group_id express-obj nil)}))
+                                                                                                                                                   (and (contains? (-> express-obj :args :tmp_val) :item_name) (contains? (-> express-obj :args :seq) :func-name)) (recur r (conj lst-rs {:stm-type "for" :sql (for-seq-func ignite group_id express-obj nil)}))
+                                                                                                                                                   :else
+                                                                                                                                                   (throw (Exception. "for 语句只能处理数据库结果或者是列表"))
+                                                                                                                                                   )
+                                            (and (contains? express-obj :expression) (my-lexical/is-eq? (-> express-obj :expression) "match")) (recur r (conj lst-rs {:stm-type "match" :sql (format "(cond %s)" (match-to-clj ignite group_id (-> express-obj :pairs) nil))}))
 
-                                        (contains? express-obj :express) (recur r (conj lst-rs (token-to-clj ignite group_id (-> express-obj :express) nil)))
-                                        (contains? express-obj :let-name) (recur r (conj lst-rs (format "(def %s (MyVar. %s))" (-> express-obj :let-name) (token-to-clj ignite group_id (-> express-obj :let-vs) nil))))
-                                        :else
-                                        (throw (Exception. (format "代码错误！%s" (str/join " " f))))
-                                        ))
+                                            (contains? express-obj :express) (recur r (conj lst-rs {:stm-type "other" :sql (token-to-clj ignite group_id (-> express-obj :express) nil)}))
+                                            (contains? express-obj :let-name) (recur r (conj lst-rs {:stm-type "let" :let-name (-> express-obj-root :let-name) :sql (format "(def %s (MyVar. %s))" (-> express-obj :let-name) (token-to-clj ignite group_id (-> express-obj :let-vs) nil))}))
+                                            :else
+                                            (throw (Exception. (format "代码错误！%s" (str/join " " f))))
+                                            )))
                               )
                         lst-rs)))
             (eval-codes [lst]
                 (loop [[f & r] lst]
                     (if (some? f)
-                        (if (nil? r)
-                            (eval (read-string f))
+                        (if-not (nil? r)
                             (do
-                                (format "select show_msg('%s') as tip;" (gson (eval (read-string f))))
-                                (recur r))))))]
+                                (eval (read-string (-> f :sql)))
+                                (recur r))
+                            (cond (= (-> f :stm-type) "let") (do
+                                                                 (eval (read-string (-> f :sql)))
+                                                                 (format "select show_msg('%s') as tip;" (-> f :let-name)))
+                                  :else
+                                  (do
+                                      (println (-> f :sql))
+                                      (format "select show_msg('%s') as tip;" (gson (eval (read-string (-> f :sql))))))
+                                  )))))]
         (let [smart-lst (get-smart-lst ignite group_id lst)]
             (eval-codes smart-lst))))
 
