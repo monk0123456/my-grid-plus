@@ -1,0 +1,3 @@
+; 测试 my-smart-db
+
+; 查询 sql: SELECT CompanyName, ContactName from public.Customers WHERE City = 'London'  AND (ContactTitle IN ('Sales Agent', 'Sales Associate', 'Sales Representative'))

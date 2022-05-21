@@ -196,8 +196,8 @@
          (str/join " " lst))))
 
 (defn item-to-clj [m args-dic]
-    (if (contains? args-dic (-> m :item_name))
-        (format "(my-lexical/get-value %s)" (get args-dic (-> m :item_name)))
+    (if (contains? (-> args-dic :dic) (-> m :item_name))
+        (format "(my-lexical/get-value %s)" (get (-> args-dic :dic) (-> m :item_name)))
         (if (my-lexical/is-eq? (-> m :item_name) "null")
             "nil"
             (-> m :item_name))))

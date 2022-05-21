@@ -418,9 +418,36 @@
                            )
           ))
 
+(defn re-fn [^String userToken ^clojure.lang.LazySeq lst]
+    (letfn [(get-fn-body [lst]
+                (loop [[f & r] (my-smart-sql/get-smart-segment lst) func-stack [] lst-rs []]
+                    (if (some? f)
+                        (cond (contains? #{"for" "match" "let"} (first f)) (if (empty? func-stack)
+                                                                               (recur r [] (conj lst-rs f))
+                                                                               (let [func-line (concat ["innerFunction" "{"] (apply concat func-stack) ["}"])]
+                                                                                   (recur r [] (conj lst-rs func-line f))))
+                              (my-lexical/is-eq? (first f) "function") (recur r (conj func-stack f) lst-rs)
+                              :else
+                              (recur r func-stack (conj lst-rs f))
+                              )
+                        (if (empty? func-stack)
+                            lst-rs
+                            (conj lst-rs (concat ["innerFunction" "{"] (apply concat func-stack) ["}"]))))))
+            (get-fn [^String userToken lst]
+                (concat ["function" (format "%s-cnc-cf-fn" userToken) "(" ")" "{"] (apply concat (get-fn-body lst)) ["}"]))]
+        (get-fn userToken lst)))
+
+(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq lst]
+    (let [smart-lst (re-fn userToken lst)]
+        (let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
+            (eval (read-string smart-code))
+            (apply (eval (read-string (format "(fn [ignite group_id]\n     %s)" (format "(%s-cnc-cf-fn ignite group_id)" userToken)))) [ignite group_id])
+            )))
+
+; 这个是没有包裹 fn 的，已经被抛弃了
 ; 执行 smart sql
 ; 要给所有的变量和方法名称换一个名字，避免和其它人的变量名冲突了
-(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq lst]
+(defn smart-lst-to-clj-old [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq lst]
     (letfn [(get-smart-lst [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq lst]
                 (loop [[f & r] (my-smart-sql/get-smart-segment lst) lst-rs []]
                     (if (some? f)
@@ -457,7 +484,7 @@
                                       (println (-> f :sql))
                                       (format "select show_msg('%s') as tip;" (gson (eval (read-string (-> f :sql))))))
                                   )))))]
-        (let [smart-lst (get-smart-lst ignite group_id lst)]
+        (let [smart-lst (get-smart-lst ignite group_id userToken lst)]
             (eval-codes smart-lst))))
 
 

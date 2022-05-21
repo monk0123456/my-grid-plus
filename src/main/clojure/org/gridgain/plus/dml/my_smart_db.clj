@@ -47,11 +47,21 @@
         ))
 
 (defn args-to-dic
-    ([args] (args-to-dic args {}))
-    ([[f & r] dic]
+    ([args] (args-to-dic args {} []))
+    ([[f & r] dic keys-lst]
      (if (some? f)
-         (recur r (assoc dic (str "?$p_s_5_c_f_" (gensym "n$@#c")) f))
-         dic)))
+         (let [args-key (str "?$p_s_5_c_f_" (gensym "n$@#c"))]
+             (recur r (assoc dic args-key f) (conj keys-lst args-key)))
+         {:dic dic :keys keys-lst})))
+
+(defn get-args-to-lst
+    ([lst args-key-lst] (get-args-to-lst lst args-key-lst []))
+    ([[f & r] args-key-lst lst-rs]
+     (if (some? f)
+         (if (= f "?")
+             (recur r (drop 1 args-key-lst) (conj lst-rs (first args-key-lst)))
+             (recur r args-key-lst (conj lst-rs f)))
+         lst-rs)))
 
 (defn insert-to-cache [ignite group_id sql & args]
     (letfn [(get-insert-pk [ignite group_id pk-rs args-dic]
@@ -68,7 +78,7 @@
                         (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic))))
                         lst-rs)))]
         (let [args-dic (args-to-dic args)]
-            (let [insert_obj (my-insert/get_insert_obj (my-lexical/to-back (apply format (str/replace sql #"\?" "%s") (keys args-dic))))]
+            (let [insert_obj (my-insert/get_insert_obj (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
                 (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :table_name)) insert_obj)]
                     (MyLogCache. (format "f_%s_%s" (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT))))))
     )
@@ -89,7 +99,7 @@
                      (recur ignite group_id args-dic r (conj lst (MyKeyValue. (-> f :item_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (-> f :item_obj) args-dic))))
                      lst)))]
         (let [args-dic (args-to-dic args)]
-            (let [{schema_name :schema_name table_name :table_name sql :sql items :items pk_lst :pk_lst} (my-update/get_update_obj ignite group_id (my-lexical/to-back (apply format (str/replace sql #"\?" "%s") (keys args-dic))))]
+            (let [{schema_name :schema_name table_name :table_name sql :sql items :items pk_lst :pk_lst} (my-update/get_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
                 (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) args-dic)]
                     (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
                                                                                                                           (.setArgs (to-array select-args))
@@ -110,7 +120,7 @@
                             lst-rs))
                     ))]
         (let [args-dic (args-to-dic args)]
-            (let [{schema_name :schema_name table_name :table_name sql :sql pk_lst :pk_lst} (my-delete/get_delete_obj ignite group_id (my-lexical/to-back (apply format (str/replace sql #"\?" "%s") (keys args-dic))))]
+            (let [{schema_name :schema_name table_name :table_name sql :sql pk_lst :pk_lst} (my-delete/get_delete_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
                 (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) args-dic)]
                     (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
                                                                                                                           (.setArgs (to-array select-args))
@@ -196,8 +206,14 @@
 
 (defn query_sql [ignite group_id sql & args]
     (cond (re-find #"^(?i)select\s+" sql) (if (nil? args)
-                                              (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (my-select-plus/my_plus_sql ignite group_id (my-lexical/to-back sql))) (.setLazy true))))
-                                              (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. (my-select-plus/my_plus_sql ignite group_id (my-lexical/to-back sql))) (.setLazy true) (.setArgs (to-array args))))))
+                                              (if-let [ast (my-select-plus/sql-to-ast (my-lexical/to-back sql))]
+                                                  (let [sql (-> (my-select-plus-args/my-ast-to-sql ignite group_id nil ast) :sql)]
+                                                      (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true))))))
+                                              (let [args-dic (args-to-dic args)]
+                                                  (if-let [ast (my-select-plus/sql-to-ast (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
+                                                      (let [{sql :sql args-1 :args} (my-select-plus-args/my-ast-to-sql ignite group_id args-dic ast)]
+                                                          (.iterator (.query (.cache ignite "public_meta") (doto (SqlFieldsQuery. sql) (.setLazy true) (.setArgs (to-array args-1))))))))
+                                              )
           (re-find #"^(?i)insert\s+" sql) (let [logCache (insert-to-cache ignite group_id sql args)]
                                               (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache])))
           (re-find #"^(?i)update\s+" sql) (let [logCache (update-to-cache ignite group_id sql args)]
