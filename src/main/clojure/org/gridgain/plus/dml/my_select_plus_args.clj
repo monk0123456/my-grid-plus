@@ -313,8 +313,8 @@
                     (cond
                         (and (not (Strings/isNullOrEmpty table_alias)) (not (nil? alias)) (not (Strings/isNullOrEmpty alias))) {:sql (str/join [table_alias "." item_name " as " alias]) :args nil}
                         (and (not (Strings/isNullOrEmpty table_alias)) (Strings/isNullOrEmpty alias)) {:sql (str/join [table_alias "." item_name]) :args nil}
-                        (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? dic-args item_name)
-                                                                                                    {:sql "?" :args [(get dic-args item_name)]}
+                        (and (Strings/isNullOrEmpty table_alias) (Strings/isNullOrEmpty alias)) (if (contains? (-> dic-args :dic) item_name)
+                                                                                                    {:sql "?" :args [(get (-> dic-args :dic) item_name)]}
                                                                                                     {:sql item_name :args nil}
                                                                                                     )
                         )))

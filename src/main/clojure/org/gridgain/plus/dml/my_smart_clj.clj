@@ -33,14 +33,11 @@
         ))
 
 (declare ast-to-clj body-to-clj token-to-clj token-lst-clj for-seq for-seq-func
-         express-to-clj query_sql trans do-express)
+         express-to-clj trans do-express)
 
 (defn do-express [f-express r-express]
     (if (and (some? f-express) (some? r-express) (contains? f-express :expression) (contains? #{"for" "match"} (-> f-express :expression)))
         true false))
-
-(defn query_sql [ignite group_id sql & args]
-    (my-smart-db/query_sql ignite group_id sql args))
 
 (defn trans [ignite group_id sql & args]
     (my-smart-db/trans ignite group_id sql args))

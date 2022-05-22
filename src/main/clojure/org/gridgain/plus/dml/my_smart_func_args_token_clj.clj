@@ -40,11 +40,11 @@
 (defn run-express [stack_number stack_symbo args-dic]
     (if (some? (peek stack_symbo))
         (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbo)]
-            (cond (and (contains? args-dic (-> first_item :item_name)) (contains? args-dic (-> second_item :item_name)))
+            (cond (and (contains? (-> args-dic :dic) (-> first_item :item_name)) (contains? (-> args-dic :dic) (-> second_item :item_name)))
                   (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
-                  (contains? args-dic (-> first_item :item_name))
+                  (contains? (-> args-dic :dic) (-> first_item :item_name))
                   (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
-                  (contains? args-dic (-> second_item :item_name))
+                  (contains? (-> args-dic :dic) (-> second_item :item_name))
                   (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
                   :else
                   (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
@@ -66,11 +66,11 @@
                                                    :else
                                                    (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbol)]
                                                        ;(recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
-                                                       (cond (and (contains? args-dic (-> first_item :item_name)) (contains? args-dic (-> second_item :item_name)))
+                                                       (cond (and (contains? (-> args-dic :dic) (-> first_item :item_name)) (contains? (-> args-dic :dic) (-> second_item :item_name)))
                                                              (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
-                                                             (contains? args-dic (-> first_item :item_name))
+                                                             (contains? (-> args-dic :dic) (-> first_item :item_name))
                                                              (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
-                                                             (contains? args-dic (-> second_item :item_name))
+                                                             (contains? (-> args-dic :dic) (-> second_item :item_name))
                                                              (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
                                                              :else
                                                              (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
@@ -158,7 +158,7 @@
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m args-dic]
     (let [{func-name :func-name lst_ps :lst_ps} m]
-        (cond (my-lexical/is-eq? func-name "trans") (format "(%s ignite group_id %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps args-dic))
+        (cond (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
@@ -172,7 +172,9 @@
               (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps args-dic))
               ; inner function
               ;(get-inner-function-context (str/lower-case func-name) args-dic) (format "(%s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
-              (my-lexical/is-eq? func-name "query_sql") (format "(%s ignite group_id %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps args-dic))
+              (my-lexical/is-eq? func-name "query_sql") (cond (= (count lst_ps) 1) (format "(my-smart-db/query_sql ignite group_id %s nil)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
+                                                              (> (count lst_ps) 1) (format "(my-smart-db/query_sql ignite group_id %s [%s])" (get-lst-ps-vs ignite group_id (first lst_ps) args-dic) (get-lst-ps-vs ignite group_id (rest lst_ps) args-dic))
+                                                              )
               (and (contains? args-dic :top-func) (= func-name (-> args-dic :top-func))) (format "(%s ignite group_id %s)" func-name (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (= func-name "empty?") (format "(empty? %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
               (= func-name "notEmpty?") (format "(my-lexical/not-empty? %s)" (get-lst-ps-vs ignite group_id lst_ps args-dic))
@@ -193,7 +195,7 @@
                      (recur ignite group_id r args-dic (conj lst (format "(my-lexical/get-value %s)" m-line)))
                      (recur ignite group_id r args-dic (conj lst m-line))))
              (recur ignite group_id r args-dic lst))
-         (str/join " " lst))))
+         (str/trim (str/join " " lst)))))
 
 (defn item-to-clj [m args-dic]
     (if (contains? (-> args-dic :dic) (-> m :item_name))
@@ -292,7 +294,7 @@
         (item-to-clj m args-dic)
         (let [fn-line (token-to-clj ignite group_id m args-dic)]
             (if-not (Strings/isNullOrEmpty fn-line)
-                (apply (eval (read-string (format "(fn [ignite group_id %s]\n     %s)" (str/join " " (keys args-dic)) fn-line))) (concat [ignite group_id] (vals args-dic))))))
+                (apply (eval (read-string (format "(fn [ignite group_id %s]\n     %s)" (str/join " " (keys (-> args-dic :dic))) fn-line))) (concat [ignite group_id] (vals (-> args-dic :dic)))))))
     )
 
 (defn func-link-to-clj [ignite group_id [f & r] my-context]

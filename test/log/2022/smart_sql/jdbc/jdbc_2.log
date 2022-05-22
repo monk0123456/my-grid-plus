@@ -1,3 +1,31 @@
 ; 测试 my-smart-db
 
 ; 查询 sql: SELECT CompanyName, ContactName from public.Customers WHERE City = 'London'  AND (ContactTitle IN ('Sales Agent', 'Sales Associate', 'Sales Representative'))
+
+
+(def line "function my_query()\n(\n    let lst = [];\n    let itr = query(\"SELECT CompanyName, ContactName from public.Customers WHERE City = ? AND ContactTitle IN (?, ?)\", \"London\", \"Sales Agent\", \"Sales Associate\");\n    for (it in itr)\n    {\n        lst.add(it.first());\n    }\n    lst;\n)")
+(def lst (my-lexical/to-back line))
+(my-smart-sql/get-func-name lst)
+
+
+function my_query()
+{
+        let lst = [];
+        let itr = query_sql("SELECT CompanyName, ContactName from public.Customers WHERE City = ? AND ContactTitle IN (?, ?)", "London", "Sales Agent", "Sales Associate");
+        for (it in itr)
+        {
+            lst.add(it.first());
+        }
+        lst;
+}
+
+function my_query(sql, args)
+{
+        let lst = [];
+        let itr = query_sql(sql, args);
+        for (it in itr)
+        {
+            lst.add(it.first());
+        }
+        lst;
+}

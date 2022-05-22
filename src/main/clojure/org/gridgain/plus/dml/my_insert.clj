@@ -93,22 +93,45 @@
                     ))]
         (insert_obj lst)))
 
+(defn insert-body
+    ([lst] (insert-body lst nil [] []))
+    ([[f & r] flag lst-sn lst]
+     (if (some? f)
+         (cond (not (nil? flag)) (recur r flag lst-sn (conj lst f))
+               (and (nil? flag) (= f "(")) (recur r true lst-sn (conj lst f))
+               :else
+               (recur r nil (conj lst-sn f) lst)
+               )
+         (cond (and (= (count lst-sn) 3) (= (second lst-sn) ".")) {:schema_name (first lst-sn) :table_name (last lst-sn) :vs-line lst}
+               (= (count lst-sn) 1) {:schema_name "" :table_name (last lst-sn) :vs-line lst}
+               :else
+               (throw (Exception. "插入语句格式错误！"))
+               ))))
+
 ; 获取 inset_obj
 ; 例如："INSERT INTO categories (categoryid, categoryname, description) values (12, 'wudafu', 'meiyy')"
 ; {:table_name "categories",
 ;  :values ({:item_name "description", :item_value "'meiyy'"}
 ;           {:item_name "categoryname", :item_value "'wudafu'"}
 ;           {:item_name "categoryid", :item_value "12"})}
-(defn get_insert_obj [lst]
-    (letfn [(insert_obj [[f & r]]
-                (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
-                    (if-let [items (get-insert-items (rest (rest r)))]
-                        (assoc (my-lexical/get-schema (str/lower-case (second r))) :values items)
-                        ;{:table_name (str/lower-case (second r)) :values items}
-                        (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))
-                        )
-                    ))]
-        (insert_obj lst)))
+(defn get_insert_obj [[f & r]]
+    (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
+        (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
+            (if-let [items (get-insert-items vs-line)]
+                {:schema_name schema_name :table_name table_name :values items}
+                (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))))
+        ))
+
+;(defn get_insert_obj [lst]
+;    (letfn [(insert_obj [[f & r]]
+;                (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
+;                    (if-let [items (get-insert-items (rest (rest r)))]
+;                        (assoc (my-lexical/get-schema (str/lower-case (second r))) :values items)
+;                        ;{:table_name (str/lower-case (second r)) :values items}
+;                        (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))
+;                        )
+;                    ))]
+;        (insert_obj lst)))
 
 (defn get_insert_obj_fun [^String line ^clojure.lang.PersistentArrayMap dic_paras]
     (if-let [lst (my-lexical/to-back line)]
@@ -147,20 +170,34 @@
 ; :data ({:column_name "categoryname", :column_type "varchar", :pkid false, :auto_increment false}
 ;        {:column_name "description", :column_type "varchar", :pkid false, :auto_increment false}
 ;        {:column_name "picture", :column_type "varchar", :pkid false, :auto_increment false})}
-(defn get_pk_data [^Ignite ignite ^String table_name]
-    (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id where t.table_name = ?")
-                                                                                    (.setLazy true)) (to-array [table_name]))))]
-        (letfn [
-                ; 从 iterator 中获取 pk列和数据列
-                (get_pk_data_it [it lst_pk lst_data]
-                    (if (.hasNext it)
-                        (when-let [row (.next it)]
-                            (if (true? (.get row 2))
-                                (recur it (concat lst_pk [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]) lst_data)
-                                (recur it lst_pk (concat lst_data [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]))
-                                ))
-                        {:pk lst_pk :data lst_data}))]
-            (get_pk_data_it it [] []))))
+(defn get_pk_data [^Ignite ignite ^String schema_name ^String table_name]
+    (if (my-lexical/is-eq? schema_name "public")
+        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id where t.table_name = ? and t.data_set_id = 0")
+                                                                                        (.setLazy true)) (to-array [(str/lower-case table_name)]))))]
+            (letfn [
+                    ; 从 iterator 中获取 pk列和数据列
+                    (get_pk_data_it [it lst_pk lst_data]
+                        (if (.hasNext it)
+                            (when-let [row (.next it)]
+                                (if (true? (.get row 2))
+                                    (recur it (concat lst_pk [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]) lst_data)
+                                    (recur it lst_pk (concat lst_data [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]))
+                                    ))
+                            {:pk lst_pk :data lst_data}))]
+                (get_pk_data_it it [] [])))
+        (when-let [it (.iterator (.query (.cache ignite "my_meta_tables") (.setArgs (doto (SqlFieldsQuery. "select m.column_name, m.column_type, m.pkid, m.auto_increment from table_item as m join my_meta_tables as t on m.table_id = t.id join my_dataset as ds on ds.id = t.data_set_id where t.table_name = ? and ds.dataset_name = ?")
+                                                                                        (.setLazy true)) (to-array [(str/lower-case table_name) (str/lower-case schema_name)]))))]
+            (letfn [
+                    ; 从 iterator 中获取 pk列和数据列
+                    (get_pk_data_it [it lst_pk lst_data]
+                        (if (.hasNext it)
+                            (when-let [row (.next it)]
+                                (if (true? (.get row 2))
+                                    (recur it (concat lst_pk [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]) lst_data)
+                                    (recur it lst_pk (concat lst_data [{:column_name (.get row 0) :column_type (.get row 1) :pkid (.get row 2) :auto_increment (.get row 3)}]))
+                                    ))
+                            {:pk lst_pk :data lst_data}))]
+                (get_pk_data_it it [] [])))))
 
 ; 获取 insert obj 和 insert view obj 两个对象
 ; insert obj: get_insert_obj
@@ -458,7 +495,7 @@
         (if-not (my-lexical/is-eq? (-> insert_obj :schema_name) "my_meta")
             (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
                 (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-                    (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                    (if-let [pk_data (get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name))]
                         (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
                             (insert_obj_to_db ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data)
                             )
@@ -473,7 +510,7 @@
         (if-not (my-lexical/is-eq? (-> insert_obj :schema_name) "my_meta")
             (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
                 (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-                    (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                    (if-let [pk_data (get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name))]
                         (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
                             (insert_obj_to_db_fun ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data dic_paras)
                             )
@@ -487,7 +524,7 @@
     (let [insert_obj (get_insert_obj lst-sql)]
         (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
             (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-                (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                (if-let [pk_data (get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name))]
                     (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
                         (insert_obj_to_db_no_log ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data)
                         )
@@ -500,7 +537,7 @@
     (let [insert_obj (get_insert_obj lst-sql)]
         (let [view_obj (get_view_obj ignite group_id (-> insert_obj :table_name))]
             (if (nil? (get-authority (-> insert_obj :values) (-> view_obj :lst)))
-                (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+                (if-let [pk_data (get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name))]
                     (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
                         (insert_obj_to_db_no_log_fun ignite group_id (-> insert_obj :schema_name) (-> insert_obj :table_name) pk_with_data dic_paras)
                         )
@@ -554,7 +591,7 @@
 ; 以下是保存到 cache 中的 scenes_name, ast, 参数列表
 (defn save_scenes [^Ignite ignite ^Long group_id ^String scenes_name ^String sql_code ^clojure.lang.PersistentVector sql_lst ^String descrip ^List params ^Boolean is_batch]
     (if-let [insert_obj (get_insert_obj_lst sql_lst)]
-        (if-let [pk_data (get_pk_data ignite (-> insert_obj :table_name))]
+        (if-let [pk_data (get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name))]
             (if-let [pk_with_data (get_pk_data_with_data pk_data insert_obj)]
                 (let [m (MyScenesCache. group_id scenes_name sql_code descrip is_batch params (assoc pk_with_data :table_name (-> insert_obj :table_name)) (ScenesType/INSERT))]
                     (.put (.cache ignite "my_scenes") (str/lower-case scenes_name) m)))

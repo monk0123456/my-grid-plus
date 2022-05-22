@@ -182,7 +182,7 @@
 ; 调用方法这个至关重要
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
-        (cond (my-lexical/is-eq? func-name "trans") (format "(%s ignite group_id %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
+        (cond (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
               (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
@@ -196,7 +196,9 @@
               (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
               ; inner function
               (get-inner-function-context func-name my-context) (format "(%s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
-              (my-lexical/is-eq? func-name "query_sql") (format "(%s ignite group_id %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "query_sql") (cond (= (count lst_ps) 1) (format "(my-smart-db/query_sql ignite group_id %s nil)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+                                                              (> (count lst_ps) 1) (format "(my-smart-db/query_sql ignite group_id %s [%s])" (get-lst-ps-vs ignite group_id (first lst_ps) my-context) (get-lst-ps-vs ignite group_id (rest lst_ps) my-context))
+                                                              )
               (and (contains? my-context :top-func) (= func-name (-> my-context :top-func))) (format "(%s ignite group_id %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
               (= func-name "empty?") (format "(empty? %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (= func-name "notEmpty?") (format "(my-lexical/not-empty? %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
@@ -216,7 +218,7 @@
                      (recur ignite group_id r my-context (conj lst (format "(my-lexical/get-value %s)" m-line)))
                      (recur ignite group_id r my-context (conj lst m-line))))
              (recur ignite group_id r my-context lst))
-         (str/join " " lst))))
+         (str/trim (str/join " " lst)))))
 
 (defn item-to-clj [m my-context]
     (let [my-let (get-let-context (-> m :item_name) my-context)]
