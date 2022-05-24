@@ -50,6 +50,7 @@
         (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
         (java.util List ArrayList Date Iterator)
         (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
+        (org.tools MyTools MyFunction)
         (java.math BigDecimal)
         (org.tools MyTools)
         (org.gridgain MyParamsUtil)

@@ -132,32 +132,11 @@
           true
           ))
 
-(defn smart-func [func-name]
-    (cond (my-lexical/is-eq? func-name "add") "my-lexical/list-add"
-          (my-lexical/is-eq? func-name "set") "my-lexical/list-set"
-          (my-lexical/is-eq? func-name "take") "my-lexical/list-take"
-          (my-lexical/is-eq? func-name "drop") "my-lexical/list-drop"
-          (my-lexical/is-eq? func-name "nth") "nth"
-          (my-lexical/is-eq? func-name "count") "count"
-          (my-lexical/is-eq? func-name "concat") "concat"
-          (my-lexical/is-eq? func-name "put") ".put"
-          (my-lexical/is-eq? func-name "get") "my-lexical/map-list-get"
-          (my-lexical/is-eq? func-name "remove") "my-lexical/list-remove"
-          (my-lexical/is-eq? func-name "pop") "my-lexical/list-peek"
-          (my-lexical/is-eq? func-name "peek") "my-lexical/list-peek"
-          (my-lexical/is-eq? func-name "takeLast") "my-lexical/list-take-last"
-          (my-lexical/is-eq? func-name "dropLast") "my-lexical/list-drop-last"
-          (my-lexical/is-eq? func-name "empty?") "empty?"
-          (my-lexical/is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
-          :else
-          (str/lower-case func-name)
-          ))
-
 (defn smart-func-lst
     ([^Ignite ignite group_id m my-context] (smart-func-lst ignite group_id m my-context [] []))
     ([^Ignite ignite group_id m my-context head-lst tail-lst]
      (let [{my-func-name :func-name lst_ps :lst_ps ds-name :ds-name} m]
-         (let [func-name (smart-func my-func-name)]
+         (let [func-name (my-lexical/smart-func my-func-name)]
              (if-not (nil? (-> m :ds-lst))
                  (recur ignite group_id (-> m :ds-lst) my-context (conj head-lst (format "%s " func-name)) (conj tail-lst (token-to-clj ignite group_id lst_ps my-context)))
                  (if-not (= ds-name "")
@@ -189,8 +168,8 @@
               (my-lexical/is-eq? "println" func-name) (format "(println %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (re-find #"\." func-name) (let [{let-name :schema_name method-name :table_name} (my-lexical/get-schema func-name)]
                                             (if (> (count lst_ps) 0)
-                                                (format "(%s (my-lexical/get-value %s) %s)" (smart-func method-name) let-name (get-lst-ps-vs ignite group_id lst_ps my-context))
-                                                (format "(%s (my-lexical/get-value %s))" (smart-func method-name) let-name))
+                                                (format "(%s (my-lexical/get-value %s) %s)" (my-lexical/smart-func method-name) let-name (get-lst-ps-vs ignite group_id lst_ps my-context))
+                                                (format "(%s (my-lexical/get-value %s))" (my-lexical/smart-func method-name) let-name))
                                             )
               ; 系统函数
               (contains? #{"first" "rest" "next" "second"} (str/lower-case func-name)) (format "(%s %s)" (str/lower-case func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
@@ -204,7 +183,7 @@
               (= func-name "notEmpty?") (format "(my-lexical/not-empty? %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               :else
               ;(format "(my-smart-scenes/my-invoke-func ignite %s %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
-              (format "(%s %s)" (smart-func func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (format "(%s %s)" (my-lexical/smart-func func-name) (get-lst-ps-vs ignite group_id lst_ps my-context))
               ;(println "Inner func")
               )))
 

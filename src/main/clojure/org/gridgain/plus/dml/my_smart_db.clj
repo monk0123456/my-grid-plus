@@ -67,24 +67,24 @@
     (letfn [(get-insert-pk [ignite group_id pk-rs args-dic]
                 (if (= (count pk-rs) 1)
                     (let [tokens (my-select-plus/sql-to-ast (-> (first pk-rs) :item_value))]
-                        (my-smart-func-args-token-clj/func-token-to-clj ignite group_id tokens args-dic))
+                        (my-lexical/get_jave_vs (-> (first pk-rs) :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id tokens args-dic)))
                     (loop [[f & r] pk-rs lst-rs []]
                         (if (some? f)
-                            (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic))))
+                            (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic)))))
                             lst-rs))))
             (get-insert-data [ignite group_id data-rs args-dic]
                 (loop [[f & r] data-rs lst-rs []]
                     (if (some? f)
-                        (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic))))
+                        (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic)))))
                         lst-rs)))]
         (if (some? args)
             (let [args-dic (args-to-dic args)]
                 (let [insert_obj (my-insert/get_insert_obj (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
                     (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                        (MyLogCache. (format "f_%s_%s" (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))))
+                        (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))))
             (let [insert_obj (my-insert/get_insert_obj (my-lexical/to-back sql))]
                 (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                    (MyLogCache. (format "f_%s_%s" (-> insert_obj :schema_name) (-> insert_obj :table_name)) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs nil) (get-insert-data ignite group_id data_rs nil) (SqlType/INSERT)))))
+                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs nil) (get-insert-data ignite group_id data_rs nil) (SqlType/INSERT)))))
         )
     )
 

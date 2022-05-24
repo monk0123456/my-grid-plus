@@ -239,7 +239,7 @@
                          (let [m (get_value values f)]
                              (if-not (nil? m)
                                  (recur r values (concat lst [m]))
-                                 (recur r values (concat lst [(assoc m :item_value nil)]))))
+                                 (recur r values lst)))
                          lst))
                     )] {:pk_rs (get_rs (-> pk_data :pk) values) :data_rs (get_rs (-> pk_data :data) values)})
         ))

@@ -14,7 +14,7 @@
              (org.gridgain.jdbc MyJdbc)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
-             (org.tools MyTools)
+             (org.tools MyTools MyFunction)
              (java.math BigDecimal))
     (:gen-class
         ; 生成 class 的类名
@@ -229,6 +229,103 @@
 
 (defn list-pop [^ArrayList lst]
     (.subList lst 0 (- (count lst) 1)))
+
+(defn my-concat [a & rs]
+    (letfn [(my-concat-str [a & rs]
+                (str/join (apply conj [a] rs)))
+            ]
+        (cond (string? a) (if (nil? rs)
+                              (my-concat-str a)
+                              (apply my-concat-str a rs))
+              (is-seq? a) (if (nil? rs)
+                                         a
+                                         (apply concat a rs))
+              :else
+              (if (nil? rs)
+                  (my-concat-str a)
+                  (apply my-concat-str a rs))
+              )))
+
+(defn to-char [m & ps]
+    (cond (integer? m) (MyFunction/to_char_int m)
+          (or (instance? long m) (instance? Long m)) (MyFunction/to_char_long m)
+          (double? m) (MyFunction/to_char_double m)
+          (instance? Date m) (MyFunction/to_char_date m (first ps))
+          ))
+
+(defn sign [m]
+    (cond (integer? m) (MyFunction/sign_int m)
+          (or (instance? long m) (instance? Long m)) (MyFunction/sign_long m)
+          (double? m) (MyFunction/sign_double m)
+          (string? m) (MyFunction/sign_str m)
+          ))
+
+(defn decode [m]
+    (if (is-seq? m)
+        (MyFunction/decode (to_arryList m))
+        (throw (Exception. "decode 的输入参数只能的序列！"))))
+
+(defn smart-func [func-name]
+    (cond (is-eq? func-name "add") "my-lexical/list-add"
+          (is-eq? func-name "set") "my-lexical/list-set"
+          (is-eq? func-name "take") "my-lexical/list-take"
+          (is-eq? func-name "drop") "my-lexical/list-drop"
+          (is-eq? func-name "nth") "nth"
+          (is-eq? func-name "count") "count"
+          (is-eq? func-name "concat") "my-lexical/my-concat"
+          (is-eq? func-name "put") ".put"
+          (is-eq? func-name "get") "my-lexical/map-list-get"
+          (is-eq? func-name "remove") "my-lexical/list-remove"
+          (is-eq? func-name "pop") "my-lexical/list-peek"
+          (is-eq? func-name "peek") "my-lexical/list-peek"
+          (is-eq? func-name "takeLast") "my-lexical/list-take-last"
+          (is-eq? func-name "dropLast") "my-lexical/list-drop-last"
+          (is-eq? func-name "empty?") "empty?"
+          (is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
+          (is-eq? func-name "abs") "MyFunction/abs"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "atan") "MyFunction/atan"
+          (is-eq? func-name "ceiling") "MyFunction/ceiling"
+          (is-eq? func-name "cos") "MyFunction/cos"
+          (is-eq? func-name "cosh") "MyFunction/cosh"
+          (is-eq? func-name "cot") "MyFunction/cot"
+          (is-eq? func-name "degrees") "MyFunction/degrees"
+          (is-eq? func-name "exp") "MyFunction/exp"
+          (is-eq? func-name "floor") "MyFunction/floor"
+          (is-eq? func-name "ln") "MyFunction/ln"
+          (is-eq? func-name "log") "MyFunction/log"
+          (is-eq? func-name "log10") "MyFunction/log10"
+          (is-eq? func-name "pi") "MyFunction/pi"
+          (is-eq? func-name "radians") "MyFunction/radians"
+          (is-eq? func-name "roundMagic") "MyFunction/roundMagic"
+          (is-eq? func-name "zero") "MyFunction/zero"
+          (is-eq? func-name "length") "MyFunction/length"
+          (is-eq? func-name "char") "MyFunction/my_char"
+          (is-eq? func-name "ucase") "MyFunction/ucase"
+          (is-eq? func-name "day_name") "MyFunction/day_name"
+          (is-eq? func-name "year") "MyFunction/year"
+          (is-eq? func-name "to_number") "MyFunction/to_number"
+          (is-eq? func-name "to_char") "my-lexical/to-char"
+          (is-eq? func-name "add_months") "MyFunction/add_months"
+          (is-eq? func-name "lpad") "MyFunction/lpad"
+          (is-eq? func-name "rpad") "MyFunction/rpad"
+          (is-eq? func-name "to_date") "MyFunction/to_date"
+          (is-eq? func-name "last_day") "MyFunction/last_day"
+          (is-eq? func-name "decode") "my-lexical/decode"
+          (is-eq? func-name "sign") "my-lexical/sign"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "asin") "MyFunction/asin"
+          :else
+          (str/lower-case func-name)
+          ))
+
+;(defn my-concat [[f & r]]
+;    (cond (string? (first f)) (MyFunction/concat lst)))
 
 (defn not-empty? [lst]
     (not (empty? lst)))
