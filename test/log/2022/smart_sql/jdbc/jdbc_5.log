@@ -1,0 +1,10 @@
+(def sql "UPDATE public.Categories SET CategoryName = concat(CategoryName, '吴大富') WHERE categoryid = ?")
+(def args [8])
+(def args-dic (my-smart-db/args-to-dic args))
+(def my-lst (my-smart-db/get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))
+(def update-ast (my-update/get_update_obj ignite 0 my-lst))
+update-ast
+(def select-ast (my-select-plus/sql-to-ast (my-lexical/to-back (-> update-ast :sql))))
+(my-select-plus-args/my-ast-to-sql ignite 0 args-dic select-ast)
+;(my-select-plus-args/my-ast-to-sql ignite 0 (my-select-plus/sql-to-ast (my-lexical/to-back (-> update-ast :sql))) args-dic)
+;(my-update/get_update_obj ignite 0 my-lst)

@@ -1,16 +1,16 @@
 function my_insert()
 {
-    query_sql("INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(100+?,?,?, '')", [1, "吴大富", "吴大贵"]);
+    query_sql("INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(100+?,concat(?, '是大帅哥！'),?, '')", [1, "吴大富", "吴大贵"]);
 }
 
 function my_insert()
 {
-    query_sql("INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(100+?,?,?, '')", 1, "吴大富", "吴大贵");
+    query_sql("INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(100+?,concat(?, '是大帅哥！'),?, '')", 1, "吴大富", "吴大贵");
 }
 
 function my_insert()
 {
-    let sql = "INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(100+?,?,?, '')";
+    let sql = "INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(100+?,concat(?, '是大帅哥！'),?, '')";
     let args = [1, "吴大富", "吴大贵"];
     query_sql(sql, args);
 }

@@ -79,9 +79,16 @@
 
 ; 剔除单括号或双括号
 (defn get_str_value [^String line]
-               (if (some? (re-find #"^\'[\S\s]+\'$|^\"[\S\s]+\"$|^\'\'$|^\"\"$" line))
-                   (str/join (reverse (rest (reverse (rest line)))))
-                   line))
+    (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (reverse (rest (reverse (rest line)))))
+          (re-find #"^\'\'$" line) ""
+          :else line
+          ))
+
+(defn my-str-value [^String line]
+    (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (concat [\"] (drop-last 1 (rest line)) [\"]))
+          (re-find #"^\'\'$" line) ""
+          :else line
+          ))
 
 ; 去掉 lst 的头和尾，取中间的链表
 (defn get-contain-lst
@@ -588,9 +595,10 @@
 
 (defn get_jave_vs [column_type column_value]
     (letfn [(get_str_value [^String line]
-                (if-not (nil? (re-find #"^\'[\S\s]+\'$" line))
-                    (str/join (reverse (rest (reverse (rest line)))))
-                    line))]
+                (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (reverse (rest (reverse (rest line)))))
+                      (re-find #"^\'\'$" line) ""
+                      :else line
+                      ))]
         (cond (re-find #"^(?i)integer$|^(?i)int$" column_type) (MyConvertUtil/ConvertToInt column_value)
               (re-find #"^(?i)float$" column_type) (MyConvertUtil/ConvertToDouble column_value)
               (re-find #"^(?i)double$" column_type) (MyConvertUtil/ConvertToDouble column_value)

@@ -97,6 +97,7 @@
                             (recur (+ index 1) (conj lst-rs (MyKeyValue. (-> (nth pk-lst index) :item_name) (nth row index))))
                             lst-rs))
                     ))
+            ; 如果里面有表中的列，那么就要把对于的值先找出来
             (get-value
                 ([ignite group_id args-dic items] (get-value ignite group_id args-dic items []))
                 ([ignite group_id args-dic [f & r] lst]
@@ -106,7 +107,7 @@
         (if (some? args)
             (let [args-dic (args-to-dic args)]
                 (let [{schema_name :schema_name table_name :table_name sql :sql items :items pk_lst :pk_lst} (my-update/get_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
-                    (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) args-dic)]
+                    (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id args-dic (my-select-plus/sql-to-ast (my-lexical/to-back sql)))]
                         (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
                                                                                                                               (.setArgs (to-array select-args))
                                                                                                                               (.setLazy true)))) lst-rs []]
@@ -116,7 +117,7 @@
                                     )
                                 lst-rs)))))
             (let [{schema_name :schema_name table_name :table_name sql :sql items :items pk_lst :pk_lst} (my-update/get_update_obj ignite group_id (my-lexical/to-back sql))]
-                (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) nil)]
+                (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast (my-lexical/to-back sql)))]
                     (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
                                                                                                                           (.setArgs (to-array select-args))
                                                                                                                           (.setLazy true)))) lst-rs []]
@@ -139,7 +140,7 @@
         (if (some? args)
             (let [args-dic (args-to-dic args)]
                 (let [{schema_name :schema_name table_name :table_name sql :sql pk_lst :pk_lst} (my-delete/get_delete_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
-                    (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) args-dic)]
+                    (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id args-dic (my-select-plus/sql-to-ast (my-lexical/to-back sql)))]
                         (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
                                                                                                                               (.setArgs (to-array select-args))
                                                                                                                               (.setLazy true)))) lst-rs []]
@@ -149,7 +150,7 @@
                                     )
                                 lst-rs)))))
             (let [{schema_name :schema_name table_name :table_name sql :sql pk_lst :pk_lst} (my-delete/get_delete_obj ignite group_id (my-lexical/to-back sql))]
-                (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id (my-select-plus/sql-to-ast (my-lexical/to-back sql)) nil)]
+                (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast (my-lexical/to-back sql)))]
                     (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
                                                                                                                           (.setArgs (to-array select-args))
                                                                                                                           (.setLazy true)))) lst-rs []]

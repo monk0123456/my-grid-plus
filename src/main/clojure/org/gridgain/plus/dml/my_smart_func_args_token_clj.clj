@@ -100,12 +100,7 @@
                :else
                (recur ignite group_id r (conj stack_number f) stack_symbol args-dic)
                )
-         (do
-             (println "*****************")
-             (println stack_number)
-             (println stack_symbol)
-             (println "*****************")
-             (run-express stack_number stack_symbol args-dic))
+         (run-express stack_number stack_symbol args-dic)
          )))
 
 ; 判断 func
@@ -189,7 +184,7 @@
     ([ignite group_id [f & r] args-dic lst]
      (if (some? f)
          (if-not (contains? f :comma_symbol)
-             (let [m-line (token-to-clj ignite group_id f args-dic)]
+             (let [m-line (my-lexical/my-str-value (token-to-clj ignite group_id f args-dic))]
                  (if (and (contains? f :item_name) (false? (-> f :const)) (not (re-find #"^\(my-lexical/get-value\s" m-line)))
                      (recur ignite group_id r args-dic (conj lst (format "(my-lexical/get-value %s)" m-line)))
                      (recur ignite group_id r args-dic (conj lst m-line))))

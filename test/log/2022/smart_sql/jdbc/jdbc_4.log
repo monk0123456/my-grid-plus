@@ -1,0 +1,46 @@
+(def sql "INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(100+?,concat(?, '是大帅哥！'),?, '')")
+(def args [(my-lexical/to_arryList [1 "吴大富" "吴大贵"])])
+
+
+(defn get-insert-pk [ignite group_id pk-rs args-dic]
+    (if (= (count pk-rs) 1)
+        (let [tokens (my-select-plus/sql-to-ast (-> (first pk-rs) :item_value))]
+            (my-lexical/get_jave_vs (-> (first pk-rs) :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id tokens args-dic)))
+        (loop [[f & r] pk-rs lst-rs []]
+            (if (some? f)
+                (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic)))))
+                lst-rs))))
+(defn get-insert-data [ignite group_id data-rs args-dic]
+    (loop [[f & r] data-rs lst-rs []]
+        (if (some? f)
+            (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (my-lexical/get_jave_vs (-> f :column_type) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (my-select-plus/sql-to-ast (-> f :item_value)) args-dic)))))
+            lst-rs)))
+
+(defn insert-to-cache [ignite group_id sql args]
+    (let [args-dic (my-smart-db/args-to-dic args)]
+        (let [insert_obj (my-insert/get_insert_obj (my-smart-db/get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
+            (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
+                (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT))))))
+
+(defn query-sql-args [ignite group_id sql args]
+    (let [logCache (insert-to-cache ignite group_id sql args)]
+        (println logCache)
+        ;(MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList [logCache]))
+        ))
+
+(defn query_sql [ignite group_id sql args]
+    (if (nil? args)
+        (my-smart-db/query-sql-no-args ignite group_id (my-lexical/get-value sql))
+        (if (and (= (count args) 1) (my-lexical/is-seq? (first (my-lexical/get-value args))))
+            (apply query-sql-args ignite group_id (my-lexical/get-value sql) (my-lexical/get-value args))
+            (query-sql-args ignite group_id (my-lexical/get-value sql) (my-lexical/get-value args)))))
+
+(def args-dic (my-smart-db/args-to-dic (first args)))
+(def insert_obj (my-insert/get_insert_obj (my-smart-db/get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys))))
+(def my_pk_data (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj))
+my_pk_data
+(def first_item_ast (my-select-plus/sql-to-ast (-> (first (-> my_pk_data :data_rs)) :item_value)))
+(my-smart-func-args-token-clj/token-to-clj ignite 0 first_item_ast args-dic)
+;(my-smart-func-args-token-clj/func-token-to-clj ignite 0 first_item_ast args-dic)
+;(get-insert-data ignite 0 (-> my_pk_data :data_rs) args-dic)
+;(query_sql ignite 0 sql args)

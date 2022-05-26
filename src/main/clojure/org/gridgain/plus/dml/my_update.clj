@@ -29,10 +29,24 @@
         ;:methods [^:static [my_update_run_log [org.apache.ignite.Ignite Long String] java.util.ArrayList]]
         ))
 
+(defn update-table
+    ([lst] (update-table lst nil [] []))
+    ([[f & r] my-set stack lst]
+     (if (some? f)
+         (cond (and (nil? my-set) (not (my-lexical/is-eq? f "set"))) (recur r my-set (conj stack f) lst)
+               (and (nil? my-set) (my-lexical/is-eq? f "set")) (recur r "set" stack lst)
+               (not (nil? my-set)) (recur r my-set stack (conj lst f))
+               )
+         (cond (and (= (count stack) 3) (= (second stack) ".")) {:schema_name (str/lower-case (first stack)) :table_name (str/lower-case (last stack)) :rs_lst lst}
+               (= (count stack) 1) {:schema_name "" :table_name (str/lower-case (first stack)) :rs_lst lst}
+               :else
+               (throw (Exception. "update 语句错误，要么是dataSetName.tableName 或者是 tableName"))
+               ))))
+
 ; 获取名字
-(defn get_table_name [[f & r]]
-    (if (and (some? f) (my-lexical/is-eq? f "update") (my-lexical/is-eq? (second r) "set"))
-        {:table_name (first r) :rs_lst (rest (rest r))}))
+(defn get_table_name [lst]
+    (if (and (not (empty? lst)) (my-lexical/is-eq? (first lst) "update"))
+        (update-table (rest lst))))
 
 (defn get_items
     ([rs_lst] (get_items rs_lst []))
@@ -66,11 +80,11 @@
          lst)))
 
 (defn get_json [lst]
-    (if-let [{table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
+    (if-let [{schema_name :schema_name table_name :table_name rs_lst :rs_lst} (get_table_name lst)]
         (if-let [{items_line :items_line where_line :where_line} (get_items rs_lst)]
             (if-let [items (get_item_lst items_line)]
-                ;{:table_name table_name :items (item_jsons items) :where_line where_line}
-                (assoc (my-lexical/get-schema (str/lower-case table_name)) :items (item_jsons items) :where_line where_line)
+                {:schema_name schema_name :table_name table_name :items (item_jsons items) :where_line where_line}
+                ;(assoc (my-lexical/get-schema (str/lower-case table_name)) :items (item_jsons items) :where_line where_line)
                 )
             (throw (Exception. "更新数据的语句错误！")))
         (throw (Exception. "更新数据的语句错误！"))))
