@@ -253,7 +253,7 @@
           (instance? Date m) (MyFunction/to_char_date m (first ps))
           ))
 
-(defn sign [m]
+(defn my-sign [m]
     (cond (integer? m) (MyFunction/sign_int m)
           (or (instance? long m) (instance? Long m)) (MyFunction/sign_long m)
           (double? m) (MyFunction/sign_double m)
@@ -264,6 +264,140 @@
     (if (is-seq? m)
         (MyFunction/decode (to_arryList m))
         (throw (Exception. "decode 的输入参数只能的序列！"))))
+
+(defn trunc_double [^Double ps num]
+    (letfn [(get-front-back [^Double ps]
+                (loop [[f & r] (str ps) dot nil front [] back []]
+                    (if (some? f)
+                        (cond (and (nil? dot) (not (= f \.))) (recur r dot (conj front f) back)
+                              (and (nil? dot) (= f \.)) (recur r \. front back)
+                              (and (not (nil? dot)) (not (= f \.))) (recur r dot front (conj back f))
+                              :else
+                              (throw (Exception. "Double 输入格式错误！"))
+                              )
+                        [front back])))]
+        (let [[front back] (get-front-back ps)]
+            (cond (and (>= num 0) (<= num (count back))) (MyConvertUtil/ConvertToDouble (str/join (concat front [\.] (drop-last num back))))
+                  (and (> num 0) (> num (count back))) ps
+                  (and (< num 0) (< (+ (count front) num) 0)) (Double/valueOf 0)
+                  (and (< num 0) (> (+ (count front) num) 0)) (let [my-count (Math/abs num)]
+                                                                  (loop [index 0 lst []]
+                                                                      (if (< index my-count)
+                                                                          (recur (+ index 1) (conj lst \0))
+                                                                          (MyConvertUtil/ConvertToDouble (str/join (concat (drop-last my-count front) lst))))))
+                  :else
+                  (throw (Exception. (format "输入参数错误！%s" ps)))
+                  )))
+    )
+
+(defn trunc [m & ps]
+    (cond (and (double? m) (not (nil? ps)) (number? (first ps))) (trunc_double m (first ps))
+          (and (instance? Date m) (not (nil? ps)) (string? (first ps))) (MyFunction/trunc_date m (first ps))
+          (and (instance? Date m) (nil? ps)) (MyFunction/trunc_single_date m)
+          ))
+
+(defn substr [str start count]
+    (MyFunction/substr str (MyConvertUtil/ConvertToInt start) (MyConvertUtil/ConvertToInt count)))
+
+(defn least [lst]
+    (MyFunction/least (to_arryList lst)))
+
+(defn greatest [lst]
+    (MyFunction/greatest (to_arryList lst)))
+
+(defn my-mod [v1 v2]
+    (MyFunction/mod (MyConvertUtil/ConvertToInt v1) (MyConvertUtil/ConvertToInt v2)))
+
+(defn my-round [^Double v0 num]
+    (MyFunction/round v0 (MyConvertUtil/ConvertToInt num)))
+
+(defn my-substrb [str begin length]
+    (MyFunction/substrb str (MyConvertUtil/ConvertToInt begin) (MyConvertUtil/ConvertToInt count)))
+
+(defn my-chr [my-ascii]
+    (MyFunction/chr (MyConvertUtil/ConvertToInt my-ascii)))
+
+(defn my-instrb [src dest begin time]
+    (MyFunction/instrb src dest (MyConvertUtil/ConvertToInt begin) (MyConvertUtil/ConvertToInt time)))
+
+(defn my-ltrim [str & my-key]
+    (if (nil? my-key)
+        (MyFunction/ltrim str)
+        (MyFunction/ltrim str (first my-key))))
+
+(defn my-rtrim [str & my-key]
+    (if (nil? my-key)
+        (MyFunction/rtrim str)
+        (MyFunction/rtrim str (first my-key))))
+
+(defn my-avg [lst]
+    (MyFunction/avg (to_arryList lst)))
+
+(defn my-acos [m]
+    (MyFunction/acos (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-asin [m]
+    (MyFunction/asin (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-atan [m]
+    (MyFunction/atan (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-ceiling [m]
+    (MyFunction/ceiling (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-cos [m]
+    (MyFunction/cos (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-cosh [m]
+    (MyFunction/cosh (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-cot [m]
+    (MyFunction/cot (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-degrees [m]
+    (MyFunction/degrees (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-exp [m]
+    (MyFunction/exp (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-floor [m]
+    (MyFunction/floor (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-ln [m]
+    (MyFunction/ln (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-log [m n]
+    (MyFunction/log (MyConvertUtil/ConvertToDouble m) (MyConvertUtil/ConvertToDouble n)))
+
+(defn my-log10 [m]
+    (MyFunction/log10 (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-radians [m]
+    (MyFunction/radians (MyConvertUtil/ConvertToLong m)))
+
+(defn my-roundMagic [m]
+    (MyFunction/roundMagic (MyConvertUtil/ConvertToDouble m)))
+
+(defn my-char [m]
+    (MyFunction/my_char (MyConvertUtil/ConvertToInt m)))
+
+(defn my-length [m]
+    (MyFunction/length (MyConvertUtil/ConvertToString m)))
+
+(defn my-ucase [m]
+    (MyFunction/ucase (MyConvertUtil/ConvertToString m)))
+
+(defn my-day-name [m]
+    (MyFunction/day_name (MyConvertUtil/ConvertToTimestamp m)))
+
+(defn my-year [m]
+    (MyFunction/year (MyConvertUtil/ConvertToTimestamp m)))
+
+(defn my-to-number [m]
+    (MyFunction/to_number (MyConvertUtil/ConvertToString m)))
+
+(defn my-add-months [ps num]
+    (MyFunction/add_months (MyConvertUtil/ConvertToTimestamp ps) (MyConvertUtil/ConvertToInt num)))
 
 (defn smart-func [func-name]
     (cond (is-eq? func-name "add") "my-lexical/list-add"
@@ -283,43 +417,60 @@
           (is-eq? func-name "empty?") "empty?"
           (is-eq? func-name "notEmpty?") "my-lexical/not-empty?"
           (is-eq? func-name "abs") "MyFunction/abs"
-          (is-eq? func-name "asin") "MyFunction/asin"
-          (is-eq? func-name "atan") "MyFunction/atan"
-          (is-eq? func-name "ceiling") "MyFunction/ceiling"
-          (is-eq? func-name "cos") "MyFunction/cos"
-          (is-eq? func-name "cosh") "MyFunction/cosh"
-          (is-eq? func-name "cot") "MyFunction/cot"
-          (is-eq? func-name "degrees") "MyFunction/degrees"
-          (is-eq? func-name "exp") "MyFunction/exp"
-          (is-eq? func-name "floor") "MyFunction/floor"
-          (is-eq? func-name "ln") "MyFunction/ln"
-          (is-eq? func-name "log") "MyFunction/log"
-          (is-eq? func-name "log10") "MyFunction/log10"
+          (is-eq? func-name "acos") "my-lexical/my-acos"
+          (is-eq? func-name "asin") "my-lexical/my-asin"
+          (is-eq? func-name "atan") "my-lexical/my-atan"
+          (is-eq? func-name "ceiling") "my-lexical/my-ceiling"
+          (is-eq? func-name "cos") "my-lexical/my-cos"
+          (is-eq? func-name "cosh") "my-lexical/my-cosh"
+          (is-eq? func-name "cot") "my-lexical/my-cot"
+          (is-eq? func-name "degrees") "my-lexical/my-degrees"
+          (is-eq? func-name "exp") "my-lexical/my-exp"
+          (is-eq? func-name "floor") "my-lexical/my-floor"
+          (is-eq? func-name "ln") "my-lexical/my-ln"
+          (is-eq? func-name "log") "my-lexical/my-log"
+          (is-eq? func-name "log10") "my-lexical/my-log10"
           (is-eq? func-name "pi") "MyFunction/pi"
-          (is-eq? func-name "radians") "MyFunction/radians"
-          (is-eq? func-name "roundMagic") "MyFunction/roundMagic"
+          (is-eq? func-name "radians") "my-lexical/my-radians"
+          (is-eq? func-name "roundMagic") "my-lexical/my-roundMagic"
+          (is-eq? func-name "sign") "my-lexical/my-sign"
           (is-eq? func-name "zero") "MyFunction/zero"
-          (is-eq? func-name "length") "MyFunction/length"
-          (is-eq? func-name "char") "MyFunction/my_char"
-          (is-eq? func-name "ucase") "MyFunction/ucase"
-          (is-eq? func-name "day_name") "MyFunction/day_name"
-          (is-eq? func-name "year") "MyFunction/year"
-          (is-eq? func-name "to_number") "MyFunction/to_number"
+          (is-eq? func-name "length") "my-lexical/my-length"
+          (is-eq? func-name "char") "my-lexical/my-char"
+          (is-eq? func-name "ucase") "my-lexical/my-ucase"
+          (is-eq? func-name "day_name") "my-lexical/my-day-name"
+          (is-eq? func-name "year") "my-lexical/my-year"
+          (is-eq? func-name "to_number") "my-lexical/my-to-number"
           (is-eq? func-name "to_char") "my-lexical/to-char"
-          (is-eq? func-name "add_months") "MyFunction/add_months"
+          (is-eq? func-name "add_months") "my-lexical/my-add-months"
           (is-eq? func-name "lpad") "MyFunction/lpad"
           (is-eq? func-name "rpad") "MyFunction/rpad"
           (is-eq? func-name "to_date") "MyFunction/to_date"
           (is-eq? func-name "last_day") "MyFunction/last_day"
           (is-eq? func-name "decode") "my-lexical/decode"
-          (is-eq? func-name "sign") "my-lexical/sign"
-          (is-eq? func-name "asin") "MyFunction/asin"
-          (is-eq? func-name "asin") "MyFunction/asin"
-          (is-eq? func-name "asin") "MyFunction/asin"
-          (is-eq? func-name "asin") "MyFunction/asin"
-          (is-eq? func-name "asin") "MyFunction/asin"
-          (is-eq? func-name "asin") "MyFunction/asin"
-          (is-eq? func-name "asin") "MyFunction/asin"
+          (is-eq? func-name "trunc") "my-lexical/trunc"
+          (is-eq? func-name "substr") "my-lexical/substr"
+          (is-eq? func-name "ascii") "MyFunction/ascii"
+          (is-eq? func-name "least") "my-lexical/least"
+          (is-eq? func-name "greatest") "my-lexical/greatest"
+          (is-eq? func-name "months_between") "MyFunction/months_between"
+          (is-eq? func-name "instr") "MyFunction/instr"
+          (is-eq? func-name "replace") "MyFunction/replace"
+          (is-eq? func-name "ceil") "MyFunction/ceil"
+          (is-eq? func-name "floor") "MyFunction/floor"
+          (is-eq? func-name "mod") "my-lexical/my-mod"
+          (is-eq? func-name "round") "my-lexical/my-round"
+          (is-eq? func-name "lower") "MyFunction/lower"
+          (is-eq? func-name "upper") "MyFunction/upper"
+          (is-eq? func-name "substrb") "my-lexical/my-substrb"
+          (is-eq? func-name "lengthb") "MyFunction/lengthb"
+          (is-eq? func-name "chr") "my-lexical/my-chr"
+          (is-eq? func-name "instrb") "my-lexical/my-instrb"
+          (is-eq? func-name "ltrim") "my-lexical/my-ltrim"
+          (is-eq? func-name "rtrim") "my-lexical/my-rtrim"
+          (is-eq? func-name "trim") "MyFunction/trim"
+          (is-eq? func-name "translate") "MyFunction/translate"
+          (is-eq? func-name "avg") "MyFunction/my-avg"
           :else
           (str/lower-case func-name)
           ))

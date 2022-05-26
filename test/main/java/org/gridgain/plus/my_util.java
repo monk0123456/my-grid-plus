@@ -4,7 +4,9 @@ import clojure.lang.Obj;
 import cn.plus.model.ddl.MyFuncPs;
 import org.gridgain.plus.tools.MyUtil;
 import org.junit.Test;
+import org.tools.MyFunction;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -126,6 +128,29 @@ public class my_util {
         }
 
         System.out.println("OK");
+    }
+
+    public static <T extends Comparable & Serializable> T least(List<T> t) {
+
+        Optional<T> largest = t.stream().min(T::compareTo);
+        if (largest.isPresent()) {
+            return largest.get();
+        } else {
+            return null;
+        }
+    }
+
+    @Test
+    public void my_test_3()
+    {
+        List<Integer> lst = new ArrayList<>();
+        lst.add(12);
+        lst.add(23);
+        lst.add(41);
+
+        //System.out.println(least(lst));
+
+        System.out.println(MyFunction.least("wu", "da", "fu"));
     }
 }
 

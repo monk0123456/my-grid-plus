@@ -1,0 +1,60 @@
+(defn trunc_double [^Double ps ^Integer num]
+    (letfn [(get-front-back [^Double ps]
+                (loop [[f & r] (str ps) dot nil front [] back []]
+                    (if (some? f)
+                        (cond (and (nil? dot) (not (= f \.))) (recur r dot (conj front f) back)
+                              (and (nil? dot) (= f \.)) (recur r \. front back)
+                              (and (not (nil? dot)) (not (= f \.))) (recur r dot front (conj back f))
+                              :else
+                              (throw (Exception. "Double 输入格式错误！"))
+                              )
+                        [front back])))]
+        (let [[front back] (get-front-back ps)]
+            (if (> num 0)
+                (str (concat front [\.] (drop-last num back))))))
+    )
+=> #'user/trunc_double
+(defn get-front-back [^Double ps]
+                (loop [[f & r] (str ps) dot nil front [] back []]
+                    (if (some? f)
+                        (cond (and (nil? dot) (not (= f \.))) (recur r dot (conj front f) back)
+                              (and (nil? dot) (= f \.)) (recur r \. front back)
+                              (and (not (nil? dot)) (not (= f \.))) (recur r dot front (conj back f))
+                              :else
+                              (throw (Exception. "Double 输入格式错误！"))
+                              )
+                        [front back])))
+=> #'user/get-front-back
+(get-front-back 123.4567)
+=> [[\1 \2 \3] [\4 \5 \6 \7]]
+
+(def num 2)
+(let [[front back] (get-front-back 123.4567)]
+    (if (and (>= num 0) (<= num (count back)))
+        (MyConvertUtil/ConvertToDouble (str/join (concat front [\.] (drop-last num back))))
+        (throw (Exception. ""))))
+
+
+
+
+(defn trunc_double [^Double ps ^Integer num]
+    (letfn [(get-front-back [^Double ps]
+                (loop [[f & r] (str ps) dot nil front [] back []]
+                    (if (some? f)
+                        (cond (and (nil? dot) (not (= f \.))) (recur r dot (conj front f) back)
+                              (and (nil? dot) (= f \.)) (recur r \. front back)
+                              (and (not (nil? dot)) (not (= f \.))) (recur r dot front (conj back f))
+                              :else
+                              (throw (Exception. "Double 输入格式错误！"))
+                              )
+                        [front back])))]
+        (let [[front back] (get-front-back ps)]
+            (cond (and (>= num 0) (<= num (count back))) (MyConvertUtil/ConvertToDouble (str/join (concat front [\.] (drop-last num back))))
+                  (and (> num 0) (> num (count back))) ps
+                  (and (< num 0) (< (+ (count front) num) 0)) (Double/valueOf 0)
+                  :else
+                  (throw (Exception. "错误！"))
+                  )))
+    )
+
+(trunc_double 123.4567 2)

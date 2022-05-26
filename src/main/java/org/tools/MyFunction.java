@@ -675,8 +675,8 @@ public class MyFunction {
      */
     public static Double trunc_double(final Double ps, final Integer num) {
         String str = String.valueOf(ps);
-        String front = str.split("\\\\.")[0];
-        String back = str.split("\\\\.")[1];
+        String front = str.split("\\.")[0];
+        String back = str.split("\\.")[1];
         String result = front;
         if (num > 0 && num > back.length()) {
             return ps;
@@ -797,6 +797,16 @@ public class MyFunction {
         }
     }
 
+    public static <T extends Comparable & Serializable> T least(final List<T> t) {
+
+        Optional<T> largest = t.stream().min(T::compareTo);
+        if (largest.isPresent()) {
+            return largest.get();
+        } else {
+            return null;
+        }
+    }
+
     /**
      * greatest()
      *
@@ -806,6 +816,16 @@ public class MyFunction {
     public static <T extends Comparable & Serializable> T greatest(final T... t) {
 
         Optional<T> largest = Arrays.stream(t).max(T::compareTo);
+        if (largest.isPresent()) {
+            return largest.get();
+        } else {
+            return null;
+        }
+    }
+
+    public static <T extends Comparable & Serializable> T greatest(final List<T> t) {
+
+        Optional<T> largest = t.stream().max(T::compareTo);
         if (largest.isPresent()) {
             return largest.get();
         } else {
@@ -1275,5 +1295,10 @@ public class MyFunction {
     public static <T extends Number> Double avg(final T ... ps)
     {
         return Arrays.stream(ps).mapToDouble(i -> i.doubleValue()).average().getAsDouble();
+    }
+
+    public static <T extends Number> Double avg(final List<T> ps)
+    {
+        return ps.stream().mapToDouble(i -> i.doubleValue()).average().getAsDouble();
     }
 }
