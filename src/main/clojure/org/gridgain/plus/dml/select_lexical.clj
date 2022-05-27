@@ -539,6 +539,50 @@
              lst
              (conj lst (str/join stack))))))
 
+; 获取 ast 中 item
+(defn my-ast-items [ast]
+    (letfn [(has-item-in [[f & r] item]
+                (if (some? f)
+                    (if (is-eq? (-> f :item_name) (-> item :item_name))
+                        true
+                        (recur r item))
+                    false))
+            (get-only-item
+                ([lst] (get-only-item lst []))
+                ([[f & r] lst-only]
+                 (if (some? f)
+                     (if (has-item-in lst-only f)
+                         (recur r lst-only)
+                         (recur r (conj lst-only f)))
+                     lst-only)))
+            (get-ast-map-items [ast-map]
+                (cond (and (contains? ast-map :item_name) (false? (-> ast-map :const))) ast-map
+                      :else
+                      (loop [[f & r] (keys ast-map) rs []]
+                          (if (some? f)
+                              (if-let [f-m (get-ast-items (get ast-map f))]
+                                  (if (is-seq? f-m)
+                                      (recur r (apply conj rs f-m))
+                                      (recur r (conj rs f-m)))
+                                  (recur r rs))
+                              rs))
+                      ))
+            (get-ast-lst-items
+                ([lst] (get-ast-lst-items lst []))
+                ([[f & r] lst]
+                 (if (some? f)
+                     (if-let [f-m (get-ast-items f)]
+                         (if (is-seq? f-m)
+                             (recur r (apply conj lst f-m))
+                             (recur r (conj lst f-m)))
+                         (recur r lst))
+                     lst)))
+            (get-ast-items [ast]
+                (cond (map? ast) (get-ast-map-items ast)
+                      (is-seq? ast) (get-ast-lst-items ast)
+                      ))]
+        (get-only-item (get-ast-items ast))))
+
 (defn to-smart-sql-type [f-type]
     (cond (re-find #"^(?i)FLOAT$" f-type) "double"
           (re-find #"^(?i)DATETIME$" f-type) "TIMESTAMP"

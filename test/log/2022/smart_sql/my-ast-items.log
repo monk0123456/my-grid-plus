@@ -1,0 +1,94 @@
+(declare get-ast-items get-ast-lst-items get-ast-map-items)
+
+(defn has-item-in [[f & r] item]
+    (if (some? f)
+        (if (my-lexical/is-eq? (-> f :item_name) (-> item :item_name))
+            true
+            (recur r item))
+        false))
+
+(defn get-only-item
+    ([lst] (get-only-item lst []))
+    ([[f & r] lst-only]
+     (if (some? f)
+         (if (has-item-in lst-only f)
+             (recur r lst-only)
+             (recur r (conj lst-only f)))
+         lst-only)))
+
+(defn get-ast-map-items [ast-map]
+    (cond (and (contains? ast-map :item_name) (false? (-> ast-map :const))) ast-map
+          :else
+          (loop [[f & r] (keys ast-map) rs []]
+              (if (some? f)
+                  (if-let [f-m (get-ast-items (get ast-map f))]
+                      (if (my-lexical/is-seq? f-m)
+                          (recur r (apply conj rs f-m))
+                          (recur r (conj rs f-m)))
+                      (recur r rs))
+                  rs))
+          ))
+
+(defn get-ast-lst-items
+    ([lst] (get-ast-lst-items lst []))
+    ([[f & r] lst]
+     (if (some? f)
+         (if-let [f-m (get-ast-items f)]
+             (if (my-lexical/is-seq? f-m)
+                 (recur r (apply conj lst f-m))
+                 (recur r (conj lst f-m)))
+             (recur r lst))
+         lst)))
+
+(defn get-ast-items [ast]
+    (cond (map? ast) (get-ast-map-items ast)
+          (my-lexical/is-seq? ast) (get-ast-lst-items ast)
+          ))
+
+(defn my-ast-items [ast]
+    (letfn [(has-item-in [[f & r] item]
+                (if (some? f)
+                    (if (my-lexical/is-eq? (-> f :item_name) (-> item :item_name))
+                        true
+                        (recur r item))
+                    false))
+            (get-only-item
+                ([lst] (get-only-item lst []))
+                ([[f & r] lst-only]
+                 (if (some? f)
+                     (if (has-item-in lst-only f)
+                         (recur r lst-only)
+                         (recur r (conj lst-only f)))
+                     lst-only)))
+            (get-ast-map-items [ast-map]
+                (cond (and (contains? ast-map :item_name) (false? (-> ast-map :const))) ast-map
+                      :else
+                      (loop [[f & r] (keys ast-map) rs []]
+                          (if (some? f)
+                              (if-let [f-m (get-ast-items (get ast-map f))]
+                                  (if (my-lexical/is-seq? f-m)
+                                      (recur r (apply conj rs f-m))
+                                      (recur r (conj rs f-m)))
+                                  (recur r rs))
+                              rs))
+                      ))
+            (get-ast-lst-items
+                ([lst] (get-ast-lst-items lst []))
+                ([[f & r] lst]
+                 (if (some? f)
+                     (if-let [f-m (get-ast-items f)]
+                         (if (my-lexical/is-seq? f-m)
+                             (recur r (apply conj lst f-m))
+                             (recur r (conj lst f-m)))
+                         (recur r lst))
+                     lst)))
+            (get-ast-items [ast]
+                (cond (map? ast) (get-ast-map-items ast)
+                      (my-lexical/is-seq? ast) (get-ast-lst-items ast)
+                      ))]
+        (get-only-item (get-ast-items ast))))
+
+(def ast (my-select-plus/sql-to-ast (my-lexical/to-back "g(a-b+f(c, d+e), b+f(c, d+e))")))
+ast
+(my-ast-items ast)
+;(get-only-item (get-ast-items ast))

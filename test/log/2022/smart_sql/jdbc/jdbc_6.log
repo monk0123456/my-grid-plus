@@ -1,0 +1,48 @@
+(defn my-items
+    ([lst] (loop [[f & r] (my-items lst []) rs []]
+               (if (some? f)
+                   (recur r (conj rs (str/lower-case (-> f :item_name))))
+                   rs)))
+    ([[f & r] lst]
+     (if (some? f)
+         (recur r (concat lst (my-lexical/my-ast-items (-> f :item_obj))))
+         lst)))
+
+(defn query-lst [dic lst-items]
+    (loop [[f & r] lst-items rs []]
+        (if (some? f)
+            (if (contains? dic f)
+                (recur r (conj rs {f (get dic f)}))
+                (recur r rs))
+            rs)))
+
+(defn my-query-lst [my-obj lst-items]
+    (loop [[f & r] (concat (query-lst (-> my-obj :dic) (-> my-obj :lst_pk)) (query-lst (-> my-obj :dic) lst-items)) index 0 rs []]
+        (if (some? f)
+            (recur r (+ index 1) (conj rs (assoc f :index index)))
+            rs)))
+
+(def lst-items (my-items (-> update-obj :items)))
+(def my-obj (my-update/get_pk_def ignite "public" "categories"))
+;(query-lst (-> my-obj :dic) lst-items)
+;(query-lst (-> my-obj :dic) (-> my-obj :lst_pk))
+(my-query-lst my-obj lst-items)
+
+(my-update/get_pk_def_map ignite "public" "categories")
+
+(defn get_pk_def_map [^Ignite ignite ^String schema_name ^String table_name items-obj]
+    (let [my-obj (my-update/get_pk_def ignite schema_name table_name) my-item-lst (my-items items-obj)]
+        (if-not (empty? my-item-lst)
+            (let [my-query-lst-obj (my-query-lst my-obj lst-items)]
+                ))))
+
+
+
+
+
+
+
+
+
+;(defn get_update_query_sql [^Ignite ignite obj]
+;    ())

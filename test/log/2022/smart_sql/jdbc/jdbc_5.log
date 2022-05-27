@@ -8,3 +8,28 @@ update-ast
 (my-select-plus-args/my-ast-to-sql ignite 0 args-dic select-ast)
 ;(my-select-plus-args/my-ast-to-sql ignite 0 (my-select-plus/sql-to-ast (my-lexical/to-back (-> update-ast :sql))) args-dic)
 ;(my-update/get_update_obj ignite 0 my-lst)
+
+
+(defn get-ast-items [ast]
+    (cond (map? ast) (loop [[f & r] (keys ast) rs []]
+                         (if (some? f)
+                             (do
+                                 (println (my-lexical/is-seq? (get ast f)))
+                                 (cond (and (= f :item_name) (false? (-> f :const))) (recur r (conj rs f))
+                                       (map? (get ast f)) (do
+                                                              (println (get ast f))
+                                                              (let [sub-lst (get-ast-items (get ast f))]
+                                                                  (if-not (empty? sub-lst)
+                                                                      (recur r (apply conj rs sub-lst))
+                                                                      (recur r rs))))
+                                       (my-lexical/is-seq? (get ast f)) (recur r (apply conj rs (apply concat (map get-ast-items (get ast f)))))
+                                       ))
+                             (do
+                                 ;(println rs)
+                                 rs)))
+          (my-lexical/is-seq? ast) (apply concat (map get-ast-items ast))
+          ))
+
+(def ast (my-select-plus/sql-to-ast (my-lexical/to-back "a-b+f(c, d+e)")))
+ast
+(get-ast-items ast)
