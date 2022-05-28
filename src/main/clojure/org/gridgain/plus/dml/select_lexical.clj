@@ -503,21 +503,36 @@
         (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
         (first (.getAll (.query (.cache ignite "my_select_views") (.setArgs (SqlFieldsQuery. "select m.code from my_select_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
 
+(defn get-code-insert [ignite schema_name table_name my_group_id sql-token]
+    (if (= (is-eq? schema_name "public"))
+        (first (.getAll (.query (.cache ignite "my_insert_views") (.setArgs (SqlFieldsQuery. "select m.code from my_insert_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
+        (first (.getAll (.query (.cache ignite "my_insert_views") (.setArgs (SqlFieldsQuery. "select m.code from my_insert_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
+
+(defn get-code-update [ignite schema_name table_name my_group_id sql-token]
+    (if (= (is-eq? schema_name "public"))
+        (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
+        (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
+
+(defn get-code-delete [ignite schema_name table_name my_group_id sql-token]
+    (if (= (is-eq? schema_name "public"))
+        (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id WHERE gv.my_group_id = ? and m.table_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) sql-token])))))
+        (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m INNER JOIN my_group_view as gv on m.id = gv.view_id INNER JOIN my_dataset as ds on ds.id = m.data_set_id WHERE gv.my_group_id = ? and m.table_name = ? and ds.dataset_name = ? and gv.view_type = ?") (to-array [my_group_id (str/lower-case table_name) (str/lower-case schema_name) sql-token])))))))
+
 ; 获取 select 的权限 code
 (defn get-select-code [ignite schema_name table_name my_group_id]
     (get-code ignite schema_name table_name my_group_id "查"))
 
 ; 获取 insert 的权限 code
 (defn get-insert-code [ignite schema_name table_name my_group_id]
-    (get-code ignite schema_name table_name my_group_id "增"))
+    (get-code-insert ignite schema_name table_name my_group_id "增"))
 
 ; 获取 delete 的权限 code
 (defn get-delete-code [ignite schema_name table_name my_group_id]
-    (get-code ignite schema_name table_name my_group_id "删"))
+    (get-code-delete ignite schema_name table_name my_group_id "删"))
 
 ; 获取 update 的权限 code
 (defn get-update-code [ignite schema_name table_name my_group_id]
-    (get-code ignite schema_name table_name my_group_id "改"))
+    (get-code-update ignite schema_name table_name my_group_id "改"))
 
 (defn get-schema
     ([lst] (if-let [m (get-schema lst [] [])]

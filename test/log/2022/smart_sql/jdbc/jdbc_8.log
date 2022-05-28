@@ -1,0 +1,23 @@
+(def update-line "UPDATE public.City set Name, District where CountryCode = 'USA'")
+(my-update/update-table (rest (my-lexical/to-back update-line)))
+(def rs-lst (-> (my-update/update-table (rest (my-lexical/to-back update-line))) :rs_lst))
+rs-lst
+(my-delete/delete-table rs-lst)
+
+
+
+(def update-line "UPDATE public.City set Name, District where CountryCode = 'USA'")
+(my-update/update-table (rest (my-lexical/to-back update-line)))
+(def rs-lst (-> (my-update/update-table (rest (my-lexical/to-back update-line))) :rs_lst))
+rs-lst
+
+(defn items-where [lst]
+    (loop [[f & r] lst has-where nil items [] where-lst []]
+        (if (some? f)
+            (cond (and (not (my-lexical/is-eq? f "where")) (nil? has-where)) (recur r has-where (conj items f) where-lst)
+                  (and (my-lexical/is-eq? f "where") (nil? has-where)) (recur r "where" items where-lst)
+                  (not (nil? has-where)) (recur r has-where items (conj where-lst f))
+                  )
+            [items where-lst])))
+
+(items-where rs-lst)

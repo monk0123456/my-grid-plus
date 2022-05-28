@@ -1,0 +1,31 @@
+(def sql "UPDATE public.Categories SET CategoryName = concat(CategoryName, '吴大富') WHERE categoryid = ?")
+(def args [8])
+(def args-dic (my-smart-db/args-to-dic args))
+(def my-lst (my-smart-db/get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))
+(def update-obj (my-update/my_update_obj ignite 0 my-lst (-> args-dic :dic)))
+
+(filter #(-> % :is-pk) (-> update-obj :query-lst))
+(filter #(false? (-> % :is-pk)) (-> update-obj :query-lst))
+
+(defn get-key [row pk-lst]
+    (if (= (count pk-lst) 1)
+        (get row (-> (first pk-lst) :index))
+        (loop [[f & r] pk-lst lst-rs []]
+            (if (some? f)
+                (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (get row (-> f :index)))))
+                lst-rs))))
+
+(defn re-args-dic [row data-lst args-dic]
+    (if-not (empty? data-lst)
+        (loop [[f & r] data-lst dic (-> args-dic :dic)]
+            (if (some? f)
+                (recur r (assoc dic (-> f :column_name) (get row (-> f :index))))
+                (assoc args-dic :dic dic)))
+        args-dic))
+
+(defn get-value [ignite group_id row data-lst args-dic items]
+    (let [dic (re-args-dic row data-lst args-dic)]
+        (loop [[f & r] items lst []]
+            (if (some? f)
+                (recur r (conj lst (MyKeyValue. (-> f :item_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (-> f :item_obj) dic))))
+                lst))))

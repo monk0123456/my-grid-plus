@@ -28,13 +28,35 @@
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
 
+(defn delete-table
+    ([lst] (delete-table lst nil [] []))
+    ([[f & r] my-set stack lst]
+     (if (some? f)
+         (cond (and (nil? my-set) (not (my-lexical/is-eq? f "where"))) (recur r my-set (conj stack f) lst)
+               (and (nil? my-set) (my-lexical/is-eq? f "where")) (recur r "where" stack lst)
+               (not (nil? my-set)) (recur r my-set stack (conj lst f))
+               )
+         (cond (and (= (count stack) 3) (= (second stack) ".")) {:schema_name (str/lower-case (first stack)) :table_name (str/lower-case (last stack)) :where_lst lst}
+               (= (count stack) 1) {:schema_name "" :table_name (str/lower-case (first stack)) :where_lst lst}
+               :else
+               (throw (Exception. "delete 语句错误，要么是dataSetName.tableName 或者是 tableName"))
+               ))))
+
 ; 获取名字
-(defn get_table_name [[f & r]]
-    (if (and (some? f) (my-lexical/is-eq? f "DELETE") (my-lexical/is-eq? (first r) "FROM") (my-lexical/is-eq? (first (rest (rest r))) "WHERE"))
-        {:table_name (second r) :where_lst (my-lexical/double-to-signal (rest (rest (rest r))))}))
+(defn get_table_name [lst]
+    (if (and (my-lexical/is-eq? (first lst) "DELETE") (my-lexical/is-eq? (second lst) "FROM"))
+        (delete-table (rest (rest lst)))))
+
+;(defn get_table_name [[f & r]]
+;    (if (and (some? f) (my-lexical/is-eq? f "DELETE") (my-lexical/is-eq? (first r) "FROM") (my-lexical/is-eq? (first (rest (rest r))) "WHERE"))
+;        {:table_name (second r) :where_lst (my-lexical/double-to-signal (rest (rest (rest r))))}))
 
 ; UPDATE categories set categoryname, description where categoryname = '白酒'
 (defn get_view_db [^Ignite ignite ^Long group_id ^String table_name]
+    (when-let [lst_rs (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m join my_group_view as v on m.id = v.view_id where m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [table_name group_id "删"])))))]
+        (if (> (count lst_rs) 0) (get_table_name (my-lexical/to-back (nth lst_rs 0))))))
+
+(defn my_view_db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
     (when-let [lst_rs (first (.getAll (.query (.cache ignite "my_delete_views") (.setArgs (SqlFieldsQuery. "select m.code from my_delete_views as m join my_group_view as v on m.id = v.view_id where m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [table_name group_id "删"])))))]
         (if (> (count lst_rs) 0) (get_table_name (my-lexical/to-back (nth lst_rs 0))))))
 

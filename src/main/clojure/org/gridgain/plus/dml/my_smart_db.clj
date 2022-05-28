@@ -84,26 +84,34 @@
                         (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))))
             (let [insert_obj (my-insert/get_insert_obj (my-lexical/to-back sql))]
                 (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
-                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs nil) (get-insert-data ignite group_id data_rs nil) (SqlType/INSERT)))))
+                    (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT)))))
         )
     )
 
 (defn update-to-cache [ignite group_id sql args]
     (letfn [(get-key [row pk-lst]
                 (if (= (count pk-lst) 1)
-                    (get row 0)
-                    (loop [index 0 lst-rs []]
-                        (if (< index (count pk-lst))
-                            (recur (+ index 1) (conj lst-rs (MyKeyValue. (-> (nth pk-lst index) :item_name) (nth row index))))
-                            lst-rs))
-                    ))
+                    (get row (-> (first pk-lst) :index))
+                    (loop [[f & r] pk-lst lst-rs []]
+                        (if (some? f)
+                            (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (get row (-> f :index)))))
+                            lst-rs))))
+            (re-args-dic [row data-lst args-dic]
+                (cond (empty? data-lst) args-dic
+                      :else
+                      (loop [[f & r] data-lst dic (-> args-dic :dic)]
+                          (if (some? f)
+                              (recur r (assoc dic (-> f :column_name) (get row (-> f :index))))
+                              (assoc args-dic :dic dic)))
+                      ))
+
             ; 如果里面有表中的列，那么就要把对于的值先找出来
-            (get-value
-                ([ignite group_id args-dic items] (get-value ignite group_id args-dic items []))
-                ([ignite group_id args-dic [f & r] lst]
-                 (if (some? f)
-                     (recur ignite group_id args-dic r (conj lst (MyKeyValue. (-> f :item_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (-> f :item_obj) args-dic))))
-                     lst)))]
+            (get-value [ignite group_id row data-lst args-dic items]
+                (let [dic (re-args-dic row data-lst args-dic)]
+                    (loop [[f & r] items lst []]
+                        (if (some? f)
+                            (recur r (conj lst (MyKeyValue. (-> f :item_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (-> f :item_obj) dic))))
+                            lst))))]
         (if (some? args)
             (let [args-dic (args-to-dic args)]
                 (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic))]
@@ -112,29 +120,19 @@
                                                                                                                           (.setLazy true)))) lst-rs []]
                         (if (.hasNext it)
                             (if-let [row (.next it)]
-                                (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-key row pk_lst) (get-value ignite group_id args-dic items) (SqlType/UPDATE))))
+                                (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-key row (filter #(-> % :is-pk) query-lst)) (get-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE))))
                                 )
-                            lst-rs)))
-                (let [{schema_name :schema_name table_name :table_name sql :sql items :items pk_lst :pk_lst} (my-update/get_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
-                    (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id args-dic (my-select-plus/sql-to-ast (my-lexical/to-back sql)))]
-                        (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
-                                                                                                                              (.setArgs (to-array select-args))
-                                                                                                                              (.setLazy true)))) lst-rs []]
-                            (if (.hasNext it)
-                                (if-let [row (.next it)]
-                                    (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-key row pk_lst) (get-value ignite group_id args-dic items) (SqlType/UPDATE))))
-                                    )
-                                lst-rs)))))
-            (let [{schema_name :schema_name table_name :table_name sql :sql items :items pk_lst :pk_lst} (my-update/get_update_obj ignite group_id (my-lexical/to-back sql))]
-                (let [{select-sql :sql select-args :args} (my-select-plus-args/my-ast-to-sql ignite group_id nil (my-select-plus/sql-to-ast (my-lexical/to-back sql)))]
-                    (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. select-sql)
-                                                                                                                          (.setArgs (to-array select-args))
-                                                                                                                          (.setLazy true)))) lst-rs []]
-                        (if (.hasNext it)
-                            (if-let [row (.next it)]
-                                (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-key row pk_lst) (get-value ignite group_id nil items) (SqlType/UPDATE))))
-                                )
-                            lst-rs)))))
+                            lst-rs))))
+            (let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) []) {})]
+                (loop [it (.iterator (.query (.getOrCreateCache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                                                                                                                      (.setArgs (to-array select-args))
+                                                                                                                      (.setLazy true)))) lst-rs []]
+                    (if (.hasNext it)
+                        (if-let [row (.next it)]
+                            (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-key row (filter #(-> % :is-pk) query-lst)) (get-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) {:dic {}, :keys []} items) (SqlType/UPDATE))))
+                            )
+                        lst-rs)))
+            )
         ))
 
 (defn delete-to-cache [ignite group_id sql args]

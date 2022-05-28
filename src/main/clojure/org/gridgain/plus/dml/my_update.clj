@@ -110,6 +110,11 @@
     (when-let [lst_rs (first (.getAll (.query (.cache ignite "my_update_views") (.setArgs (SqlFieldsQuery. "select m.code from my_update_views as m join my_group_view as v on m.id = v.view_id where m.table_name = ? and v.my_group_id = ? and v.view_type = ?") (to-array [table_name group_id "改"])))))]
         (if (> (count lst_rs) 0) (get_view_obj (my-lexical/to-back (nth lst_rs 0))))))
 
+(defn my-view-db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+    (if-let [code (my-lexical/get-update-code ignite schema_name table_name group_id)]
+        (let [m (update-table (my-lexical/to-back code))]
+            ())))
+
 (defn my-contains [[f & r] item_name]
     (if (my-lexical/is-eq? f item_name)
         true
@@ -233,7 +238,7 @@
                          (recur r dic lst))
                      lst)))]
         (let [{query-line :query-line query-lst :query-lst dic :dic} (my-pk-def-map ignite (-> obj :schema_name) (-> obj :table_name) obj)]
-            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst query-lst :sql (format "select %s from %s.%s where %s" query-line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :items (get_items_type (-> obj :items) dic [])})))
+            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst query-lst :sql (format "select %s from %s.%s where %s" query-line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :args (-> obj :args) :items (get_items_type (-> obj :items) dic [])})))
 
 ; 2、生成 select sql 通过 PK 查询 cache
 (defn get_update_query_sql [^Ignite ignite obj]
@@ -272,8 +277,27 @@
             )
         ))
 
+(defn my-where-line [where-line-lst args-dic]
+    (loop [[f & r] where-line-lst where-lst [] args []]
+        (if (some? f)
+            (if (contains? args-dic f)
+                (recur r (conj where-lst "?") (conj args (get args-dic f)))
+                (recur r (conj where-lst f) args))
+            [where-lst args])))
+
+(defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
+        (let [[where-lst args] (my-where-line where_line args-dic)]
+            (if-let [{v_items :items v_where_line :where_line} (get_view_db ignite group_id table_name)]
+                (if (nil? (has_authority_item items v_items))
+                    {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where-lst v_where_line) :args args}
+                    {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
+                {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}
+                ))
+        ))
+
 (defn my_update_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
-    (if-let [m (get-authority ignite group_id lst-sql)]
+    (if-let [m (my-authority ignite group_id lst-sql args-dic)]
         (if-let [us (my_update_query_sql ignite m)]
             us
             (throw (Exception. "更新语句字符串错误！")))
