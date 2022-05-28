@@ -22,6 +22,10 @@
             (recur r (+ index 1) (conj rs (assoc f :index index)))
             rs)))
 
+(def sql "UPDATE public.Categories SET CategoryName = concat(CategoryName, '吴大富') WHERE categoryid = ?")
+(def args [8])
+(def args-dic (my-smart-db/args-to-dic args))
+(def my-lst (my-smart-db/get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))
 (def lst-items (my-items (-> update-obj :items)))
 (def my-obj (my-update/get_pk_def ignite "public" "categories"))
 ;(query-lst (-> my-obj :dic) lst-items)

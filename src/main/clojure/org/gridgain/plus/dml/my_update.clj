@@ -185,6 +185,56 @@
             )
         ))
 
+(defn my-items
+    ([lst] (loop [[f & r] (my-items lst []) rs []]
+               (if (some? f)
+                   (recur r (conj rs (str/lower-case (-> f :item_name))))
+                   rs)))
+    ([[f & r] lst]
+     (if (some? f)
+         (recur r (concat lst (my-lexical/my-ast-items (-> f :item_obj))))
+         lst)))
+
+(defn query-lst [dic lst-items is-pk]
+    (loop [[f & r] lst-items rs []]
+        (if (some? f)
+            (if (contains? dic f)
+                (recur r (conj rs {:column_name f :column_type (get dic f) :is-pk is-pk}))
+                (recur r rs))
+            rs)))
+
+(defn my-query-lst [my-obj lst-items]
+    (loop [[f & r] (concat (query-lst (-> my-obj :dic) (-> my-obj :lst_pk) true) (query-lst (-> my-obj :dic) lst-items false)) index 0 rs []]
+        (if (some? f)
+            (recur r (+ index 1) (conj rs (assoc f :index index)))
+            rs)))
+
+(defn my-query-line [query-lst]
+    (loop [[f & r] query-lst rs []]
+        (if (some? f)
+            (if (true? (-> f :is-pk))
+                (recur r (conj rs (format "%s_pk" (-> f :column_name))))
+                (recur r (conj rs (-> f :column_name)))
+                )
+            (str/join "," rs))))
+
+(defn my-pk-def-map [^Ignite ignite ^String schema_name ^String table_name update-obj]
+    (let [my-obj (get_pk_def ignite schema_name table_name) lst-items (my-items (-> update-obj :items))]
+        (let [query-lst (my-query-lst my-obj lst-items)]
+            {:query-line (my-query-line query-lst) :query-lst query-lst :dic (-> my-obj :dic)})))
+
+(defn my_update_query_sql [^Ignite ignite obj]
+    (letfn [(get_items_type
+                ([items dic] (get_items_type items dic []))
+                ([[f & r] dic lst]
+                 (if (some? f)
+                     (if (contains? dic (str/lower-case (-> f :item_name)))
+                         (recur r dic (conj lst (assoc f :type (get dic (str/lower-case (-> f :item_name))))))
+                         (recur r dic lst))
+                     lst)))]
+        (let [{query-line :query-line query-lst :query-lst dic :dic} (my-pk-def-map ignite (-> obj :schema_name) (-> obj :table_name) obj)]
+            {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :query-lst query-lst :sql (format "select %s from %s.%s where %s" query-line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_line))) :items (get_items_type (-> obj :items) dic [])})))
+
 ; 2、生成 select sql 通过 PK 查询 cache
 (defn get_update_query_sql [^Ignite ignite obj]
     (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
@@ -221,6 +271,13 @@
                 (assoc m :table_name (-> obj :table_name) :items (get_items_type (-> obj :items) dic []) :pk_lst (get_pk_lst lst_pk dic []) :lst lst :dic dic))
             )
         ))
+
+(defn my_update_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (get-authority ignite group_id lst-sql)]
+        (if-let [us (my_update_query_sql ignite m)]
+            us
+            (throw (Exception. "更新语句字符串错误！")))
+        (throw (Exception. "更新语句字符串错误！"))))
 
 ; update 转换为对象
 (defn get_update_obj [^Ignite ignite ^Long group_id lst-sql]
