@@ -79,10 +79,10 @@
                         lst-rs)))]
         (if (some? args)
             (let [args-dic (args-to-dic args)]
-                (let [insert_obj (my-insert/get_insert_obj (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
+                (let [insert_obj (my-insert/my_insert_obj ignite group_id (get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)))]
                     (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
                         (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs args-dic) (get-insert-data ignite group_id data_rs args-dic) (SqlType/INSERT)))))
-            (let [insert_obj (my-insert/get_insert_obj (my-lexical/to-back sql))]
+            (let [insert_obj (my-insert/my_insert_obj ignite group_id (my-lexical/to-back sql))]
                 (let [{pk_rs :pk_rs data_rs :data_rs} (my-insert/get_pk_data_with_data (my-insert/get_pk_data ignite (-> insert_obj :schema_name) (-> insert_obj :table_name)) insert_obj)]
                     (MyLogCache. (format "f_%s_%s" (str/lower-case (-> insert_obj :schema_name)) (str/lower-case (-> insert_obj :table_name))) (-> insert_obj :schema_name) (-> insert_obj :table_name) (get-insert-pk ignite group_id pk_rs {:dic {}, :keys []}) (get-insert-data ignite group_id data_rs {:dic {}, :keys []}) (SqlType/INSERT)))))
         )
@@ -91,17 +91,17 @@
 (defn update-to-cache [ignite group_id sql args]
     (letfn [(get-key [row pk-lst]
                 (if (= (count pk-lst) 1)
-                    (get row (-> (first pk-lst) :index))
+                    (.get row (-> (first pk-lst) :index))
                     (loop [[f & r] pk-lst lst-rs []]
                         (if (some? f)
-                            (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (get row (-> f :index)))))
+                            (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (.get row (-> f :index)))))
                             lst-rs))))
             (re-args-dic [row data-lst args-dic]
                 (cond (empty? data-lst) args-dic
                       :else
                       (loop [[f & r] data-lst dic (-> args-dic :dic)]
                           (if (some? f)
-                              (recur r (assoc dic (-> f :column_name) (get row (-> f :index))))
+                              (recur r (assoc dic (-> f :column_name) (.get row (-> f :index))))
                               (assoc args-dic :dic dic)))
                       ))
 
@@ -138,7 +138,7 @@
 (defn delete-to-cache [ignite group_id sql args]
     (letfn [(get-key [row pk-lst]
                 (if (= (count pk-lst) 1)
-                    (get row 0)
+                    (.get row 0)
                     (loop [index 0 lst-rs []]
                         (if (< index (count pk-lst))
                             (recur (+ index 1) (conj lst-rs (MyKeyValue. (-> (nth pk-lst index) :item_name) (nth row index))))

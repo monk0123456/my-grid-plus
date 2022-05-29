@@ -108,12 +108,41 @@
                (throw (Exception. "插入语句格式错误！"))
                ))))
 
+(defn my-authority [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
+    (if-let [code (my-lexical/get-insert-code ignite schema_name table_name group_id)]
+        (letfn [(get_insert_view_items [[f & r] lst]
+                    (if (some? f)
+                        (if (not (or (= f "(") (= f ")") (= f ",")))
+                            (recur r (conj lst f))
+                            (recur r lst))
+                        lst))]
+            (let [my-lst (my-lexical/to-back (first code))]
+                (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest (rest my-lst)))]
+                    (let [vs (get_insert_view_items vs-line #{})]
+                        {:schema_name schema_name :table_name table_name :v-items vs}))))))
+
+(defn has-my-authority [[f & r] v-items]
+    (cond (contains? v-items (str/lower-case (-> f :item_name))) (recur r v-items)
+          :else (throw (Exception. "没有 %s 字段的插入权限！" (-> f :item_name)))
+        ))
+
 ; 获取 inset_obj
 ; 例如："INSERT INTO categories (categoryid, categoryname, description) values (12, 'wudafu', 'meiyy')"
 ; {:table_name "categories",
 ;  :values ({:item_name "description", :item_value "'meiyy'"}
 ;           {:item_name "categoryname", :item_value "'wudafu'"}
 ;           {:item_name "categoryid", :item_value "12"})}
+(defn my_insert_obj [^Ignite ignite ^Long group_id [f & r]]
+    (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
+        (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
+            (if-let [items (get-insert-items vs-line)]
+                (if-let [{v-items :v-items} (my-authority ignite group_id schema_name table_name)]
+                    (if (nil? (has-my-authority items v-items))
+                        {:schema_name schema_name :table_name table_name :values items})
+                    {:schema_name schema_name :table_name table_name :values items})
+                (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))))
+        ))
+
 (defn get_insert_obj [[f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]

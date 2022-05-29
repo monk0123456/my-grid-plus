@@ -1,0 +1,1 @@
+(def delete-line "DELETE FROM public.Categories WHERE categoryid = 110")

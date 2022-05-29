@@ -229,10 +229,11 @@
 (defn my-query-line [query-lst]
     (loop [[f & r] query-lst rs []]
         (if (some? f)
-            (if (true? (-> f :is-pk))
-                (recur r (conj rs (format "%s_pk" (-> f :column_name))))
-                (recur r (conj rs (-> f :column_name)))
-                )
+            (recur r (conj rs (-> f :column_name)))
+            ;(if (true? (-> f :is-pk))
+            ;    (recur r (conj rs (format "%s_pk" (-> f :column_name))))
+            ;    (recur r (conj rs (-> f :column_name)))
+            ;    )
             (str/join "," rs))))
 
 (defn my-pk-def-map [^Ignite ignite ^String schema_name ^String table_name update-obj]

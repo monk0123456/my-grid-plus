@@ -21,3 +21,63 @@ rs-lst
             [items where-lst])))
 
 (items-where rs-lst)
+
+(def update-line "UPDATE public.City set Name, District where CountryCode = 'USA'")
+(my-update/my_update_obj ignite 0 (my-smart-db/get-args-to-lst (my-lexical/to-back update-line) []) {})
+
+
+(def update-line "UPDATE public.Categories SET CategoryName = concat(CategoryName, '吴大富') WHERE categoryid = 8")
+(my-update/my_update_obj ignite 0 (my-smart-db/get-args-to-lst (my-lexical/to-back update-line) []) {})
+
+
+
+
+
+
+(def sql "UPDATE public.Categories SET CategoryName = concat(CategoryName, '吴大富') WHERE categoryid = ?")
+(def args [8])
+(def args-dic (my-smart-db/args-to-dic args))
+(def group_id 0)
+
+(defn get-key [row pk-lst]
+    (if (= (count pk-lst) 1)
+        (get row (-> (first pk-lst) :index))
+        (loop [[f & r] pk-lst lst-rs []]
+            (if (some? f)
+                (recur r (conj lst-rs (MyKeyValue. (-> f :column_name) (get row (-> f :index)))))
+                lst-rs))))
+(defn re-args-dic [row data-lst args-dic]
+    (cond (empty? data-lst) args-dic
+          :else
+          (loop [[f & r] data-lst dic (-> args-dic :dic)]
+              (if (some? f)
+                  (recur r (assoc dic (-> f :column_name) (get row (-> f :index))))
+                  (assoc args-dic :dic dic)))
+          ))
+
+; 如果里面有表中的列，那么就要把对于的值先找出来
+(defn get-value [ignite group_id row data-lst args-dic items]
+    (let [dic (re-args-dic row data-lst args-dic)]
+        (loop [[f & r] items lst []]
+            (if (some? f)
+                (recur r (conj lst (MyKeyValue. (-> f :item_name) (my-smart-func-args-token-clj/func-token-to-clj ignite group_id (-> f :item_obj) dic))))
+                lst))))
+
+(let [{schema_name :schema_name table_name :table_name query-lst :query-lst sql :sql items :items select-args :args} (my-update/my_update_obj ignite group_id (my-smart-db/get-args-to-lst (my-lexical/to-back sql) (-> args-dic :keys)) (-> args-dic :dic))]
+    ;(println sql)
+    ;(println select-args)
+    ;(println query-lst)
+    (loop [it (.iterator (.query (.cache ignite (format "f_%s_%s" schema_name table_name)) (doto (SqlFieldsQuery. sql)
+                                                                                               (.setArgs (to-array select-args))
+                                                                                               (.setLazy true)))) lst-rs []]
+        (if (.hasNext it)
+            (do
+                ;(println (.next it))
+                (if-let [row (.next it)]
+                    (do
+                        (println (filter #(-> % :is-pk) query-lst))
+                        ;(println (get-key row (filter #(-> % :is-pk) query-lst)))
+                        (recur it (conj lst-rs (MyLogCache. (format "f_%s_%s" schema_name table_name) schema_name table_name (get-key row (filter #(-> % :is-pk) query-lst)) (get-value ignite group_id row (filter #(false? (-> % :is-pk)) query-lst) args-dic items) (SqlType/UPDATE)))))
+                    ))
+            lst-rs)))
+;(my-smart-db/update-to-cache ignite 0 sql [8])

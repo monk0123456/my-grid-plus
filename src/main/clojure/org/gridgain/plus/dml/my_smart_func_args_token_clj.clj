@@ -29,6 +29,17 @@
 (declare is-symbol-priority run-express calculate is-func? is-scenes? func-to-clj item-to-clj token-lst-to-clj get-const-vs
          token-to-clj map-token-to-clj parenthesis-to-clj seq-obj-to-clj map-obj-to-clj smart-func-to-clj func-link-to-clj get-lst-ps-vs)
 
+(defn has-dic-item [args-dic m]
+    (cond (contains? (-> args-dic :dic) (-> m :item_name)) true
+          (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) true
+          :else false
+          ))
+
+(defn my-dic-item-name [args-dic m]
+    (cond (contains? (-> args-dic :dic) (-> m :item_name)) (-> m :item_name)
+          (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (str/lower-case (-> m :item_name))
+          ))
+
 ; 判断符号优先级
 ; f symbol 的优先级大于等于 s 返回 true 否则返回 false
 (defn is-symbol-priority [f s]
@@ -40,13 +51,13 @@
 (defn run-express [stack_number stack_symbo args-dic]
     (if (some? (peek stack_symbo))
         (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbo)]
-            (cond (and (contains? (-> args-dic :dic) (-> first_item :item_name)) (contains? (-> args-dic :dic) (-> second_item :item_name)))
-                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
-                  (contains? (-> args-dic :dic) (-> first_item :item_name)) (cond (true? (-> second_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
-                                                                                  (false? (-> second_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
+            (cond (and (has-dic-item args-dic first_item) (has-dic-item args-dic second_item))
+                  (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (my-dic-item-name args-dic first_item) (my-dic-item-name args-dic second_item)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
+                  (has-dic-item args-dic first_item) (cond (true? (-> second_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (my-dic-item-name args-dic first_item) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
+                                                                                  (false? (-> second_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (my-dic-item-name args-dic first_item) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
                                                                                   )
-                  (contains? (-> args-dic :dic) (-> second_item :item_name)) (cond (true? (-> first_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
-                                                                                   (false? (-> first_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
+                  (has-dic-item args-dic second_item) (cond (true? (-> first_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (my-dic-item-name args-dic second_item)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
+                                                                                   (false? (-> first_item :const)) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (my-dic-item-name args-dic second_item)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
                                                                                    )
                   :else
                   (cond (and (true? (-> first_item :const)) (true? (-> second_item :const))) (recur (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (pop stack_symbo) args-dic)
@@ -73,13 +84,13 @@
                                                    :else
                                                    (let [first_item (peek stack_number) second_item (peek (pop stack_number)) top_symbol (peek stack_symbol)]
                                                        ;(recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
-                                                       (cond (and (contains? (-> args-dic :dic) (-> first_item :item_name)) (contains? (-> args-dic :dic) (-> second_item :item_name)))
-                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
-                                                             (contains? (-> args-dic :dic) (-> first_item :item_name)) (cond (true? (-> second_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
-                                                                                                                             (false? (-> second_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
+                                                       (cond (and (has-dic-item args-dic first_item) (has-dic-item args-dic second_item))
+                                                             (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (my-dic-item-name args-dic first_item) (my-dic-item-name args-dic second_item)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
+                                                             (has-dic-item args-dic first_item) (cond (true? (-> second_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) %s)" (-> top_symbol :operation_symbol) (my-dic-item-name args-dic first_item) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
+                                                                                                                             (false? (-> second_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (my-dic-item-name args-dic first_item) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
                                                                                                                              )
-                                                             (contains? (-> args-dic :dic) (-> second_item :item_name)) (cond (true? (-> first_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
-                                                                                                                              (false? (-> first_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
+                                                             (has-dic-item args-dic second_item) (cond (true? (-> first_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (my-dic-item-name args-dic second_item)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
+                                                                                                                              (false? (-> first_item :const)) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s (my-lexical/get-value %s) (my-lexical/get-value %s))" (-> top_symbol :operation_symbol) (-> first_item :item_name) (my-dic-item-name args-dic second_item)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
                                                                                                                               )
                                                              :else
                                                              (cond (and (true? (-> first_item :const)) (true? (-> second_item :item_name))) (recur ignite group_id r (conj (pop (pop stack_number)) {:table_alias "", :item_name (format "(%s %s %s)" (-> top_symbol :operation_symbol) (-> first_item :item_name) (-> second_item :item_name)), :item_type "", :java_item_type java.lang.Object, :const false}) (conj (pop stack_symbol) f) args-dic)
@@ -193,7 +204,10 @@
 
 (defn item-to-clj [m args-dic]
     (cond (my-lexical/is-eq? (-> m :item_name) "null") "nil"
-          (false? (-> m :const)) (format "(my-lexical/get-value %s)" (-> m :item_name))
+          (false? (-> m :const)) (cond (contains? (-> args-dic :dic) (-> m :item_name)) (format "(my-lexical/get-value %s)" (-> m :item_name))
+                                       (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (format "(my-lexical/get-value %s)" (str/lower-case (-> m :item_name)))
+                                       :else
+                                       (format "(my-lexical/get-value %s)" (-> m :item_name)))
           (true? (-> m :const)) (get-const-vs (-> m :item_name))
           ))
 
@@ -290,9 +304,10 @@
 ;            (eval (read-string (-> m :item_name))))))
 
 (defn my-item-to-clj [m args-dic]
-    (if (contains? (-> args-dic :dic) (-> m :item_name))
-        (get (-> args-dic :dic) (-> m :item_name))
-        (if (my-lexical/is-eq? (-> m :item_name) "null")
+    (cond (contains? (-> args-dic :dic) (-> m :item_name)) (get (-> args-dic :dic) (-> m :item_name))
+          (contains? (-> args-dic :dic) (str/lower-case (-> m :item_name))) (get (-> args-dic :dic) (str/lower-case (-> m :item_name)))
+          :else
+          (if (my-lexical/is-eq? (-> m :item_name) "null")
             nil
             (get-const-vs (-> m :item_name)))))
 
