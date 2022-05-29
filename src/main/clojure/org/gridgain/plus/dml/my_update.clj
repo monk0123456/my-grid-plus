@@ -112,8 +112,14 @@
 
 (defn my-view-db [^Ignite ignite ^Long group_id ^String schema_name ^String table_name]
     (if-let [code (my-lexical/get-update-code ignite schema_name table_name group_id)]
-        (let [m (update-table (my-lexical/to-back code))]
-            ())))
+        (let [rs-lst (-> (update-table (rest (my-lexical/to-back code))) :rs_lst)]
+            (let [{items_line :items_line where_line :where_line} (get_items rs-lst)]
+                (loop [[f & r] (my-select/my-get-items items_line) lst-rs #{}]
+                    (if (some? f)
+                        (if (= (count f) 1)
+                            (recur r (conj lst-rs (str/lower-case (first f))))
+                            (recur r lst-rs))
+                        {:items lst-rs :where_line where_line}))))))
 
 (defn my-contains [[f & r] item_name]
     (if (my-lexical/is-eq? f item_name)
@@ -123,6 +129,12 @@
 (defn has_authority_item [[f & r] v_items]
     (if (some? f)
         (if (my-contains v_items (str/lower-case (-> f :item_name)))
+            (recur r v_items)
+            (throw (Exception. (format "%s列没有修改的权限！" (-> f :item_name)))))))
+
+(defn my-has-authority-item [[f & r] v_items]
+    (if (some? f)
+        (if (contains? v_items (str/lower-case (-> f :item_name)))
             (recur r v_items)
             (throw (Exception. (format "%s列没有修改的权限！" (-> f :item_name)))))))
 
@@ -288,8 +300,8 @@
 (defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
     (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
         (let [[where-lst args] (my-where-line where_line args-dic)]
-            (if-let [{v_items :items v_where_line :where_line} (get_view_db ignite group_id table_name)]
-                (if (nil? (has_authority_item items v_items))
+            (if-let [{v_items :items v_where_line :where_line} (my-view-db ignite group_id schema_name table_name)]
+                (if (nil? (my-has-authority-item items v_items))
                     {:schema_name schema_name :table_name table_name :items items :where_line (merge_where where-lst v_where_line) :args args}
                     {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
                 {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args}

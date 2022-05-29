@@ -74,6 +74,22 @@
             )
         ))
 
+(defn my_view_db [ignite group_id schema_name table_name]
+    (if-let [code (my-lexical/get-delete-code ignite schema_name table_name group_id)]
+        (get_table_name (my-lexical/to-back code))))
+
+(defn my-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [{schema_name :schema_name table_name :table_name where_lst :where_lst} (get_table_name lst-sql)]
+        (let [[where-lst args] (my-update/my-where-line where_lst args-dic)]
+            (if (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0))
+                (throw (Exception. "用户不存在或者没有权限！"))
+                (if-let [{v_table_name :table_name v_where_lst :where_lst} (my_view_db ignite group_id schema_name table_name)]
+                    (if (my-lexical/is-eq? table_name v_table_name)
+                        {:schema_name schema_name :table_name table_name :args args :where_lst (my-update/merge_where where-lst v_where_lst)})
+                    {:schema_name schema_name :table_name table_name :args args :where_lst where-lst}
+                    )))
+        ))
+
 (defn get-authority-lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
     (if-let [{my_table_name :table_name where_lst :where_lst} (get_table_name sql_lst)]
         (let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema my_table_name)]
@@ -97,6 +113,17 @@
             {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :sql (format "select %s from %s.%s where %s" pk_line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst (get_pk_lst lst_pk dic []) :lst lst :dic dic})
         ))
 
+(defn get_pk_lst [[f & r] dic lst]
+            (if (some? f)
+                (if (contains? dic f)
+                    (recur r dic (conj lst {:item_name f :item_type (get dic f)}))
+                    (recur r dic lst))
+                lst))
+
+(defn my_delete_query_sql [^Ignite ignite obj]
+    (if-let [{pk_line :line lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (str/lower-case (-> obj :schema_name)) (str/lower-case (-> obj :table_name)))]
+        {:schema_name (-> obj :schema_name) :table_name (-> obj :table_name) :args (-> obj :args) :sql (format "select %s from %s.%s where %s" pk_line (-> obj :schema_name) (-> obj :table_name) (my-select/my-array-to-sql (-> obj :where_lst))) :pk_lst (get_pk_lst lst_pk dic [])}))
+
 (defn get_delete_query_sql_fun [^Ignite ignite group_id obj ^clojure.lang.PersistentArrayMap dic_paras]
     (when-let [{pk_line :line lst :lst lst_pk :lst_pk dic :dic} (my-update/get_pk_def_map ignite (-> obj :schema_name) (-> obj :table_name))]
         (letfn [(get_pk_lst [[f & r] dic lst]
@@ -114,6 +141,11 @@
 (defn get_delete_obj [^Ignite ignite ^Long group_id lst-sql]
     (if-let [m (get-authority ignite group_id lst-sql)]
         (get_delete_query_sql ignite m)
+        (throw (Exception. "删除语句字符串错误！"))))
+
+(defn my_delete_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (my-authority ignite group_id lst-sql args-dic)]
+        (my_delete_query_sql ignite m)
         (throw (Exception. "删除语句字符串错误！"))))
 
 (defn get_delete_obj_fun [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
