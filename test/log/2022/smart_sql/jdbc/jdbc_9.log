@@ -1,1 +1,9 @@
 (def delete-line "DELETE FROM public.Categories WHERE categoryid = 110")
+
+
+function my_trans(a, b)
+{
+   let lst = [["INSERT INTO public.Categories (CategoryID, CategoryName, Description, Picture) VALUES(? + 1+ ?,?,'Seaweed and fish', '')", [a, b, "吴大富"]]];
+   lst.add(noSqlInsert({"table_name": "wudafu", "key": "吴大富", "value": "大帅哥"}));
+   trans(lst);
+}

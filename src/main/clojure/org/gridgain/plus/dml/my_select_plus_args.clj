@@ -361,6 +361,9 @@
     (let [my-ast (re-select-ast ignite group_id ast)]
         (ast_to_sql ignite group_id dic-args my-ast)))
 
+(defn my-ast-to-sql-no-authority [ignite group_id dic-args ast]
+    (ast_to_sql ignite group_id dic-args ast))
+
 
 
 

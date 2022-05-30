@@ -143,6 +143,14 @@
                 (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))))
         ))
 
+(defn my_insert_obj-no-authority [^Ignite ignite ^Long group_id [f & r]]
+    (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
+        (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
+            (if-let [items (get-insert-items vs-line)]
+                {:schema_name schema_name :table_name table_name :values items}
+                (throw (Exception. "insert 语句错误，必须是 insert into 表名 (...) values (...)！"))))
+        ))
+
 (defn get_insert_obj [[f & r]]
     (if (and (my-lexical/is-eq? f "insert") (my-lexical/is-eq? (first r) "into"))
         (let [{schema_name :schema_name table_name :table_name vs-line :vs-line} (insert-body (rest r))]
@@ -580,7 +588,7 @@
 ; key 表示参数的名字，value 表示值和数据类型
 (defn get_insert_cache_tran [^Ignite ignite ^Long group_id ^String sql ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
+        (if (true? (.isMyLogEnabled (.configuration ignite)))
             (insert_run_log_fun ignite group_id sql dic_paras)
             (insert_run_no_log_fun ignite group_id sql dic_paras)
             )))
@@ -591,7 +599,7 @@
 ; key 表示参数的名字，value 表示值和数据类型
 (defn get_insert_cache [^Ignite ignite ^Long group_id ^clojure.lang.PersistentArrayMap ast ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
+        (if (true? (.isMyLogEnabled (.configuration ignite)))
             (insert_obj_to_db_fun ignite group_id (-> ast :schema_name) (-> ast :table_name) ast dic_paras)
             (insert_obj_to_db_no_log_fun ignite group_id (-> ast :schema_name) (-> ast :table_name) ast dic_paras)
             )))
@@ -612,7 +620,7 @@
                       (throw e)
                       )))
         ; 不是超级用户就要先看看这个用户组在哪个数据集下
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
+        (if (true? (.isMyLogEnabled (.configuration ignite)))
             (my-lexical/trans ignite (insert_run_log ignite group_id lst-sql))
             (my-lexical/trans ignite (insert_run_no_log ignite group_id lst-sql))))
     )

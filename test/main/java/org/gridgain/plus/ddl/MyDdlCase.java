@@ -25,7 +25,7 @@ public class MyDdlCase {
         CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>("my_meta_table").setSqlSchema("MY_META");
         IgniteCache cache = ignite.getOrCreateCache(cacheCfg);
 
-        //ignite.configuration().isDataSetEnabled();
+        //ignite.configuration().isMyLogEnabled();
 
         String sql = "DROP TABLE IF EXISTS my_meta_tables";
         cache.query(new SqlFieldsQuery(sql)).getAll();

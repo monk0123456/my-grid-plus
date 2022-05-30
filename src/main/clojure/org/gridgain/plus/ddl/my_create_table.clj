@@ -451,7 +451,7 @@
         (if (= group_id 0)
             (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
                 (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item 0))]
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
+                    (if (true? (.isMyLogEnabled (.configuration ignite)))
                         (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                             (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (DdlLog. ddl_id group_id code 0) (SqlType/INSERT))))))
                         (run_ddl_dml ignite lst_ddl lst_dml_table))
@@ -460,7 +460,7 @@
             (if (contains? #{"ALL" "DDL"} (str/upper-case group_type))
                 (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
                     (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item dataset_id))]
-                        (if (true? (.isDataSetEnabled (.configuration ignite)))
+                        (if (true? (.isMyLogEnabled (.configuration ignite)))
                             (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                 (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (DdlLog. ddl_id group_id code dataset_id) (SqlType/INSERT))))))
                             (run_ddl_dml ignite lst_ddl lst_dml_table))
@@ -477,7 +477,7 @@
         (if (= group_id 0)
             (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
                 (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item 0))]
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
+                    (if (true? (.isMyLogEnabled (.configuration ignite)))
                         (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                             (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (DdlLog. ddl_id group_id code 0) (SqlType/INSERT))))))
                         (run_ddl_dml ignite lst_ddl lst_dml_table))
@@ -487,7 +487,7 @@
                 (if-let [{schema_name :schema_name table_name :table_name lst_table_item :lst_table_item lst_ddl :lst_ddl} (to_ddl_lst ignite sql_line dataset_name)]
                     (if (and (not (my-lexical/is-eq? schema_name "my_meta")) (my-lexical/is-eq? schema_name dataset_name))
                         (if-let [lst_dml_table (to_mycachex ignite (get_my_table ignite table_name descrip sql_line lst_table_item dataset_id))]
-                            (if (true? (.isDataSetEnabled (.configuration ignite)))
+                            (if (true? (.isMyLogEnabled (.configuration ignite)))
                                 (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                                     (run_ddl_dml ignite lst_ddl (doto lst_dml_table (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (DdlLog. ddl_id group_id code dataset_id) (SqlType/INSERT))))))
                                 (run_ddl_dml ignite lst_ddl lst_dml_table))

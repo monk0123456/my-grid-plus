@@ -171,7 +171,7 @@
                  (recur r (concat lst_sql [sql]) (concat lst_un_sql [un_sql]) lst_cachex group_id sql_line ignite data_set_id)
                  (recur r (concat lst_sql [sql]) (concat lst_un_sql [un_sql]) (concat lst_cachex cachex) group_id sql_line ignite data_set_id))
              )
-         (if (true? (.isDataSetEnabled (.configuration ignite)))
+         (if (true? (.isMyLogEnabled (.configuration ignite)))
              (let [ddl_id (.incrementAndGet (.atomicSequence ignite "my_log" 0 true))]
                  {:sql (my-lexical/to_arryList lst_sql) :un_sql (my-lexical/to_arryList lst_un_sql) :lst_cachex (doto (my-lexical/to_arryList lst_cachex) (.add (MyCacheEx. (.cache ignite "my_log") ddl_id (MyLog. ddl_id "ddl_log" (MyCacheExUtil/objToBytes (first lst_sql))) (SqlType/INSERT))))})
              {:sql (my-lexical/to_arryList lst_sql) :un_sql (my-lexical/to_arryList lst_un_sql) :lst_cachex (my-lexical/to_arryList lst_cachex)})
@@ -212,7 +212,7 @@
 ;                                        (if (> (first tables) 0)
 ;                                            (throw (Exception. (format "该用户组不能修改实时数据集对应到该数据集中的表：%s！" (str/trim (-> m :table_name)))))
 ;                                            (let [ds_m (assoc m :table_name (format "%s_%s" (.getDataset_name dataset) (-> m :table_name)))]
-;                                                (if (true? (.isDataSetEnabled (.configuration ignite)))
+;                                                (if (true? (.isMyLogEnabled (.configuration ignite)))
 ;                                                    (let [ddl_id (.incrementAndGet (.atomicSequence ignite "ddl_log" 0 true))]
 ;                                                        (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (doto (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item))) (.add (MyCacheEx. (.cache ignite "ddl_log") ddl_id (DdlLog. ddl_id group_id sql_line (.getData_set_id my_group)) (SqlType/INSERT))))}))
 ;                                                    (MyDdlUtil/runDdl ignite {:sql (doto (ArrayList.) (.append (get_sql_line ds_m))) :un_sql (doto (ArrayList.) (.append (get_un_sql_line ds_m))) :lst_cachex (my-lexical/to_arryList (myTableItemToMyCacheEx ignite (-> ds_m :add_or_drop :is_add) (str/trim (-> ds_m :table_name)) (.getId dataset) (-> (-> ds_m :colums) :lst_table_item)))}))

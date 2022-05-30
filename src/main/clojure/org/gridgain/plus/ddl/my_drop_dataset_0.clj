@@ -59,12 +59,12 @@
         (if (some? (first data_set_id))
             (if-let [columns (.getAll (.query (.cache ignite "my_dataset") (.setArgs (SqlFieldsQuery. "SELECT DISTINCT m.table_name FROM my_dataset_real_table AS m INNER JOIN my_dataset AS ds ON m.dataset_id = ds.id WHERE ds.dataset_name = ?") (to-array [data_set_name]))))]
                 (let [lst_cache (my-alter-dataset/drop_to_my_dataset_table_real ignite columns data_set_name is_exists)]
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
+                    (if (true? (.isMyLogEnabled (.configuration ignite)))
                         (let [ds_id (.incrementAndGet (.atomicSequence ignite "dataset_ddl_log" 0 true))]
                             (MyDdlUtil/runDdl ignite {:lst_cachex (doto (my-lexical/to_arryList (conj lst_cache (MyCacheEx. (.cache ignite "my_dataset") (first data_set_id) nil (SqlType/DELETE)))) (.add (MyCacheEx. (.cache ignite "dataset_ddl_log") ds_id (DataSetDdlLog. ds_id data_set_name "drop" sql_line) (SqlType/INSERT))))}))
                         (MyDdlUtil/runDdl ignite {:lst_cachex (my-lexical/to_arryList (conj lst_cache (MyCacheEx. (.cache ignite "my_dataset") (first data_set_id) nil (SqlType/DELETE))))}))
                     )
-                (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (if (true? (.isMyLogEnabled (.configuration ignite)))
                     (let [ds_id (.incrementAndGet (.atomicSequence ignite "dataset_ddl_log" 0 true))]
                         (MyDdlUtil/runDdl ignite {:lst_cachex (doto (my-lexical/to_arryList [(MyCacheEx. (.cache ignite "my_dataset") (first data_set_id) nil (SqlType/DELETE))]) (.add (MyCacheEx. (.cache ignite "dataset_ddl_log") ds_id (DataSetDdlLog. ds_id data_set_name "drop" sql_line) (SqlType/INSERT))))}))
                     (MyDdlUtil/runDdl ignite {:lst_cachex (my-lexical/to_arryList [(MyCacheEx. (.cache ignite "my_dataset") (first data_set_id) nil (SqlType/DELETE))])}))

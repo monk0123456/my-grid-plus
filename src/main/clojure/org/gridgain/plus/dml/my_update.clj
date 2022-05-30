@@ -309,8 +309,21 @@
                 ))
         ))
 
+(defn my-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (when-let [{schema_name :schema_name table_name :table_name items :items where_line :where_line} (get_json lst-sql)]
+        (let [[where-lst args] (my-where-line where_line args-dic)]
+            {:schema_name schema_name :table_name table_name :items items :where_line where-lst :args args})
+        ))
+
 (defn my_update_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
+        (if-let [us (my_update_query_sql ignite m)]
+            us
+            (throw (Exception. "更新语句字符串错误！")))
+        (throw (Exception. "更新语句字符串错误！"))))
+
+(defn my_update_obj-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
         (if-let [us (my_update_query_sql ignite m)]
             us
             (throw (Exception. "更新语句字符串错误！")))
@@ -555,14 +568,14 @@
 
 (defn get_update_cache_tran [^Ignite ignite ^Long group_id lst-sql ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
+        (if (true? (.isMyLogEnabled (.configuration ignite)))
             (update_run_log_fun_tran ignite group_id lst-sql dic_paras)
             (update_run_no_log_fun_tran ignite group_id lst-sql dic_paras))))
 
 (defn get_update_cache [^Ignite ignite ^Long group_id ^clojure.lang.PersistentArrayMap ast ^clojure.lang.PersistentArrayMap dic_paras]
     (if (> group_id 0)
         (if-let [my_ast (get_update_query_sql_fun ignite group_id ast dic_paras)]
-            (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (if (true? (.isMyLogEnabled (.configuration ignite)))
                 (update_run_log_fun ignite group_id my_ast dic_paras)
                 (update_run_no_log_fun ignite group_id my_ast dic_paras)))))
 
@@ -574,7 +587,7 @@
     (if (= group_id 0)
         ; 超级用户
         (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))
-        (if (true? (.isDataSetEnabled (.configuration ignite)))
+        (if (true? (.isMyLogEnabled (.configuration ignite)))
             (my-lexical/trans ignite (update_run_log ignite group_id lst-sql))
             (my-lexical/trans ignite (update_run_no_log ignite group_id lst-sql)))
         )

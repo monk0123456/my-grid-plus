@@ -90,6 +90,14 @@
                     )))
         ))
 
+(defn my-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [{schema_name :schema_name table_name :table_name where_lst :where_lst} (get_table_name lst-sql)]
+        (let [[where-lst args] (my-update/my-where-line where_lst args-dic)]
+            (if (and (my-lexical/is-eq? schema_name "my_meta") (> group_id 0))
+                (throw (Exception. "用户不存在或者没有权限！"))
+                {:schema_name schema_name :table_name table_name :args args :where_lst where-lst}))
+        ))
+
 (defn get-authority-lst [^Ignite ignite ^Long group_id ^clojure.lang.PersistentVector sql_lst]
     (if-let [{my_table_name :table_name where_lst :where_lst} (get_table_name sql_lst)]
         (let [{schema_name :schema_name table_name :table_name} (my-lexical/get-schema my_table_name)]
@@ -145,6 +153,11 @@
 
 (defn my_delete_obj [^Ignite ignite ^Long group_id lst-sql args-dic]
     (if-let [m (my-authority ignite group_id lst-sql args-dic)]
+        (my_delete_query_sql ignite m)
+        (throw (Exception. "删除语句字符串错误！"))))
+
+(defn my_delete_obj-no-authority [^Ignite ignite ^Long group_id lst-sql args-dic]
+    (if-let [m (my-no-authority ignite group_id lst-sql args-dic)]
         (my_delete_query_sql ignite m)
         (throw (Exception. "删除语句字符串错误！"))))
 
@@ -315,7 +328,7 @@
     (if (> group_id 0)
         (if-let [delete_obj (get_delete_obj_fun ignite group_id sql dic_paras)]
             ; 在实时数据集
-            (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (if (true? (.isMyLogEnabled (.configuration ignite)))
                 (delete_run_log_fun ignite delete_obj)
                 (delete_run_no_log_fun ignite delete_obj)))))
 
@@ -323,7 +336,7 @@
     (if (> group_id 0)
         (if-let [delete_obj (get_delete_query_sql_fun ignite group_id ast dic_paras)]
             ; 在实时数据集
-            (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (if (true? (.isMyLogEnabled (.configuration ignite)))
                 (delete_run_log_fun ignite delete_obj)
                 (delete_run_no_log_fun ignite delete_obj)))))
 
@@ -336,7 +349,7 @@
         ; 超级用户
         (.getAll (.query (.cache ignite "my_meta_table") (SqlFieldsQuery. sql)))
         (if-let [delete_obj (get_delete_obj ignite group_id lst-sql)]
-            (if (true? (.isDataSetEnabled (.configuration ignite)))
+            (if (true? (.isMyLogEnabled (.configuration ignite)))
                 (my-lexical/trans ignite (delete_run_log ignite delete_obj))
                 (my-lexical/trans ignite (delete_run_no_log ignite delete_obj)))))
     )

@@ -53,8 +53,11 @@
         <!-- 超级管理员的 root token -->
         <property name="root_token" value="dafu"/>
 
-        <!-- 是否启用 Data Set -->
-        <property name="dataSetEnabled" value="true"/>
+        <!-- 是否允许保存增删改的 log -->
+        <property name="myLogEnabled" value="true"/>
+
+        <!-- 是否启用多用户组 -->
+        <property name="multiUserGroup" value="true"/>
 
 <!--        <property name="templateConfiguration">-->
 <!--            <map>-->

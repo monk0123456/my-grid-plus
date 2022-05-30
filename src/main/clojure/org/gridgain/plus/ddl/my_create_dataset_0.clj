@@ -131,14 +131,14 @@
     (if-let [m_obj (get_create_data_set_obj sql_line)]
         (if (true? (-> m_obj :is_real))
             (if-let [{cache :cache} (run_ddl_real_time ignite m_obj)]
-                (if (true? (.isDataSetEnabled (.configuration ignite)))
+                (if (true? (.isMyLogEnabled (.configuration ignite)))
                     (let [ds_id (.incrementAndGet (.atomicSequence ignite "dataset_ddl_log" 0 true))]
                         (MyDdlUtil/runDdl ignite {:lst_cachex (doto (my-lexical/to_arryList cache) (.add (MyCacheEx. (.cache ignite "dataset_ddl_log") ds_id (DataSetDdlLog. ds_id (-> m_obj :data_set_name) "create" sql_line) (SqlType/INSERT))))}))
                     (MyDdlUtil/runDdl ignite {:lst_cachex (my-lexical/to_arryList cache)}))
                 )
             (if-let [{ddl :ddl cache :cache} (run_ddl ignite m_obj)]
                 (let [lst_ddl (get_sql_lst ddl)]
-                    (if (true? (.isDataSetEnabled (.configuration ignite)))
+                    (if (true? (.isMyLogEnabled (.configuration ignite)))
                         (let [ds_id (.incrementAndGet (.atomicSequence ignite "dataset_ddl_log" 0 true))]
                             (MyDdlUtil/runDdl ignite (assoc lst_ddl :lst_cachex (doto (my-lexical/to_arryList cache) (.add (MyCacheEx. (.cache ignite "dataset_ddl_log") ds_id (DataSetDdlLog. ds_id (-> m_obj :data_set_name) "create" sql_line) (SqlType/INSERT)))))))
                         (MyDdlUtil/runDdl ignite (assoc lst_ddl :lst_cachex (my-lexical/to_arryList cache)))))
