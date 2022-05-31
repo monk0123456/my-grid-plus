@@ -42,27 +42,6 @@
 (defn trans [ignite group_id sql & args]
     (my-smart-db/trans ignite group_id sql args))
 
-(defn myInsert [ignite group_id m]
-    (my-smart-db/my-insert ignite group_id m))
-
-(defn myInsertTran [ignite group_id m]
-    (my-smart-db/my-insert-tran ignite group_id m))
-
-(defn myUpdate [ignite group_id m]
-    (my-smart-db/my-update ignite group_id m))
-
-(defn myUpdateTran [ignite group_id m]
-    (my-smart-db/my-update-tran ignite group_id m))
-
-(defn myDelete [ignite group_id m]
-    (my-smart-db/my-delete ignite group_id m))
-
-(defn myDeleteTran [ignite group_id m]
-    (my-smart-db/my-delete-tran ignite group_id m))
-
-(defn myDrop [ignite group_id m]
-    (my-smart-db/my-drop ignite group_id m))
-
 (defn contains-context? [my-context token-name]
     (cond (contains? (-> my-context :input-params) token-name) true
           (some? (my-smart-token-clj/get-let-context token-name my-context)) true

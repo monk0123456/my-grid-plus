@@ -48,7 +48,7 @@
         (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
         (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
         (org.gridgain.ddl MyCreateTableUtil MyDdlUtil)
-        (java.util List ArrayList Date Iterator)
+        (java.util List ArrayList Date Iterator Hashtable)
         (java.sql Timestamp Connection DriverManager Statement PreparedStatement)
         (org.tools MyTools MyFunction)
         (java.math BigDecimal)

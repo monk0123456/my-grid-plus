@@ -11,12 +11,14 @@
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
              (cn.plus.model.db MyScenesCache)
+             (org.gridgain.myservice MyNoSqlFunService)
              (org.gridgain.jdbc MyJdbc)
              (java.util ArrayList Date Iterator)
              (java.sql Timestamp)
              (org.tools MyTools MyFunction)
              (java.math BigDecimal))
     (:gen-class
+        :implements [org.gridgain.superservice.INoSqlFun]
         ; 生成 class 的类名
         :name org.gridgain.plus.dml.MyLexical
         ; 是否生成 class 的 main 方法
@@ -27,6 +29,8 @@
                   ^:static [hasConnPermission [String] Boolean]]
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
+
+(declare get-schema)
 
 ; 输入场景（方法的名字）实际参，输出 dic
 ; 在调用的时候，形成 dic 参数的名字做 key, 值和数据类型做为 value 调用的方法是
@@ -76,6 +80,14 @@
     )
 
 (def my_group_schema_name (memoize get_group_schema_name))
+
+(defn get_obj_schema_name [^Ignite ignite ^Long group_id my-obj]
+    (if-let [vs-obj (get-value my-obj)]
+        (if (contains? vs-obj "table_name")
+            (let [{schema_name :schema_name table_name :table_name} (get-schema (get vs-obj "table_name"))]
+                (if (= schema_name "")
+                    {:schema_name (first (my_group_schema_name ignite group_id)) :table_name table_name}
+                    {:schema_name schema_name :table_name table_name})))))
 
 ; 剔除单括号或双括号
 (defn get_str_value [^String line]
@@ -406,11 +418,33 @@
 (defn my-add-months [ps num]
     (MyFunction/add_months (MyConvertUtil/ConvertToTimestamp ps) (MyConvertUtil/ConvertToInt num)))
 
+(defn no-sql-insert-tran [ignite group_id m]
+    (.myInsertTran (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-update-tran [ignite group_id m]
+    (.myUpdateTran (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-delete-tran [ignite group_id m]
+    (.myDeleteTran (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-drop [ignite group_id m]
+    (.myDrop (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-insert [ignite group_id m]
+    (.myInsert (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-update [ignite group_id m]
+    (.myUpdate (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
+(defn no-sql-delete [ignite group_id m]
+    (.myDelete (.getNoSqlFun (MyNoSqlFunService/getInstance)) ignite group_id m))
+
 (defn smart-func [func-name]
     (cond (is-eq? func-name "add") "my-lexical/list-add"
           (is-eq? func-name "set") "my-lexical/list-set"
           (is-eq? func-name "take") "my-lexical/list-take"
           (is-eq? func-name "drop") "my-lexical/list-drop"
+          (is-eq? func-name "noSqlInsert") "my-lexical/no-sql-insert"
           (is-eq? func-name "nth") "nth"
           (is-eq? func-name "count") "count"
           (is-eq? func-name "concat") "my-lexical/my-concat"
