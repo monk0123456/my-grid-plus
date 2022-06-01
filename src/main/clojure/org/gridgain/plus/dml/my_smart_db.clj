@@ -400,24 +400,27 @@
         (my-log-no-authority ignite group_id sql args)
         ))
 
-(defn trans [ignite group_id [f & r] lst-rs]
-    (if (some? f)
-        (cond (and (string? (first f)) (re-find #"^(?i)insert\s+" (first f)) (.isMultiUserGroup (.configuration ignite))) (let [logCache (insert-to-cache ignite group_id (first f) (last f))]
-                                                        (recur ignite group_id r (concat lst-rs [logCache])))
-              (and (string? (first f)) (re-find #"^(?i)update\s+" (first f)) (.isMultiUserGroup (.configuration ignite))) (let [logCache (update-to-cache ignite group_id (first f) (last f))]
-                                                        (recur ignite group_id r (concat lst-rs logCache)))
-              (and (string? (first f)) (re-find #"^(?i)delete\s+" (first f)) (.isMultiUserGroup (.configuration ignite))) (let [logCache (delete-to-cache ignite group_id (first f) (last f))]
-                                                        (recur ignite group_id r (concat lst-rs logCache)))
-              (and (string? (first f)) (re-find #"^(?i)insert\s+" (first f)) (false? (.isMultiUserGroup (.configuration ignite)))) (let [logCache (insert-to-cache-no-authority ignite group_id (first f) (last f))]
-                                                                                                                              (recur ignite group_id r (concat lst-rs [logCache])))
-              (and (string? (first f)) (re-find #"^(?i)update\s+" (first f)) (false? (.isMultiUserGroup (.configuration ignite)))) (let [logCache (update-to-cache-no-authority ignite group_id (first f) (last f))]
-                                                                                                                              (recur ignite group_id r (concat lst-rs logCache)))
-              (and (string? (first f)) (re-find #"^(?i)delete\s+" (first f)) (false? (.isMultiUserGroup (.configuration ignite)))) (let [logCache (delete-to-cache-no-authority ignite group_id (first f) (last f))]
-                                                                                                                              (recur ignite group_id r (concat lst-rs logCache)))
-              :else
-              (throw (Exception. "trans 只能执行 insert、update、delete 语句！"))
-              )
-        (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList lst-rs))))
+(defn trans
+    ([ignite group_id lst] (trans ignite group_id lst []))
+    ([ignite group_id [f & r] lst-rs]
+     (if (some? f)
+         (cond (and (not (instance? MyNoSqlCache f)) (string? (first f)) (re-find #"^(?i)insert\s+" (first f)) (.isMultiUserGroup (.configuration ignite))) (let [logCache (insert-to-cache ignite group_id (first f) (last f))]
+                                                                                                                               (recur ignite group_id r (concat lst-rs [logCache])))
+               (and (not (instance? MyNoSqlCache f)) (string? (first f)) (re-find #"^(?i)update\s+" (first f)) (.isMultiUserGroup (.configuration ignite))) (let [logCache (update-to-cache ignite group_id (first f) (last f))]
+                                                                                                                               (recur ignite group_id r (concat lst-rs logCache)))
+               (and (not (instance? MyNoSqlCache f)) (string? (first f)) (re-find #"^(?i)delete\s+" (first f)) (.isMultiUserGroup (.configuration ignite))) (let [logCache (delete-to-cache ignite group_id (first f) (last f))]
+                                                                                                                               (recur ignite group_id r (concat lst-rs logCache)))
+               (and (not (instance? MyNoSqlCache f)) (string? (first f)) (re-find #"^(?i)insert\s+" (first f)) (false? (.isMultiUserGroup (.configuration ignite)))) (let [logCache (insert-to-cache-no-authority ignite group_id (first f) (last f))]
+                                                                                                                                        (recur ignite group_id r (concat lst-rs [logCache])))
+               (and (not (instance? MyNoSqlCache f)) (string? (first f)) (re-find #"^(?i)update\s+" (first f)) (false? (.isMultiUserGroup (.configuration ignite)))) (let [logCache (update-to-cache-no-authority ignite group_id (first f) (last f))]
+                                                                                                                                        (recur ignite group_id r (concat lst-rs logCache)))
+               (and (not (instance? MyNoSqlCache f)) (string? (first f)) (re-find #"^(?i)delete\s+" (first f)) (false? (.isMultiUserGroup (.configuration ignite)))) (let [logCache (delete-to-cache-no-authority ignite group_id (first f) (last f))]
+                                                                                                                                        (recur ignite group_id r (concat lst-rs logCache)))
+               (instance? MyNoSqlCache f) (recur ignite group_id r (concat lst-rs [f]))
+               :else
+               (throw (Exception. "trans 只能执行 insert、update、delete 语句！"))
+               )
+         (MyCacheExUtil/transLogCache ignite (my-lexical/to_arryList lst-rs)))))
 
 
 
