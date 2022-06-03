@@ -6,15 +6,16 @@
         [org.gridgain.plus.dml.my-update :as my-update]
         [org.gridgain.plus.dml.my-delete :as my-delete]
         [org.gridgain.plus.dml.my-select-plus-args :as my-select-plus-args]
+        [org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
         [clojure.walk :as w])
     (:import (org.apache.ignite Ignite)
-             (org.gridgain.smart MyVar MyLetLayer)
+             (org.tools MyConvertUtil MyPlusUtil KvSql MyDbUtil)
              (com.google.common.base Strings)
-             (cn.plus.model MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
+             (cn.plus.model MyCacheEx MyKeyValue MyLogCache MCron SqlType)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
              (java.util List ArrayList Hashtable Date Iterator)
@@ -29,6 +30,15 @@
         ;          ^:static [getSqlToAst [org.apache.ignite.Ignite String String] clojure.lang.LazySeq]
         ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
         ))
+
+(defn cron-to-str
+    ([lst] (cron-to-str lst []))
+    ([[f & r] lst]
+     (if (some? f)
+         (if (= "*" (first r))
+             (recur r (concat lst [f " "]))
+             (recur r (concat lst [f])))
+         (str/join lst))))
 
 (defn get-data-set-id-by-group-id [^Ignite ignite ^Long group_id]
     (let [rs (first (.getAll (.query (.cache ignite "my_users_group") (.setArgs (SqlFieldsQuery. "select m.id, m.dataset_name from my_users_group as g JOIN my_dataset as m ON m.id = g.data_set_id where g.id = ?") (to-array [group_id])))))]
@@ -75,8 +85,43 @@
               (my-lexical/is-eq? (first lst) "select") (smart-view-select ignite group_id lst code)
               )))
 
+; 添加 job
+(defn add-job [^Ignite ignite ^Long group_id ^String job-name ^Object ps ^String cron]
+    (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
+        (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
+            (if (.containsKey scheduledFutures job-name)
+                (throw (Exception. (format "已存在任务 %s 不能添加相同的任务名！" job-name)))
+                (try
+                    (let [cron-line (cron-to-str (my-lexical/to-back cron)) my-cron-cache (.cache ignite "my_cron")]
+                        (if-not (nil? (.scheduleLocal (.scheduler ignite) job-name (proxy [Object Runnable] []
+                                                                                       (run []
+                                                                                           (my-smart-scenes/my-invoke-scenes ignite group_id job-name ps)))
+                                                      cron-line))
+                            (.put my-cron-cache job-name (MCron. job-name cron-line (MyCacheExUtil/objToBytes ps)))))
+                    (catch Exception ex
+                        (.remove scheduledFutures job-name))
+                    )
+                ))))
+
+; 删除 job
+(defn remove-job [^Ignite ignite ^Long group_id ^String job-name]
+    (if-let [scheduleProcessor (MyPlusUtil/getIgniteScheduleProcessor ignite)]
+        (if-let [scheduledFutures (.getScheduledFutures scheduleProcessor)]
+            (let [job-cache (.cache ignite "my_cron")]
+                (if-let [job-obj (.get job-cache job-name)]
+                    (if (.containsKey scheduledFutures job-name)
+                        (try
+                            (.remove scheduledFutures job-name)
+                            (.remove job-cache job-name)
+                            (catch Exception ex
+                                (add-job ignite group_id job-name (MyCacheExUtil/restore (.getPs job-obj)) (.getCron job-obj)))
+                            )
+                        (throw (Exception. (format "任务 %s 不存在！" job-name)))))
+                )
+            )))
+
 ; smart view 方法
-(defn smart-func [^Ignite ignite ^Long group_id lst]
+(defn smart-func [^Ignite ignite ^Long group_id ^String code]
     ())
 
 

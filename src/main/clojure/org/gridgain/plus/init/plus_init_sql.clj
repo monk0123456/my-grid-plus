@@ -274,6 +274,7 @@
     CREATE TABLE IF NOT EXISTS my_cron (
                       cron_name VARCHAR(40),
                       cron VARCHAR,
+                      ps VARBINARY,
                       descrip VARCHAR,
                       PRIMARY KEY (cron_name)
                       ) WITH \"template=MyMeta_template,VALUE_TYPE=cn.plus.model.MyCron,cache_name=my_cron,ATOMICITY=TRANSACTIONAL_SNAPSHOT,cache_group=my_meta\";

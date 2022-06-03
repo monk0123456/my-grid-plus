@@ -62,7 +62,8 @@
                                                                                                     (run []
                                                                                                         (do
                                                                                                             (run-map ignite group_id (-> (-> (-> ast :obj) :batch) :map))
-                                                                                                            (run-map ignite group_id [(-> (-> (-> ast :obj) :batch) :reduce)])))) (cron-to-str (-> ast :cron)))]
+                                                                                                            (run-map ignite group_id [(-> (-> (-> ast :obj) :batch) :reduce)])
+                                                                                                            ))) (cron-to-str (-> ast :cron)))]
                         (.put (.cache ignite "my_cron") (-> ast :name) (MCron. (-> ast :name) (cron-to-str (-> ast :cron)) (my-lexical/get_str_value (first (-> ast :descrip))) ast)))
                     (catch Exception ex
                         (.remove scheduledFutures (-> ast :name)))
