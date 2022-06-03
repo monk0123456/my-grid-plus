@@ -26,7 +26,8 @@
         ; 生成 java 静态的方法
         :methods [^:static [my_url_tokens [String] cn.mysuper.model.MyUrlToken]
                   ^:static [isJdbcThin [String] Boolean]
-                  ^:static [hasConnPermission [String] Boolean]]
+                  ^:static [hasConnPermission [String] Boolean]
+                  ^:static [lineToList [String] java.util.List]]
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
 
@@ -444,7 +445,7 @@
           (is-eq? func-name "set") "my-lexical/list-set"
           (is-eq? func-name "take") "my-lexical/list-take"
           (is-eq? func-name "drop") "my-lexical/list-drop"
-          (is-eq? func-name "noSqlInsert") "my-lexical/no-sql-insert"
+          ;(is-eq? func-name "noSqlInsert") "my-lexical/no-sql-insert"
           (is-eq? func-name "nth") "nth"
           (is-eq? func-name "count") "count"
           (is-eq? func-name "concat") "my-lexical/my-concat"
@@ -853,6 +854,9 @@
                )
          (if (> (count lst) 0) (concat lst_result [(str/join lst)]) lst_result)
          )))
+
+(defn lineToList [^String line]
+    (to_arryList (to-back line)))
 
 ; 按逗号切分 query
 ; stack 记录 （）

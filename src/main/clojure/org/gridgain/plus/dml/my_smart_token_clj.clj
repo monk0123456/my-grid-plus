@@ -1,5 +1,6 @@
 (ns org.gridgain.plus.dml.my-smart-token-clj
     (:require
+        [org.gridgain.plus.smart-func :as smart-func]
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [clojure.core.reducers :as r]
         [clojure.string :as str]
@@ -162,6 +163,9 @@
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
         (cond (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "my_view") (format "(smart-func/smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add_job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "remove_job") (format "(smart-func/remove-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (is-func? ignite func-name) (format "(my-smart-scenes/my-invoke-func ignite \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
               (is-scenes? ignite group_id func-name) (format "(my-smart-scenes/my-invoke-scenes ignite group_id \"%s\" %s)" func-name (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? "log" func-name) (format "(log %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
@@ -184,7 +188,7 @@
               (my-lexical/is-eq? func-name "noSqlInsertTran") (format "(my-lexical/no-sql-insert-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "noSqlUpdateTran") (format "(my-lexical/no-sql-update-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "noSqlDeleteTran") (format "(my-lexical/no-sql-delete-tran ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
-              (my-lexical/is-eq? func-name "myDrop") (format "(my-lexical/no-sql-drop ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "noSqlDrop") (format "(my-lexical/no-sql-drop ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "noSqlInsert") (format "(my-lexical/no-sql-insert ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "noSqlUpdate") (format "(my-lexical/no-sql-update ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "noSqlDelete") (format "(my-lexical/no-sql-delete ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))

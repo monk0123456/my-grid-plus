@@ -26,9 +26,7 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        ;:methods [^:static [get_plus_sql [org.apache.ignite.Ignite Long String] String]
-        ;          ^:static [getSqlToAst [org.apache.ignite.Ignite String String] clojure.lang.LazySeq]
-        ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
+        :methods [^:static [smart_view [org.apache.ignite.Ignite Long String] String]]
         ))
 
 (defn cron-to-str
@@ -120,10 +118,8 @@
                 )
             )))
 
-; smart view 方法
-(defn smart-func [^Ignite ignite ^Long group_id ^String code]
-    ())
-
+(defn _smart_view [^Ignite ignite ^Long group_id ^String code]
+    (smart-view ignite group_id code))
 
 
 
