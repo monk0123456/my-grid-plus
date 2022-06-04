@@ -1,6 +1,5 @@
 (ns org.gridgain.plus.dml.my-smart-token-clj
     (:require
-        [org.gridgain.plus.smart-func :as smart-func]
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [clojure.core.reducers :as r]
         [clojure.string :as str]

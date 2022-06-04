@@ -27,6 +27,7 @@
         :methods [^:static [my_url_tokens [String] cn.mysuper.model.MyUrlToken]
                   ^:static [isJdbcThin [String] Boolean]
                   ^:static [hasConnPermission [String] Boolean]
+                  ^:static [getStrValue [String] String]
                   ^:static [lineToList [String] java.util.List]]
         ;:methods [^:static [getPlusInsert [org.apache.ignite.Ignite Long String] clojure.lang.PersistentArrayMap]]
         ))
@@ -100,6 +101,12 @@
 (defn my-str-value [^String line]
     (cond (not (nil? (re-find #"^\'[\S\s]+\'$" line))) (str/join (concat [\"] (drop-last 1 (rest line)) [\"]))
           (re-find #"^\'\'$" line) ""
+          :else line
+          ))
+
+(defn -getStrValue [^String line]
+    (cond (and (= (first line) \') (= (last line) \')) (str/join (drop-last 1 (rest line)))
+          (and (= (first line) \") (= (first line) \")) (str/join (drop-last 1 (rest line)))
           :else line
           ))
 
@@ -855,7 +862,7 @@
          (if (> (count lst) 0) (concat lst_result [(str/join lst)]) lst_result)
          )))
 
-(defn lineToList [^String line]
+(defn -lineToList [^String line]
     (to_arryList (to-back line)))
 
 ; 按逗号切分 query

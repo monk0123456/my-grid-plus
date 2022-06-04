@@ -24,9 +24,7 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        ;:methods [^:static [get_plus_sql [org.apache.ignite.Ignite Long String] String]
-        ;          ^:static [getSqlToAst [org.apache.ignite.Ignite String String] clojure.lang.LazySeq]
-        ;          ^:static [putAstCache [org.apache.ignite.Ignite String String String] void]]
+        :methods [^:static [getSmartSegment [String] java.util.List]]
         ))
 
 (declare body-segment get-ast-lst get-ast get-re-pair get-pairs get-pairs-tokens
@@ -80,6 +78,12 @@
          (if-not (empty? stack-lst)
              (conj lst stack-lst)
              lst))))
+
+(defn -getSmartSegment [^String sql]
+    (loop [[f & r] (get-smart-segment (my-lexical/to-back sql)) ar (ArrayList.)]
+        (if (some? f)
+            (recur r (doto ar (.add (my-lexical/to_arryList f))))
+            ar)))
 
 (defn get-pair-item-ex
     ([lst] (get-pair-item-ex lst [] nil [] []))

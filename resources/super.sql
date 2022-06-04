@@ -155,7 +155,8 @@ DROP TABLE IF EXISTS my_scenes;
 CREATE TABLE IF NOT EXISTS my_scenes (
                   group_id BIGINT,
                   scenes_name VARCHAR(40),
-                  sql_code VARCHAR,
+                  --sql_code VARCHAR,
+                  smart_code VARCHAR,
                   --ps_code VARCHAR,
                   descrip VARCHAR,
                   is_batch BOOLEAN DEFAULT false,
