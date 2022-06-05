@@ -79,11 +79,14 @@
              (conj lst stack-lst)
              lst))))
 
-(defn -getSmartSegment [^String sql]
+(defn get-my-smart-segment [^String sql]
     (loop [[f & r] (get-smart-segment (my-lexical/to-back sql)) ar (ArrayList.)]
         (if (some? f)
             (recur r (doto ar (.add (my-lexical/to_arryList f))))
             ar)))
+
+(defn -getSmartSegment [^String sql]
+    (get-my-smart-segment sql))
 
 (defn get-pair-item-ex
     ([lst] (get-pair-item-ex lst [] nil [] []))

@@ -364,6 +364,14 @@
             (str/replace code #"^\(\s*" "(defn "))
         ))
 
+(defn my-smart-to-clj [^Ignite ignite ^Long group_id smart-lst]
+    (let [ast (first (my-smart-sql/my-get-ast-lst smart-lst))]
+        (let [code (ast-to-clj ignite group_id ast nil)]
+            (if (re-find #"^\(defn\s*" code)
+                [code (-> ast :func-name)]
+                [(str/replace code #"^\(\s*" "(defn ") (-> ast :func-name)])
+            )))
+
 ; smart-lst: (my-lexical/to-back smart-sql)
 (defn my-smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq smart-lst]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]

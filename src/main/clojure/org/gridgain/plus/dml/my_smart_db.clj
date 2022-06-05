@@ -15,8 +15,6 @@
         [org.gridgain.plus.dml.my-delete :as my-delete]
         [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
         [org.gridgain.plus.dml.my-select-plus-args :as my-select-plus-args]
-        [org.gridgain.plus.dml.my-trans :as my-trans]
-        [org.gridgain.plus.nosql.my-super-cache :as my-super-cache]
         [clojure.core.reducers :as r]
         [clojure.string :as str])
     (:import (org.apache.ignite Ignite IgniteCache)

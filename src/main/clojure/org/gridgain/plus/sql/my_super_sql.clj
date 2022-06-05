@@ -200,10 +200,18 @@
         ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
         (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id lst (StringBuilder.))))
 
+(defn super-sql-line [^Ignite ignite ^String userToken ^String line]
+    (let [[group_id dataset_name group_type dataset_id] (my_group_id ignite userToken)]
+        ;(.myWriter (MyLogger/getInstance) (format "%s %s" sql group_id))
+        (super-sql-lst ignite group_id userToken dataset_name group_type dataset_id (my-smart-sql/get-my-smart-segment line) (StringBuilder.))))
+
 ; 传入 [["select" "name" ...], ["update" ...], ["insert" ...]]
 (defn -superSql [^Ignite ignite ^Object userToken ^Object lst-sql]
     (if (some? userToken)
-        (super-sql ignite (MyCacheExUtil/restoreToLine userToken) (MyCacheExUtil/restore lst-sql))
+        (if-let [m-obj (MyCacheExUtil/restore lst-sql)]
+            (cond (string? m-obj) (super-sql-line ignite (MyCacheExUtil/restoreToLine userToken) m-obj)
+                  (my-lexical/is-seq? m-obj) (super-sql ignite (MyCacheExUtil/restoreToLine userToken) m-obj)
+                  ))
         (throw (Exception. "没有权限不能访问数据库！"))))
 
 (defn -getGroupId [^Ignite ignite ^String userToken]
