@@ -1,0 +1,54 @@
+(import (cn.myservice MySqlAstService))
+(def mySqlAst (.getMySqlAst (MySqlAstService/getInstance)))
+(.getStrValue mySqlAst "\"吴大富\"")
+
+(import (org.tools MyLineToBinary))
+(def mySqlAst (.getMySqlAst (MySqlAstService/getInstance)))
+(.getSmartSegment mySqlAst "let a = 1; let b = 0;")
+
+(import (cn.myservice MyLoadScriptService))
+
+(def myLoadScript (.getMyLoadScript (MyLoadScriptService/getInstance)))
+(def code (.loadFromNative myLoadScript "/Users/chenfei/Documents/smart/insert_query.smart"))
+
+(def lsts ["loadCode" "(" code ")"])
+(def lst-sql (MyLineToBinary/objToBytes lsts))
+;(def m-obj (MyLineToBinary/restore lst-sql))
+(def m-obj (MyCacheExUtil/restore lst-sql))
+
+;(def lst (my-smart-sql/re-super-smart-segment m-obj))
+(def lst (first (my-smart-sql/re-super-smart-segment m-obj)))
+
+(def smart-code-lst [lst])
+(my-smart-sql/body-segment (concat (first smart-code-lst) [";"]))
+
+
+*********************************************
+
+
+(import (cn.myservice MySqlAstService))
+(def mySqlAst (.getMySqlAst (MySqlAstService/getInstance)))
+(.getStrValue mySqlAst "\"吴大富\"")
+
+(import (org.tools MyLineToBinary))
+(def mySqlAst (.getMySqlAst (MySqlAstService/getInstance)))
+(.getSmartSegment mySqlAst "let a = 1; let b = 0;")
+
+(import (cn.myservice MyLoadScriptService))
+
+(def myLoadScript (.getMyLoadScript (MyLoadScriptService/getInstance)))
+(def code (.loadFromNative myLoadScript "/Users/chenfei/Documents/smart/insert_query.smart"))
+
+(def lsts ["loadCode" "(" code ")"])
+(def lst-sql (MyLineToBinary/objToBytes lsts))
+;(def m-obj (MyLineToBinary/restore lst-sql))
+(def m-obj (MyCacheExUtil/restore lst-sql))
+
+;(def lst (my-smart-sql/re-super-smart-segment m-obj))
+(def lst (first (my-smart-sql/re-super-smart-segment m-obj)))
+
+(def smart-code-lst [lst])
+(my-smart-sql/body-segment (my-lexical/to-back "let a = 1; let b = 2; c = a + b;"))
+(my-smart-clj/smart-lst-to-clj ignite 0 "wdf" (my-lexical/to-back "let a = 1; let b = 2; c = a + b;"))
+;(my-smart-sql/body-segment (first smart-code-lst))
+;(my-smart-sql/body-segment (concat (first smart-code-lst) [";"]))

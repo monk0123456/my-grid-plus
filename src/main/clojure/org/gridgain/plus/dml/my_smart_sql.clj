@@ -24,7 +24,8 @@
         ; 是否生成 class 的 main 方法
         :main false
         ; 生成 java 静态的方法
-        :methods [^:static [getSmartSegment [String] java.util.List]]
+        :methods [^:static [getSmartSegment [String] java.util.List]
+                  ^:static [reSmartSegmentLst [java.util.List] java.util.List]]
         ))
 
 (declare body-segment get-ast-lst get-ast get-re-pair get-pairs get-pairs-tokens
@@ -78,6 +79,48 @@
          (if-not (empty? stack-lst)
              (conj lst stack-lst)
              lst))))
+
+(defn re-super-smart-segment [segment-lst]
+    (loop [[f & r] segment-lst stack [] lst []]
+        (if (some? f)
+            (cond (and (empty? stack) (contains? #{"create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst f))
+                  (and (= (count stack) 1) (contains? #{"create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst (first stack) f))
+                  (and (> (count stack) 1) (contains? #{"create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst stack f))
+                  :else
+                  (recur r (conj stack f) lst)
+                  )
+            (cond (empty? stack) lst
+                  (= (count stack) 1) (conj lst (first stack))
+                  (> (count stack) 1) (conj lst stack)
+                  ))))
+
+(defn re-smart-segment [segment-lst]
+    (loop [[f & r] segment-lst stack [] lst []]
+        (if (some? f)
+            (cond (and (empty? stack) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst f))
+                  (and (= (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst (first stack) f))
+                  (and (> (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (conj lst stack f))
+                  :else
+                  (recur r (conj stack f) lst)
+                  )
+            (cond (empty? stack) lst
+                  (= (count stack) 1) (conj lst (first stack))
+                  (> (count stack) 1) (conj lst stack)
+                  ))))
+
+(defn -reSmartSegmentLst [^List segment-lst]
+    (loop [[f & r] segment-lst stack [] lst (ArrayList.)]
+        (if (some? f)
+            (cond (and (empty? stack) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add f)))
+                  (and (= (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (first stack)) (.add f)))
+                  (and (> (count stack) 1) (contains? #{"function" "create" "alter" "drop" "select" "insert" "update" "delete"} (str/lower-case (first f)))) (recur r [] (doto lst (.add (my-lexical/to_arryList stack)) (.add f)))
+                  :else
+                  (recur r (conj stack f) lst)
+                  )
+            (cond (empty? stack) lst
+                  (= (count stack) 1) (doto lst (.add (first stack)))
+                  (> (count stack) 1) (doto lst (.add stack))
+                  ))))
 
 (defn get-my-smart-segment [^String sql]
     (loop [[f & r] (get-smart-segment (my-lexical/to-back sql)) ar (ArrayList.)]
@@ -470,7 +513,9 @@
                :else
                (recur r (conj stack-lst f) lst)
                )
-         lst)))
+         (if (empty? stack-lst)
+             lst
+             (conj lst (lst-to-token stack-lst))))))
 
 (defn get-ast-lst [lst]
     (let [{func-name :func-name  args-lst :args-lst body-lst :body-lst} (get-func-name lst)]

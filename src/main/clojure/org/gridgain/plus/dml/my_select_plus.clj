@@ -614,26 +614,27 @@
             (when-let [m (my-lexical/sql-union sql-lst)]
                 (map to-ast m)))))
 
+(defn to-lst [ast]
+        (cond (map? ast) (loop [[f & r] (keys ast) my-ast (Hashtable.)]
+                             (if (some? f)
+                                 (cond (map? (get ast f)) (if-let [m (to-lst (get ast f))]
+                                                              (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
+                                                              (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
+                                       (my-lexical/is-seq? (get ast f)) (if-let [m (to-lst (get ast f))]
+                                                                            (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
+                                                                            (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
+                                       :else
+                                       (if-let [m (get ast f)]
+                                           (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
+                                           (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
+                                       )
+                                 my-ast))
+              (my-lexical/is-seq? ast) (my-lexical/to_arryList (map to-lst ast))
+              ))
+
 (defn -sqlToAst [^java.util.List lst]
-    (letfn [(to-lst [ast]
-                (cond (map? ast) (loop [[f & r] (keys ast) my-ast (Hashtable.)]
-                                     (if (some? f)
-                                         (cond (map? (get ast f)) (if-let [m (to-lst (get ast f))]
-                                                                      (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
-                                                                      (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
-                                               (my-lexical/is-seq? (get ast f)) (if-let [m (to-lst (get ast f))]
-                                                                                    (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
-                                                                                    (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
-                                               :else
-                                               (if-let [m (get ast f)]
-                                                   (recur r (doto my-ast (.put (str/join (rest (str f))) m)))
-                                                   (recur r (doto my-ast (.put (str/join (rest (str f))) ""))))
-                                               )
-                                         my-ast))
-                      (my-lexical/is-seq? ast) (my-lexical/to_arryList (map to-lst ast))
-                      ))]
-        (let [ast (sql-to-ast lst)]
-                  (to-lst ast))))
+    (let [ast (sql-to-ast lst)]
+        (to-lst ast)))
 
 ; 1、替换 function 在 select ... from table, func(a, b) where ... 中用到
 (defn find-table-func [^Ignite ignite ast]

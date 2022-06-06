@@ -9,6 +9,7 @@
              (com.google.common.base Strings)
              (cn.plus.model MyKeyValue MyLogCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
+             (org.gridgain.myservice MyLoadSmartSqlService)
              (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk MyScenesCachePk)
              (org.apache.ignite.cache.query SqlFieldsQuery)
              (java.math BigDecimal)
@@ -162,6 +163,7 @@
 (defn func-to-clj [^Ignite ignite group_id m my-context]
     (let [{func-name :func-name lst_ps :lst_ps} m]
         (cond (my-lexical/is-eq? func-name "trans") (format "(my-smart-db/trans ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
+              (my-lexical/is-eq? func-name "loadCode") (.loadSmartSql (.getLoadSmartSql (MyLoadSmartSqlService/getInstance)) ignite group_id (format "(smart-func/smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context)))
               (my-lexical/is-eq? func-name "my_view") (format "(smart-func/smart-view ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "add_job") (format "(smart-func/add_job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))
               (my-lexical/is-eq? func-name "remove_job") (format "(smart-func/remove-job ignite group_id %s)" (get-lst-ps-vs ignite group_id lst_ps my-context))

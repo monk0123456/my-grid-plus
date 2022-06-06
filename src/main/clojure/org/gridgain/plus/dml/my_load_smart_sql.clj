@@ -3,6 +3,7 @@
         [org.gridgain.plus.dml.select-lexical :as my-lexical]
         [org.gridgain.plus.dml.my-smart-clj :as my-smart-clj]
         [org.gridgain.plus.dml.my-smart-sql :as my-smart-sql]
+        [org.gridgain.plus.dml.my-smart-db-line :as my-smart-db-line]
         [org.gridgain.plus.dml.my-select-plus :as my-select-plus]
         [org.gridgain.plus.dml.my-smart-func-args-token-clj :as my-smart-func-args-token-clj]
         [org.gridgain.plus.dml.my-select-plus-args :as my-select-plus-args]
@@ -16,7 +17,7 @@
              (cn.plus.model MyCacheEx MyKeyValue MyLogCache MyNoSqlCache SqlType)
              (org.gridgain.dml.util MyCacheExUtil)
              (org.apache.ignite.cache.query FieldsQueryCursor SqlFieldsQuery)
-             (cn.plus.model.db MyScenesCache ScenesType MyScenesParams MyScenesParamsPk)
+             (cn.plus.model.db MyScenesCache MyScenesCachePk ScenesType MyScenesParams MyScenesParamsPk)
              (org.apache.ignite.configuration CacheConfiguration)
              (org.apache.ignite.cache CacheMode CacheAtomicityMode)
              (org.apache.ignite.binary BinaryObjectBuilder BinaryObject)
@@ -37,15 +38,29 @@
         ))
 
 (defn save-to-cache [^Ignite ignite ^Long group_id ^String func-name ^String sql_code ^String smart_code]
-    ())
+    (let [pk (MyScenesCachePk. group_id func-name) cache (.cache ignite "my_scenes")]
+        (if-not (.containsKey cache pk)
+            (.put cache pk (MyScenesCache. group_id func-name sql_code smart_code)))))
 
 (defn load-smart-sql [^Ignite ignite ^Long group_id ^String code]
-    (loop [[f & r] (my-smart-sql/get-smart-segment code)]
-        (if (some? f)
-            (cond (my-lexical/is-eq? (first f) "function") (let [[sql func-name] (my-smart-clj/my-smart-to-clj ignite group_id f)]
-                                                               (eval (read-string sql))
-                                                               )
-                  ))))
+    (do
+        (println code)
+        (println (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment code)))
+        (loop [[f & r] (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment code))]
+            (if (some? f)
+                (do
+                    (cond (and (string? (first f)) (my-lexical/is-eq? (first f) "function")) (let [[sql func-name] (my-smart-clj/my-smart-to-clj ignite group_id f)]
+                                                                                                 (eval (read-string sql))
+                                                                                                 (save-to-cache ignite group_id func-name sql code))
+                          (and (string? (first f)) (contains? #{"insert" "update" "delete" "select"} (str/lower-case (first f)))) (my-smart-db-line/query_sql ignite group_id f)
+                          :else
+                          (if (string? (first f))
+                              (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id [f])]
+                                  (eval (read-string sql)))
+                              (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id f)]
+                                  (eval (read-string sql))))
+                          )
+                    (recur r))))))
 
 
 (defn -loadSmartSql [^Ignite ignite ^Long group_id ^String code]

@@ -402,7 +402,7 @@
                            )
           ))
 
-(defn re-fn [^String userToken ^clojure.lang.LazySeq lst]
+(defn re-fn [^clojure.lang.LazySeq lst]
     (letfn [(get-fn-body [lst]
                 (loop [[f & r] (my-smart-sql/get-smart-segment lst) func-stack [] lst-rs []]
                     (if (some? f)
@@ -417,15 +417,15 @@
                         (if (empty? func-stack)
                             lst-rs
                             (conj lst-rs (concat ["innerFunction" "{"] (apply concat func-stack) ["}"]))))))
-            (get-fn [^String userToken lst]
-                (concat ["function" (format "%s-cnc-cf-fn" userToken) "(" ")" "{"] (apply concat (get-fn-body lst)) ["}"]))]
-        (get-fn userToken lst)))
+            (get-fn [lst]
+                (concat ["function" "cnc-cf-fn" "(" ")" "{"] (apply concat (get-fn-body lst)) ["}"]))]
+        (get-fn lst)))
 
-(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^String userToken ^clojure.lang.LazySeq lst]
-    (let [smart-lst (re-fn userToken lst)]
+(defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
+    (let [smart-lst (re-fn lst)]
         (let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
-            (eval (read-string smart-code))
-            (apply (eval (read-string (format "(fn [ignite group_id]\n     %s)" (format "(%s-cnc-cf-fn ignite group_id)" userToken)))) [ignite group_id])
+            (let [my-smart-code (str/replace smart-code #"^\(defn\s+cnc-cf-fn\s+" "(fn ")]
+                (apply (eval (read-string my-smart-code)) [ignite group_id]))
             )))
 
 ; 这个是没有包裹 fn 的，已经被抛弃了

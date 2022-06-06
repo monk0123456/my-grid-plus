@@ -12,6 +12,7 @@
                  [org.gridgain/ignite-spring "8.7.24"]
                  [org.gridgain/ignite-h2 "8.7.24"]
                  [org.gridgain/ignite-schedule "8.7.24"]
+                 [cn.smart.service/my-thin-client-service "1.0-SNAPSHOT"]
                  [cn.mysuper/my-super-service "1.0-SNAPSHOT"]
                  [org.springframework/spring-core "4.3.25.RELEASE"]
                  [org.springframework/spring-aop "4.3.25.RELEASE"]
