@@ -52,3 +52,33 @@
 (my-smart-clj/smart-lst-to-clj ignite 0 "wdf" (my-lexical/to-back "let a = 1; let b = 2; c = a + b;"))
 ;(my-smart-sql/body-segment (first smart-code-lst))
 ;(my-smart-sql/body-segment (concat (first smart-code-lst) [";"]))
+
+
+********************************************
+
+(import (cn.myservice MyLoadScriptService))
+
+(def myLoadScript (.getMyLoadScript (MyLoadScriptService/getInstance)))
+(def code (.loadFromNative myLoadScript "/Users/chenfei/Documents/smart/insert_query.smart"))
+
+
+
+(def ast (my-smart-sql/get-ast "function my_test(a, b)\n{\n   let c = 10;\n   let d = [1, 2+3*4];\n   let tmp = c + d.get(1);\n   a + b + tmp;\n}"))
+(-> (nth (-> (first ast) :body-lst) 4) :let-vs)
+(def token (-> (nth (-> (first ast) :body-lst) 4) :let-vs))
+(my-smart-token-clj/token-to-clj ignite 0 token nil)
+(def m (nth (-> token :operation) 2))
+(my-smart-token-clj/func-link-to-clj ignite 0 (reverse (-> m :func-link)) nil)
+(reverse (-> m :func-link))
+;
+
+
+(def ast (my-smart-sql/get-ast "function my_test(a, b)\n{\n   let c = 10;\n   let d = [1, 2+3*4];\n   let tmp = c + d.get(1);\n   a + b + tmp;\n}"))
+(-> (nth (-> (first ast) :body-lst) 4) :let-vs)
+(def token (-> (nth (-> (first ast) :body-lst) 4) :let-vs))
+token
+(my-smart-token-clj/token-to-clj ignite 0 token nil)
+;(def m (nth (-> token :operation) 2))
+;m
+;(my-smart-token-clj/func-link-to-clj ignite 0 (-> m :func-link) nil)
+;

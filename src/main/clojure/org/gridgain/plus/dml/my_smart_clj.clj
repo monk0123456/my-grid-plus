@@ -357,6 +357,15 @@
                     (format "(%s [%s]\n    %s)" func-name (str/join " " args-lst) (body-to-clj ignite group_id body-lst func-context)))
                 ))))
 
+(defn my-ast-to-clj [ignite group_id ast up-my-context]
+    (let [{func-name :func-name args-lst :args-lst body-lst :body-lst} ast my-context {:input-params #{} :let-params {} :last-item nil :inner-func #{} :up-my-context up-my-context}]
+        (let [my-args-lst (get-input args-lst body-lst)]
+            (let [func-context (assoc my-context :input-params (apply conj (-> my-context :input-params) my-args-lst))]
+                (if (nil? up-my-context)
+                    (body-to-clj ignite group_id body-lst (assoc func-context :top-func func-name))
+                    (body-to-clj ignite group_id body-lst func-context))
+                ))))
+
 (defn smart-to-clj [^Ignite ignite ^Long group_id ^String smart-sql]
     (let [code (ast-to-clj ignite group_id (first (my-smart-sql/get-ast smart-sql)) nil)]
         (if (re-find #"^\(defn\s*" code)
@@ -423,10 +432,13 @@
 
 (defn smart-lst-to-clj [^Ignite ignite ^Long group_id ^clojure.lang.LazySeq lst]
     (let [smart-lst (re-fn lst)]
-        (let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
-            (let [my-smart-code (str/replace smart-code #"^\(defn\s+cnc-cf-fn\s+" "(fn ")]
-                (apply (eval (read-string my-smart-code)) [ignite group_id]))
-            )))
+        (let [my-smart-code (my-ast-to-clj ignite group_id (first (my-smart-sql/my-get-ast-lst smart-lst)) nil)]
+            (apply (eval (read-string (format "(fn [^Ignite ignite ^Long group_id] %s)" my-smart-code))) [ignite group_id])))
+        ;(let [smart-code (my-smart-lst-to-clj ignite group_id smart-lst)]
+        ;    (let [my-smart-code (str/replace smart-code #"^\(defn\s+cnc-cf-fn\s+" "(fn ")]
+        ;        (apply (eval (read-string my-smart-code)) [ignite group_id]))
+        ;    )
+        )
 
 ; 这个是没有包裹 fn 的，已经被抛弃了
 ; 执行 smart sql

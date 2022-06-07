@@ -43,27 +43,24 @@
             (.put cache pk (MyScenesCache. group_id func-name sql_code smart_code)))))
 
 (defn load-smart-sql [^Ignite ignite ^Long group_id ^String code]
-    (do
-        (println code)
-        (println (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment code)))
-        (loop [[f & r] (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment code))]
-            (if (some? f)
-                (do
-                    (cond (and (string? (first f)) (my-lexical/is-eq? (first f) "function")) (let [[sql func-name] (my-smart-clj/my-smart-to-clj ignite group_id f)]
-                                                                                                 (eval (read-string sql))
-                                                                                                 (save-to-cache ignite group_id func-name sql code))
-                          (and (string? (first f)) (contains? #{"insert" "update" "delete" "select"} (str/lower-case (first f)))) (my-smart-db-line/query_sql ignite group_id f)
-                          :else
-                          (if (string? (first f))
-                              (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id [f])]
-                                  (eval (read-string sql)))
-                              (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id f)]
-                                  (eval (read-string sql))))
-                          )
-                    (recur r))))))
+    (loop [[f & r] (my-smart-sql/re-smart-segment (my-smart-sql/get-smart-segment (my-lexical/to-back code)))]
+        (if (some? f)
+            (do
+                (cond (and (string? (first f)) (my-lexical/is-eq? (first f) "function")) (let [[sql func-name] (my-smart-clj/my-smart-to-clj ignite group_id f)]
+                                                                                             (eval (read-string sql))
+                                                                                             (save-to-cache ignite group_id func-name sql code))
+                      (and (string? (first f)) (contains? #{"insert" "update" "delete" "select"} (str/lower-case (first f)))) (my-smart-db-line/query_sql ignite group_id f)
+                      :else
+                      (if (string? (first f))
+                          (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id [f])]
+                              (eval (read-string sql)))
+                          (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id f)]
+                              (eval (read-string sql))))
+                      )
+                (recur r)))))
 
 
-(defn -loadSmartSql [^Ignite ignite ^Long group_id ^String code]
+(defn -loadSmartSql [this ^Ignite ignite ^Long group_id ^String code]
     (load-smart-sql ignite group_id code))
 
 

@@ -30,6 +30,7 @@
     '[org.gridgain.plus.tools.my-util :as my-util]
     '[org.gridgain.plus.sql.my-smart-scenes :as my-smart-scenes]
     '[org.gridgain.plus.tools.my-cache :as my-cache]
+    '[org.gridgain.plus.dml.my-load-smart-sql :as my-load-smart-sql]
     '[clojure.core.reducers :as r]
     '[clojure.string :as str]
     '[clojure.walk :as w])

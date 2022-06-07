@@ -64,7 +64,7 @@
         (throw (Exception. (format "%s 场景不存在！" methodName)))))
 
 ; myInvoke sql 的方法
-(defn -myInvoke [^Ignite ignite ^String methodName ^ArrayList lst]
+(defn -myInvoke [this ^Ignite ignite ^String methodName ^ArrayList lst]
     (my-invoke ignite methodName lst))
 
 ; myInvoke sql 的方法
