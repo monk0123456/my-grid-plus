@@ -109,6 +109,8 @@
                (contains? f :item_name) (recur ignite group_id r (conj stack_number f) stack_symbol args-dic)
                (contains? f :func-name) (let [m (func-to-clj ignite group_id f args-dic)]
                                             (recur ignite group_id r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol args-dic))
+               (contains? f :func-link) (let [m (func-link-to-clj ignite group_id (-> f :func-link) args-dic)]
+                                            (recur ignite group_id r (conj stack_number {:table_alias "", :item_name m, :item_type "", :java_item_type java.lang.Object, :const false}) stack_symbol args-dic))
                :else
                (recur ignite group_id r (conj stack_number f) stack_symbol args-dic)
                )
@@ -284,7 +286,8 @@
         (cond (contains? m :func-name) (func-to-clj ignite group_id m args-dic)
               ;(and (contains? m :func-name) (contains? m :lst_ps)) (func-to-clj ignite group_id m args-dic)
               ;(and (contains? m :func-name) (contains? m :lst_ps) (contains? m :ds-name)) (smart-func-to-clj ignite group_id m args-dic)
-              (contains? m :func-link) (func-link-to-clj ignite group_id (reverse (-> m :func-link)) args-dic)
+              ;(contains? m :func-link) (func-link-to-clj ignite group_id (reverse (-> m :func-link)) args-dic)
+              (contains? m :func-link) (func-link-to-clj ignite group_id (-> m :func-link) args-dic)
               (contains? m :and_or_symbol) (get m :and_or_symbol)
               (contains? m :operation) (calculate ignite group_id (reverse (-> m :operation)) args-dic)
               (contains? m :comparison_symbol) (get m :comparison_symbol)
@@ -339,12 +342,19 @@
                 (apply (eval (read-string (format "(fn [ignite group_id %s]\n     %s)" (str/join " " (keys (-> args-dic :dic))) fn-line))) (concat [ignite group_id] (vals (-> args-dic :dic)))))))
     )
 
-(defn func-link-to-clj [ignite group_id [f & r] my-context]
-    (cond (and (some? f) (or (nil? r) (empty? r))) (token-clj ignite group_id f my-context)
-          (and (some? f) (some? r)) (let [up-items (func-link-to-clj ignite group_id r my-context)]
-                                        (if-not (Strings/isNullOrEmpty up-items)
-                                            (let [m (assoc f :lst_ps (conj (-> f :lst_ps) {:table_alias "", :item_name up-items, :item_type "", :java_item_type nil, :const false}))]
-                                                (func-to-clj ignite group_id m my-context))
-                                            ))
-          )
-    )
+(defn func-link-to-clj [ignite group_id [f & r] args-dic]
+    (cond (and (some? f) (or (nil? r) (empty? r))) (token-clj ignite group_id f args-dic)
+          (and (some? f) (some? r)) (let [first-item (token-clj ignite group_id f args-dic) next-item (first r)]
+                                        (let [m (assoc next-item :lst_ps (concat [{:table_alias "", :item_name first-item, :item_type "", :java_item_type nil, :const false}] (-> next-item :lst_ps)))]
+                                            (func-link-to-clj ignite group_id (concat [m] (rest r)) args-dic)))
+          ))
+
+;(defn func-link-to-clj [ignite group_id [f & r] my-context]
+;    (cond (and (some? f) (or (nil? r) (empty? r))) (token-clj ignite group_id f my-context)
+;          (and (some? f) (some? r)) (let [up-items (func-link-to-clj ignite group_id r my-context)]
+;                                        (if-not (Strings/isNullOrEmpty up-items)
+;                                            (let [m (assoc f :lst_ps (conj (-> f :lst_ps) {:table_alias "", :item_name up-items, :item_type "", :java_item_type nil, :const false}))]
+;                                                (func-to-clj ignite group_id m my-context))
+;                                            ))
+;          )
+;    )

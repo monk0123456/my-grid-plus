@@ -52,10 +52,8 @@
                       (and (string? (first f)) (contains? #{"insert" "update" "delete" "select"} (str/lower-case (first f)))) (my-smart-db-line/query_sql ignite group_id f)
                       :else
                       (if (string? (first f))
-                          (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id [f])]
-                              (eval (read-string sql)))
-                          (let [sql (my-smart-clj/smart-lst-to-clj ignite group_id f)]
-                              (eval (read-string sql))))
+                          (my-smart-clj/smart-lst-to-clj ignite group_id f)
+                          (my-smart-clj/smart-lst-to-clj ignite group_id (apply concat f)))
                       )
                 (recur r)))))
 
